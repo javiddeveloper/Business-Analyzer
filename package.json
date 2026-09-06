@@ -1,0 +1,18 @@
+{
+  "name": "coder-review",
+  "version": "0.1.0",
+  "description": "AI code reviewer for GitLab merge requests — webhook-driven, knowledge-base aware.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

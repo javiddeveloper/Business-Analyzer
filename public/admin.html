@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>پایگاه دانش — Coder Review</title>
+<style>
+  body { font-family: Tahoma, Arial, sans-serif; background: #0f1115; color: #e5e7eb; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  p.hint { color: #9ca3af; font-size: 13px; margin-top: 0; }
+  .card { background: #171a21; border: 1px solid #262b36; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  input[type=text], textarea, input[type=password] { width: 100%; box-sizing: border-box; background: #0f1115; color: #e5e7eb; border: 1px solid #2b3140; border-radius: 6px; padding: 8px; font-family: inherit; margin-bottom: 8px; }
+  textarea { min-height: 120px; resize: vertical; }
+  button { background: #3b82f6; color: white; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-family: inherit; }
+  button.danger { background: #ef4444; }
+  button:hover { opacity: 0.9; }
+  ul { list-style: none; padding: 0; }
+  li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #262b36; }
+  li:last-child { border-bottom: none; }
+  .meta { color: #9ca3af; font-size: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .empty { color: #6b7280; padding: 12px 0; }
+</style>
+</head>
+<body>
+  <h1>📚 پایگاه دانش پروژه</h1>
+  <p class="hint">هر چیزی اینجا اضافه شود، خودکار در ریویوی هر Merge Request توسط هوش مصنوعی لحاظ می‌شود.</p>
+
+  <div class="card">
+    <label>توکن ادمین (اگر ADMIN_TOKEN در secrets.env ست شده؛ در غیر این‌صورت خالی بگذار)</label>
+    <input type="password" id="adminToken" placeholder="X-Admin-Token" />
+  </div>
+
+  <div class="card">
+    <h3>افزودن یادداشت جدید</h3>
+    <input type="text" id="title" placeholder="عنوان (مثلاً: قوانین امنیتی API)" />
+    <textarea id="content" placeholder="متن استاندارد یا قانون تیم..."></textarea>
+    <button onclick="addNote()">افزودن یادداشت</button>
+    <span class="meta">یا یک فایل .md/.txt آپلود کن:</span>
+    <input type="file" id="file" accept=".md,.txt" />
+    <button onclick="uploadFile()">آپلود</button>
+  </div>
+
+  <div class="card">
+    <h3>یادداشت‌های موجود</h3>
+    <ul id="list"><li class="empty">در حال بارگذاری...</li></ul>
+  </div>
+
+<script>
+function headers(extra) {
+  const token = document.getElementById('adminToken').value.trim();
+  const h = Object.assign({ 'Content-Type': 'application/json' }, extra || {});
+  if (token) h['X-Admin-Token'] = token;
+  return h;
+}
+
+async function loadList() {
+  const ul = document.getElementById('list');
+  ul.innerHTML = '<li class="empty">در حال بارگذاری...</li>';
+  try {
+    const res = await fetch('/api/knowledge', { headers: headers() });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const items = await res.json();
+    if (!items.length) {
+      ul.innerHTML = '<li class="empty">هنوز یادداشتی اضافه نشده.</li>';
+      return;
+    }
+    ul.innerHTML = '';
+    for (const it of items) {
+      const li = document.createElement('li');
+      const date = new Date(it.updatedAt).toLocaleString('fa-IR');
+      li.innerHTML = '<div><strong>' + escapeHtml(it.title) + '</strong><div class="meta">' + it.source + ' · ' + date + ' · ' + it.sizeChars + ' کاراکتر</div></div>';
+      const btn = document.createElement('button');
+      btn.textContent = 'حذف';
+      btn.className = 'danger';
+      btn.onclick = () => removeNote(it.id);
+      li.appendChild(btn);
+      ul.appendChild(li);
+    }
+  } catch (e) {
+    ul.innerHTML = '<li class="empty">خطا در بارگذاری: ' + escapeHtml(e.message) + '</li>';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function addNote() {
+  const title = document.getElementById('title').value.trim();
+  const content = document.getElementById('content').value.trim();
+  if (!content) return alert('متن یادداشت خالی است.');
+  const res = await fetch('/api/knowledge', { method: 'POST', headers: headers(), body: JSON.stringify({ title, content }) });
+  if (!res.ok) return alert('خطا: ' + (await res.text()));
+  document.getElementById('title').value = '';
+  document.getElementById('content').value = '';
+  loadList();
+}
+
+async function uploadFile() {
+  const input = document.getElementById('file');
+  const f = input.files[0];
+  if (!f) return alert('یک فایل انتخاب کن.');
+  const ext = f.name.split('.').pop();
+  const buf = await f.arrayBuffer();
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const res = await fetch('/api/knowledge', { method: 'POST', headers: headers(), body: JSON.stringify({ title: f.name, ext, fileBase64: b64 }) });
+  if (!res.ok) return alert('خطا: ' + (await res.text()));
+  input.value = '';
+  loadList();
+}
+
+async function removeNote(id) {
+  if (!confirm('حذف شود؟')) return;
+  const res = await fetch('/api/knowledge/' + id, { method: 'DELETE', headers: headers() });
+  if (!res.ok) return alert('خطا: ' + (await res.text()));
+  loadList();
+}
+
+loadList();
+</script>
+</body>
+</html>
