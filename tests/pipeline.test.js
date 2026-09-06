@@ -60,6 +60,7 @@ stub('../lib/ai_bridge', {
     if (k === 'PROJECT_PATH') return FAKE_PROJECT_PATH;
     return '';
   },
+  engineStatus: () => ({ model: 'test-model' }),
   async callModel() {
     return {
       text: JSON.stringify({

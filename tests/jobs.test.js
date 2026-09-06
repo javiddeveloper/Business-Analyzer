@@ -61,6 +61,7 @@ stub('../lib/publish', {
 
 stub('../lib/ai_bridge', {
   secret: (k) => (k === 'PROJECT_PATH' ? '/fake/project' : ''),
+  engineStatus: () => ({ model: 'test-model' }),
 });
 
 stub('../lib/localRepo', {

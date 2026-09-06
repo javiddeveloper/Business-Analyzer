@@ -76,10 +76,11 @@
   .badge.pick:hover { border-color: var(--border-strong); background: var(--panel); }
   .engine-list { display: flex; flex-direction: column; gap: 8px; }
   .engine-card {
-    display: flex; align-items: center; gap: 10px; text-align: start;
+    display: flex; flex-direction: column; gap: 0; text-align: start;
     background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px 12px; cursor: pointer; color: var(--text);
+    padding: 10px 12px; color: var(--text);
   }
+  .engine-card .row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
   .engine-card:hover { border-color: var(--border-strong); }
   .engine-card.active { border-color: var(--cyan); background: rgba(52,227,227,.1); }
   .engine-card .icon { font-size: 20px; flex: 0 0 auto; }
@@ -90,6 +91,15 @@
   .engine-card .status.ok { color: var(--green); }
   .engine-card .status.warn { color: var(--amber); }
   .engine-card .status.unknown { color: var(--muted); }
+  .engine-card .test-btn {
+    flex: 0 0 auto; font-size: 11px; padding: 4px 10px;
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+  }
+  .engine-card .test-btn:hover { border-color: var(--border-strong); color: var(--text); background: var(--panel); }
+  .engine-card .test-btn:disabled { opacity: .6; cursor: wait; }
+  .engine-test-result { font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
+  .engine-test-result.ok { color: var(--green); }
+  .engine-test-result.err { color: var(--red); }
 
   /* ---- top-level tabs: Merge Requests / Developers (own toolbar, not tied
      to a single project's MR list, so a later multi-project switch only
@@ -556,16 +566,23 @@ async function loadEngines() {
   }
   box.innerHTML = data.engines.map((e) => (
     '<div class="engine-card ' + (e.active ? 'active' : '') + '" data-id="' + esc(e.id) + '">' +
-      '<span class="icon">' + e.icon + '</span>' +
-      '<div class="body">' +
-        '<div class="name">' + esc(e.label) + (e.active ? ' · فعال' : '') + '</div>' +
-        '<div class="hint">' + esc(e.hint) + (e.model ? ' · ' + esc(e.model) : '') + '</div>' +
+      '<div class="row" data-select="' + esc(e.id) + '">' +
+        '<span class="icon">' + e.icon + '</span>' +
+        '<div class="body">' +
+          '<div class="name">' + esc(e.label) + (e.active ? ' · فعال' : '') + '</div>' +
+          '<div class="hint">' + esc(e.hint) + (e.model ? ' · ' + esc(e.model) : '') + '</div>' +
+        '</div>' +
+        '<span class="status ' + esc(ENGINE_STATE[e.state].cls) + '">' + esc(ENGINE_STATE[e.state].text) + '</span>' +
+        '<button type="button" class="test-btn" data-test="' + esc(e.id) + '">▶ تست</button>' +
       '</div>' +
-      '<span class="status ' + esc(ENGINE_STATE[e.state].cls) + '">' + esc(ENGINE_STATE[e.state].text) + '</span>' +
+      '<div class="engine-test-result" data-result="' + esc(e.id) + '" hidden></div>' +
     '</div>'
   )).join('');
-  box.querySelectorAll('.engine-card').forEach((el) => {
-    el.onclick = () => selectEngine(el.dataset.id);
+  box.querySelectorAll('[data-select]').forEach((el) => {
+    el.onclick = () => selectEngine(el.dataset.select);
+  });
+  box.querySelectorAll('[data-test]').forEach((el) => {
+    el.onclick = (ev) => { ev.stopPropagation(); testEngineUI(el.dataset.test, el); };
   });
 }
 
@@ -579,6 +596,32 @@ async function selectEngine(id) {
     if (!document.getElementById('settingsOverlay').hidden) await loadEnv();
   } catch (e) {
     alert('خطا در تغییر موتور: ' + e.message);
+  }
+}
+
+// "▶ تست" on an engine card: fires one small real call at that specific
+// engine (regardless of which one is active) and shows success/latency or
+// the exact error inline — e.g. a Claude subscription's session-limit
+// message — without switching engines or spending a full MR review to find out.
+async function testEngineUI(id, btn) {
+  const resultBox = document.querySelector('[data-result="' + CSS.escape(id) + '"]');
+  btn.disabled = true;
+  btn.textContent = '⏳ …';
+  resultBox.hidden = true;
+  try {
+    const r = await api('/api/engines/test', { method: 'POST', body: JSON.stringify({ id }) });
+    resultBox.hidden = false;
+    resultBox.className = 'engine-test-result ' + (r.ok ? 'ok' : 'err');
+    resultBox.textContent = r.ok
+      ? '✓ وصل شد (' + r.ms + 'ms) — پاسخ: «' + (r.text || '(خالی)') + '»'
+      : '✗ ' + r.error + (r.ms ? ' (' + r.ms + 'ms)' : '');
+  } catch (e) {
+    resultBox.hidden = false;
+    resultBox.className = 'engine-test-result err';
+    resultBox.textContent = '✗ خطا در فراخوانی: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ تست';
   }
 }
 

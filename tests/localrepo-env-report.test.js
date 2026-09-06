@@ -183,6 +183,7 @@ test('auto-approve is blocked while an earlier-created MR in the same project is
 
   stub('../lib/ai_bridge', {
     secret: (k) => (k === 'PROJECT_PATH' ? projectPath : ''),
+    engineStatus: () => ({ model: 'test-model' }),
   });
   stub('../lib/localRepo', { async loadContext() { return { fileContents: {}, warning: null }; } });
   stub('../lib/reportFile', { writeReport() { return { path: null }; } });

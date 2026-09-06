@@ -14,7 +14,7 @@ const envFile = require('./lib/envFile');
 const activity = require('./lib/activity');
 const ratings = require('./lib/ratings');
 const task = require('./lib/task');
-const { secret, listModels, listEngines, engineStatus } = require('./lib/ai_bridge');
+const { secret, listModels, listEngines, engineStatus, testEngine, ENGINES } = require('./lib/ai_bridge');
 
 const PORT = process.env.PORT || 8078;
 
@@ -246,15 +246,32 @@ async function handleModels(req, res) {
 // engine's own key/base/model already lives in secrets.env under its own
 // keys (see HTTP_ENGINES in ai_bridge.js), so switching never overwrites
 // another engine's config the way retyping a shared AI_API_KEY field would.
+// Validated against ai_bridge's own ENGINES catalog (not a hand-copied list)
+// so a newly-added engine there is never listed-but-unselectable here.
+const ENGINE_IDS = ENGINES.map((e) => e.id);
+
 async function handleEngines(req, res) {
   if (req.method === 'GET') return sendJson(res, 200, { engines: listEngines() });
   const body = await readJsonBody(req);
   const id = body && body.id;
-  if (!id || !['claude-cli', 'openai-compatible', '9router', 'gemini'].includes(id)) {
+  if (!id || !ENGINE_IDS.includes(id)) {
     return sendJson(res, 400, { error: 'شناسه‌ی موتور نامعتبر است.' });
   }
   envFile.writeValues({ AI_PROVIDER: id });
   return sendJson(res, 200, { engines: listEngines() });
+}
+
+// "تست اتصال" button: fires one small real call at the requested engine
+// (independent of which one is currently active) and reports success/latency
+// or the exact error — e.g. a Claude subscription's session-limit message —
+// without spending a full MR review just to find out if an engine works.
+async function handleEngineTest(req, res) {
+  const body = await readJsonBody(req);
+  const id = body && body.id;
+  if (!id || !ENGINE_IDS.includes(id)) {
+    return sendJson(res, 400, { error: 'شناسه‌ی موتور نامعتبر است.' });
+  }
+  return sendJson(res, 200, await testEngine(id));
 }
 
 async function handleStartReview(req, res) {
@@ -407,6 +424,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && pathname === '/api/developers') return await handleDevelopers(req, res);
       if (req.method === 'GET' && pathname === '/api/models') return await handleModels(req, res);
       if (pathname === '/api/engines') return await handleEngines(req, res);
+      if (req.method === 'POST' && pathname === '/api/engines/test') return await handleEngineTest(req, res);
       const ratingMatch = pathname.match(/^\/api\/developers\/([^/]+)\/rating$/);
       if (ratingMatch) return await handleDeveloperRating(req, res, decodeURIComponent(ratingMatch[1]));
       if (req.method === 'GET' && pathname === '/api/jobs') return sendJson(res, 200, jobs.list());
