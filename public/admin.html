@@ -2,121 +2,500 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8" />
-<title>پایگاه دانش — Coder Review</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coder Review — داشبورد</title>
 <style>
-  body { font-family: Tahoma, Arial, sans-serif; background: #0f1115; color: #e5e7eb; margin: 0; padding: 24px; }
-  h1 { font-size: 20px; margin-bottom: 4px; }
-  p.hint { color: #9ca3af; font-size: 13px; margin-top: 0; }
-  .card { background: #171a21; border: 1px solid #262b36; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
-  input[type=text], textarea, input[type=password] { width: 100%; box-sizing: border-box; background: #0f1115; color: #e5e7eb; border: 1px solid #2b3140; border-radius: 6px; padding: 8px; font-family: inherit; margin-bottom: 8px; }
-  textarea { min-height: 120px; resize: vertical; }
-  button { background: #3b82f6; color: white; border: none; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-family: inherit; }
-  button.danger { background: #ef4444; }
-  button:hover { opacity: 0.9; }
-  ul { list-style: none; padding: 0; }
-  li { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #262b36; }
-  li:last-child { border-bottom: none; }
-  .meta { color: #9ca3af; font-size: 12px; }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .empty { color: #6b7280; padding: 12px 0; }
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1d212a;
+    --line: #262b36;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --dim: #6b7280;
+    --blue: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Tahoma, Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+    margin: 0; padding: 16px; font-size: 14px; line-height: 1.7;
+  }
+  h1 { font-size: 18px; margin: 0; }
+  h3 { font-size: 15px; margin: 0 0 10px; }
+  a { color: var(--blue); }
+
+  /* ---- header ---- */
+  header {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    justify-content: space-between; margin-bottom: 16px;
+  }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 100%; min-width: 0; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 5px 12px; font-size: 12px; color: var(--muted);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); flex: 0 0 auto; }
+  .dot.ok { background: var(--green); }
+  .dot.err { background: var(--red); }
+  .dot.run { background: var(--blue); animation: pulse 1s infinite; }
+  .dot.warn { background: var(--amber); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+  /* ---- layout ---- */
+  .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 1024px) {
+    .layout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: start; }
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px; min-width: 0;
+  }
+
+  /* ---- controls ---- */
+  button {
+    background: var(--blue); color: #fff; border: none; border-radius: 6px;
+    padding: 7px 13px; cursor: pointer; font-family: inherit; font-size: 13px;
+  }
+  button:hover { opacity: .9; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); }
+  button.danger { background: var(--red); }
+  input[type=text], input[type=password], textarea {
+    width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid #2b3140; border-radius: 6px; padding: 8px;
+    font-family: inherit; font-size: 13px; margin-bottom: 8px;
+  }
+  textarea { min-height: 110px; resize: vertical; line-height: 1.7; }
+  label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* ---- MR tabs ---- */
+  .tabs {
+    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px;
+    border-bottom: 1px solid var(--line); margin-bottom: 12px;
+  }
+  .tab {
+    flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 8px 8px 0 0; padding: 7px 12px; cursor: pointer;
+    font-size: 13px; max-width: 240px;
+  }
+  .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab.active { background: var(--bg); color: var(--text); border-color: var(--blue); }
+  .tab:hover { color: var(--text); }
+
+  /* ---- MR panel ---- */
+  .meta { color: var(--muted); font-size: 12px; }
+  .meta-grid { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 10px 0 14px; }
+  @media (min-width: 620px) { .meta-grid { grid-template-columns: 1fr 1fr; } }
+  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 12px; }
+  .note {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px; white-space: pre-wrap; word-break: break-word;
+    line-height: 1.9; margin-top: 12px; max-height: 60vh; overflow: auto;
+  }
+  .verdict { display: inline-block; border-radius: 6px; padding: 3px 10px; font-size: 12px; }
+  .verdict.approve { background: rgba(34,197,94,.15); color: var(--green); }
+  .verdict.changes { background: rgba(239,68,68,.15); color: var(--red); }
+  .empty { color: var(--dim); padding: 16px 0; text-align: center; }
+  .error-box { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); color: #fca5a5; border-radius: 8px; padding: 10px; font-size: 13px; }
+
+  /* ---- knowledge base ---- */
+  .kb-item { border-bottom: 1px solid var(--line); padding: 10px 0; }
+  .kb-item:last-child { border-bottom: none; }
+  .kb-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .kb-title { cursor: pointer; flex: 1; min-width: 0; }
+  .kb-title strong { display: block; word-break: break-word; }
+  .kb-body {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px; margin-top: 10px; white-space: pre-wrap; word-break: break-word;
+    line-height: 1.9; font-size: 13px; max-height: 45vh; overflow: auto;
+  }
+  .kb-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+  .kb-actions button { padding: 4px 9px; font-size: 12px; }
+  details.tokenbox summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details.tokenbox { margin-bottom: 12px; }
 </style>
 </head>
 <body>
-  <h1>📚 پایگاه دانش پروژه</h1>
-  <p class="hint">هر چیزی اینجا اضافه شود، خودکار در ریویوی هر Merge Request توسط هوش مصنوعی لحاظ می‌شود.</p>
 
-  <div class="card">
-    <label>توکن ادمین (اگر ADMIN_TOKEN در secrets.env ست شده؛ در غیر این‌صورت خالی بگذار)</label>
-    <input type="password" id="adminToken" placeholder="X-Admin-Token" />
+<header>
+  <h1>🤖 Coder Review</h1>
+  <div class="badges">
+    <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
+    <span class="badge" id="aiBadge"><span class="dot"></span> مدل: …</span>
+    <label class="check badge"><input type="checkbox" id="autoReview" /> ریویوی خودکار</label>
+    <button class="ghost" id="refreshBtn">🔄 بروزرسانی</button>
   </div>
+</header>
 
-  <div class="card">
-    <h3>افزودن یادداشت جدید</h3>
-    <input type="text" id="title" placeholder="عنوان (مثلاً: قوانین امنیتی API)" />
-    <textarea id="content" placeholder="متن استاندارد یا قانون تیم..."></textarea>
-    <button onclick="addNote()">افزودن یادداشت</button>
-    <span class="meta">یا یک فایل .md/.txt آپلود کن:</span>
-    <input type="file" id="file" accept=".md,.txt" />
-    <button onclick="uploadFile()">آپلود</button>
-  </div>
+<details class="tokenbox">
+  <summary>تنظیمات دسترسی (توکن ادمین)</summary>
+  <input type="password" id="adminToken" placeholder="اگر ADMIN_TOKEN در secrets.env ست شده، اینجا وارد کن" />
+</details>
 
-  <div class="card">
-    <h3>یادداشت‌های موجود</h3>
-    <ul id="list"><li class="empty">در حال بارگذاری...</li></ul>
-  </div>
+<div class="layout">
+  <!-- ---- merge requests ---- -->
+  <section class="card">
+    <h3>Merge Requestها</h3>
+    <div id="mrError"></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
+  </section>
+
+  <!-- ---- knowledge base ---- -->
+  <section class="card">
+    <h3>📚 پایگاه دانش</h3>
+    <p class="meta">هر یادداشت اینجا، خودکار در ریویوی هر MR به مدل داده می‌شود.</p>
+
+    <input type="text" id="kbTitle" placeholder="عنوان" />
+    <textarea id="kbContent" placeholder="متن استاندارد یا قانون تیم…"></textarea>
+    <div class="row">
+      <button id="kbSaveBtn">افزودن یادداشت</button>
+      <button class="ghost" id="kbCancelBtn" style="display:none">انصراف از ویرایش</button>
+      <input type="file" id="kbFile" accept=".md,.txt" style="flex:1; min-width:150px" />
+      <button class="ghost" id="kbUploadBtn">آپلود</button>
+    </div>
+
+    <div id="kbList" style="margin-top:14px"><div class="empty">در حال بارگذاری…</div></div>
+  </section>
+</div>
 
 <script>
-function headers(extra) {
+// ---- state ----------------------------------------------------------------
+const S = {
+  status: null,
+  mrs: [],
+  jobs: {},        // key -> job
+  activeKey: null,
+  kb: [],
+  kbOpen: null,    // id of the expanded entry
+  kbBodies: {},    // id -> content
+  editingId: null,
+  postToGitlab: true,
+};
+
+const keyOf = (projectId, iid) => projectId + '!' + iid;
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---- api ------------------------------------------------------------------
+function headers() {
   const token = document.getElementById('adminToken').value.trim();
-  const h = Object.assign({ 'Content-Type': 'application/json' }, extra || {});
+  const h = { 'Content-Type': 'application/json' };
   if (token) h['X-Admin-Token'] = token;
   return h;
 }
+async function api(path, options = {}) {
+  const res = await fetch(path, { ...options, headers: headers() });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch (e) { data = { error: text.slice(0, 200) }; }
+  if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+  return data;
+}
 
-async function loadList() {
-  const ul = document.getElementById('list');
-  ul.innerHTML = '<li class="empty">در حال بارگذاری...</li>';
+// ---- header / status ------------------------------------------------------
+async function loadStatus() {
   try {
-    const res = await fetch('/api/knowledge', { headers: headers() });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const items = await res.json();
-    if (!items.length) {
-      ul.innerHTML = '<li class="empty">هنوز یادداشتی اضافه نشده.</li>';
-      return;
-    }
-    ul.innerHTML = '';
-    for (const it of items) {
-      const li = document.createElement('li');
-      const date = new Date(it.updatedAt).toLocaleString('fa-IR');
-      li.innerHTML = '<div><strong>' + escapeHtml(it.title) + '</strong><div class="meta">' + it.source + ' · ' + date + ' · ' + it.sizeChars + ' کاراکتر</div></div>';
-      const btn = document.createElement('button');
-      btn.textContent = 'حذف';
-      btn.className = 'danger';
-      btn.onclick = () => removeNote(it.id);
-      li.appendChild(btn);
-      ul.appendChild(li);
-    }
+    S.status = await api('/api/status');
   } catch (e) {
-    ul.innerHTML = '<li class="empty">خطا در بارگذاری: ' + escapeHtml(e.message) + '</li>';
+    S.status = { gitlab: { ok: false, error: e.message }, ai: {}, settings: {} };
+  }
+  renderStatus();
+}
+
+function renderStatus() {
+  const g = (S.status && S.status.gitlab) || {};
+  const ai = (S.status && S.status.ai) || {};
+  const st = (S.status && S.status.settings) || {};
+  const gBadge = document.getElementById('gitlabBadge');
+  // A GitLab error can be a whole JSON body — elide it in the badge (full text
+  // stays in the tooltip) so it can't blow out the header on a narrow screen.
+  const short = (s) => (String(s).length > 42 ? String(s).slice(0, 42) + '…' : String(s));
+  gBadge.innerHTML = '<span class="dot ' + (g.ok ? 'ok' : 'err') + '"></span> گیت‌لب: ' +
+    (g.ok ? esc(g.url.replace(/^https?:\/\//, '')) + ' (' + esc(g.user || '—') + ')' : esc(short(g.error || 'قطع')));
+  gBadge.title = g.ok ? 'اتصال برقرار است: ' + g.url : (g.error || '');
+
+  document.getElementById('aiBadge').innerHTML =
+    '<span class="dot ' + (ai.keySet ? 'ok' : 'warn') + '"></span> مدل: ' + esc(ai.model || '—') +
+    (ai.keySet ? '' : ' (کلید تنظیم نشده)');
+
+  document.getElementById('autoReview').checked = !!st.autoReview;
+}
+
+// ---- merge requests -------------------------------------------------------
+async function loadMergeRequests() {
+  const box = document.getElementById('mrError');
+  try {
+    S.mrs = await api('/api/merge-requests');
+    box.innerHTML = '';
+  } catch (e) {
+    S.mrs = [];
+    box.innerHTML = '<div class="error-box">خطا در گرفتن لیست Merge Requestها: ' + esc(e.message) + '</div>';
+  }
+  if (!S.activeKey && S.mrs.length) S.activeKey = keyOf(S.mrs[0].projectId, S.mrs[0].iid);
+  renderTabs();
+  renderMrPanel();
+}
+
+async function loadJobs() {
+  try {
+    const list = await api('/api/jobs');
+    S.jobs = {};
+    for (const job of list) S.jobs[job.key] = job;
+  } catch (e) { /* keep previous jobs on a transient failure */ }
+  renderTabs();
+  renderMrPanel();
+}
+
+function jobDotClass(job, mr) {
+  if (!job) return (mr && mr.lastReviewedSha === mr.sha) ? 'ok' : '';
+  if (job.status === 'running') return 'run';
+  if (job.status === 'error') return 'warn';
+  return job.decision === 'REQUEST_CHANGES' ? 'err' : 'ok';
+}
+
+function renderTabs() {
+  const tabs = document.getElementById('tabs');
+  if (!S.mrs.length) { tabs.innerHTML = ''; return; }
+  tabs.innerHTML = S.mrs.map((mr) => {
+    const key = keyOf(mr.projectId, mr.iid);
+    const job = S.jobs[key];
+    return '<div class="tab ' + (key === S.activeKey ? 'active' : '') + '" data-key="' + esc(key) + '" title="' + esc(mr.title) + '">' +
+      '<span class="dot ' + jobDotClass(job, mr) + '"></span>' +
+      '<span class="label">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</span>' +
+    '</div>';
+  }).join('');
+  tabs.querySelectorAll('.tab').forEach((el) => {
+    el.onclick = () => { S.activeKey = el.dataset.key; renderTabs(); renderMrPanel(); };
+  });
+}
+
+function renderMrPanel() {
+  const panel = document.getElementById('mrPanel');
+  if (!S.mrs.length) {
+    panel.innerHTML = '<div class="empty">هیچ Merge Request بازی پیدا نشد.</div>';
+    return;
+  }
+  const mr = S.mrs.find((m) => keyOf(m.projectId, m.iid) === S.activeKey);
+  if (!mr) { panel.innerHTML = '<div class="empty">یک MR را از بالا انتخاب کن.</div>'; return; }
+
+  const key = keyOf(mr.projectId, mr.iid);
+  const job = S.jobs[key];
+  const running = job && job.status === 'running';
+  const isStale = mr.lastReviewedSha && mr.sha && mr.lastReviewedSha !== mr.sha;
+
+  let statusLine = '<span class="meta">هنوز ریویو نشده.</span>';
+  if (running) statusLine = '<span class="meta"><span class="dot run"></span> در حال ریویو… (' + esc(job.trigger) + ')</span>';
+  else if (job && job.status === 'error') statusLine = '<div class="error-box">خطا: ' + esc(job.error) + '</div>';
+  else if (job && job.status === 'done') {
+    const v = job.decision === 'APPROVE' ? '<span class="verdict approve">✅ APPROVE</span>'
+      : job.decision === 'REQUEST_CHANGES' ? '<span class="verdict changes">🔴 REQUEST_CHANGES</span>'
+      : '<span class="verdict">بدون تصمیم مشخص</span>';
+    statusLine = v + ' <span class="meta">· ' + esc(job.filesReviewed) + ' فایل · ' +
+      (job.posted ? 'روی گیت‌لب ثبت شد' : 'روی گیت‌لب ثبت نشده') + ' · ' + esc(job.trigger) + '</span>';
+  } else if (mr.lastReviewedSha && !isStale) {
+    statusLine = '<span class="meta">این کامیت قبلاً ریویو شده است (نتیجه‌اش در این نشست نیست).</span>';
+  }
+
+  panel.innerHTML =
+    '<div class="row" style="justify-content:space-between">' +
+      '<strong style="word-break:break-word">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</strong>' +
+      (mr.webUrl ? '<a href="' + esc(mr.webUrl) + '" target="_blank" rel="noreferrer">باز کردن در گیت‌لب ↗</a>' : '') +
+    '</div>' +
+    '<div class="meta-grid">' +
+      '<div class="meta">شاخه: <span class="mono">' + esc(mr.sourceBranch) + ' → ' + esc(mr.targetBranch) + '</span></div>' +
+      '<div class="meta">نویسنده: ' + esc(mr.author) + (mr.draft ? ' · <b>Draft</b>' : '') + '</div>' +
+      '<div class="meta">کامیت فعلی: <span class="mono">' + esc((mr.sha || '').slice(0, 8)) + '</span>' +
+        (isStale ? ' <b style="color:var(--amber)">(بعد از آخرین ریویو تغییر کرده)</b>' : '') + '</div>' +
+      '<div class="meta">آخرین بروزرسانی: ' + esc(new Date(mr.updatedAt).toLocaleString('fa-IR')) + '</div>' +
+    '</div>' +
+    '<div class="row">' +
+      '<button id="runBtn" ' + (running ? 'disabled' : '') + '>' + (running ? 'در حال اجرا…' : '▶ اجرای ریویو') + '</button>' +
+      '<label class="check"><input type="checkbox" id="postChk" ' + (S.postToGitlab ? 'checked' : '') + ' /> کامنت روی گیت‌لب ثبت شود</label>' +
+      (job && job.note && !job.posted ? '<button class="ghost" id="postBtn">💬 ثبت این نتیجه روی MR</button>' : '') +
+    '</div>' +
+    '<div style="margin-top:10px">' + statusLine + '</div>' +
+    (job && job.note ? '<div class="note">' + esc(job.note) + '</div>' : '');
+
+  const runBtn = document.getElementById('runBtn');
+  if (runBtn) runBtn.onclick = () => runReview(mr);
+  const postChk = document.getElementById('postChk');
+  if (postChk) postChk.onchange = (e) => { S.postToGitlab = e.target.checked; };
+  const postBtn = document.getElementById('postBtn');
+  if (postBtn) postBtn.onclick = () => postNote(mr);
+}
+
+async function runReview(mr) {
+  try {
+    const job = await api('/api/review', {
+      method: 'POST',
+      body: JSON.stringify({ projectId: mr.projectId, iid: mr.iid, title: mr.title, webUrl: mr.webUrl, post: S.postToGitlab }),
+    });
+    S.jobs[job.key] = job;
+    renderTabs(); renderMrPanel();
+  } catch (e) {
+    alert('خطا در شروع ریویو: ' + e.message);
   }
 }
 
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function postNote(mr) {
+  try {
+    const job = await api('/api/post-note', { method: 'POST', body: JSON.stringify({ projectId: mr.projectId, iid: mr.iid }) });
+    S.jobs[job.key] = job;
+    renderMrPanel();
+  } catch (e) {
+    alert('خطا در ثبت کامنت: ' + e.message);
+  }
 }
 
-async function addNote() {
-  const title = document.getElementById('title').value.trim();
-  const content = document.getElementById('content').value.trim();
+// ---- settings -------------------------------------------------------------
+document.getElementById('autoReview').onchange = async (e) => {
+  try {
+    const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ autoReview: e.target.checked }) });
+    if (S.status) S.status.settings = next;
+  } catch (err) {
+    alert('خطا در ذخیره تنظیمات: ' + err.message);
+    e.target.checked = !e.target.checked;
+  }
+};
+
+document.getElementById('refreshBtn').onclick = async () => {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true; btn.textContent = '⏳ …';
+  await Promise.all([loadStatus(), loadMergeRequests(), loadJobs()]);
+  btn.disabled = false; btn.textContent = '🔄 بروزرسانی';
+};
+
+// ---- knowledge base -------------------------------------------------------
+async function loadKb() {
+  const box = document.getElementById('kbList');
+  try {
+    S.kb = await api('/api/knowledge');
+  } catch (e) {
+    box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+    return;
+  }
+  renderKb();
+}
+
+function renderKb() {
+  const box = document.getElementById('kbList');
+  if (!S.kb.length) { box.innerHTML = '<div class="empty">هنوز یادداشتی اضافه نشده.</div>'; return; }
+  box.innerHTML = S.kb.map((it) => {
+    const open = S.kbOpen === it.id;
+    const body = open ? '<div class="kb-body">' + esc(S.kbBodies[it.id] || 'در حال بارگذاری…') + '</div>' : '';
+    return '<div class="kb-item">' +
+      '<div class="kb-head">' +
+        '<div class="kb-title" data-id="' + esc(it.id) + '">' +
+          '<strong>' + (open ? '▾ ' : '▸ ') + esc(it.title) + '</strong>' +
+          '<span class="meta">' + esc(it.source) + ' · ' + esc(new Date(it.updatedAt).toLocaleString('fa-IR')) + ' · ' + esc(it.sizeChars) + ' کاراکتر</span>' +
+        '</div>' +
+        '<div class="kb-actions">' +
+          '<button class="ghost" data-edit="' + esc(it.id) + '">ویرایش</button>' +
+          '<button class="danger" data-del="' + esc(it.id) + '">حذف</button>' +
+        '</div>' +
+      '</div>' + body +
+    '</div>';
+  }).join('');
+
+  box.querySelectorAll('.kb-title').forEach((el) => { el.onclick = () => toggleKb(el.dataset.id); });
+  box.querySelectorAll('[data-edit]').forEach((el) => { el.onclick = () => editKb(el.dataset.edit); });
+  box.querySelectorAll('[data-del]').forEach((el) => { el.onclick = () => deleteKb(el.dataset.del); });
+}
+
+async function fetchKbBody(id) {
+  if (S.kbBodies[id]) return S.kbBodies[id];
+  const data = await api('/api/knowledge/' + id);
+  S.kbBodies[id] = data.content || '';
+  return S.kbBodies[id];
+}
+
+async function toggleKb(id) {
+  if (S.kbOpen === id) { S.kbOpen = null; renderKb(); return; }
+  S.kbOpen = id;
+  renderKb();
+  await fetchKbBody(id);
+  renderKb();
+}
+
+async function editKb(id) {
+  const content = await fetchKbBody(id);
+  const meta = S.kb.find((k) => k.id === id);
+  S.editingId = id;
+  document.getElementById('kbTitle').value = (meta && meta.title) || '';
+  document.getElementById('kbContent').value = content;
+  document.getElementById('kbSaveBtn').textContent = 'ذخیره تغییرات';
+  document.getElementById('kbCancelBtn').style.display = '';
+  document.getElementById('kbTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function resetKbForm() {
+  S.editingId = null;
+  document.getElementById('kbTitle').value = '';
+  document.getElementById('kbContent').value = '';
+  document.getElementById('kbSaveBtn').textContent = 'افزودن یادداشت';
+  document.getElementById('kbCancelBtn').style.display = 'none';
+}
+
+document.getElementById('kbCancelBtn').onclick = resetKbForm;
+
+document.getElementById('kbSaveBtn').onclick = async () => {
+  const title = document.getElementById('kbTitle').value.trim();
+  const content = document.getElementById('kbContent').value.trim();
   if (!content) return alert('متن یادداشت خالی است.');
-  const res = await fetch('/api/knowledge', { method: 'POST', headers: headers(), body: JSON.stringify({ title, content }) });
-  if (!res.ok) return alert('خطا: ' + (await res.text()));
-  document.getElementById('title').value = '';
-  document.getElementById('content').value = '';
-  loadList();
-}
+  try {
+    await api('/api/knowledge', { method: 'POST', body: JSON.stringify({ id: S.editingId || undefined, title, content }) });
+    if (S.editingId) delete S.kbBodies[S.editingId];
+    resetKbForm();
+    await loadKb();
+  } catch (e) { alert('خطا: ' + e.message); }
+};
 
-async function uploadFile() {
-  const input = document.getElementById('file');
+document.getElementById('kbUploadBtn').onclick = async () => {
+  const input = document.getElementById('kbFile');
   const f = input.files[0];
   if (!f) return alert('یک فایل انتخاب کن.');
   const ext = f.name.split('.').pop();
-  const buf = await f.arrayBuffer();
-  const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-  const res = await fetch('/api/knowledge', { method: 'POST', headers: headers(), body: JSON.stringify({ title: f.name, ext, fileBase64: b64 }) });
-  if (!res.ok) return alert('خطا: ' + (await res.text()));
-  input.value = '';
-  loadList();
+  const bytes = new Uint8Array(await f.arrayBuffer());
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  try {
+    await api('/api/knowledge', { method: 'POST', body: JSON.stringify({ title: f.name, ext, fileBase64: btoa(bin) }) });
+    input.value = '';
+    await loadKb();
+  } catch (e) { alert('خطا: ' + e.message); }
+};
+
+async function deleteKb(id) {
+  if (!confirm('این یادداشت حذف شود؟')) return;
+  try {
+    await api('/api/knowledge/' + id, { method: 'DELETE' });
+    delete S.kbBodies[id];
+    if (S.kbOpen === id) S.kbOpen = null;
+    if (S.editingId === id) resetKbForm();
+    await loadKb();
+  } catch (e) { alert('خطا: ' + e.message); }
 }
 
-async function removeNote(id) {
-  if (!confirm('حذف شود؟')) return;
-  const res = await fetch('/api/knowledge/' + id, { method: 'DELETE', headers: headers() });
-  if (!res.ok) return alert('خطا: ' + (await res.text()));
-  loadList();
-}
+// ---- boot -----------------------------------------------------------------
+document.getElementById('adminToken').onchange = () => { loadStatus(); loadMergeRequests(); loadKb(); };
 
-loadList();
+loadStatus();
+loadMergeRequests().then(loadJobs);
+loadKb();
+
+// Live status for every tab at once — so several MRs reviewing in parallel all
+// stay up to date, not just the one being looked at.
+setInterval(loadJobs, 4000);
+// The MR list itself changes far more slowly than job state.
+setInterval(loadMergeRequests, 60000);
 </script>
 </body>
 </html>
