@@ -40,7 +40,22 @@ stub('../lib/gitlab', {
 
 stub('../lib/reviewer', {
   async review({ mr }) {
-    return { note: 'review of ' + mr.title, decision: 'APPROVE' };
+    return {
+      decision: 'APPROVE',
+      summary: 'review of ' + mr.title,
+      findings: [],
+      stats: { files: 1, skipped: 0, batches: 1, promptTokens: 0, completionTokens: 0 },
+    };
+  },
+  prepareFiles() {
+    return { files: [{ path: 'a.kt', lineMap: new Map() }], skipped: [] };
+  },
+});
+
+stub('../lib/publish', {
+  async publish({ projectId, mrIid, result }) {
+    posted.push({ projectId, mrIid, body: result.summary });
+    return { inline: 0, summaryPosted: true };
   },
 });
 
@@ -63,8 +78,8 @@ test('different MRs review in parallel; the same MR does not start twice', async
   assert.equal(jobs.get(7, 1).status, 'done');
   assert.equal(jobs.get(7, 2).status, 'done');
   assert.equal(jobs.get(7, 1).decision, 'APPROVE');
-  assert.equal(jobs.get(7, 1).note, 'review of MR 1');
-  assert.equal(jobs.get(7, 2).note, 'review of MR 2');
+  assert.equal(jobs.get(7, 1).summary, 'review of MR 1');
+  assert.equal(jobs.get(7, 2).summary, 'review of MR 2');
   assert.equal(posted.length, 2, 'each MR got exactly one comment');
   assert.ok(jobs.get(7, 1).posted && jobs.get(7, 2).posted);
 });

@@ -217,6 +217,7 @@ async function autoTick() {
     const mrs = await gitlab.listOpenMergeRequests();
     for (const mr of Array.isArray(mrs) ? mrs : []) {
       const key = jobs.keyFor(mr.project_id, mr.iid);
+      if (settings.skipDrafts && (mr.draft || mr.work_in_progress)) continue;
       // Nothing new since the last successful review of this MR.
       if (mr.sha && state.lastReviewedSha(key) === mr.sha) continue;
       const running = jobs.get(mr.project_id, mr.iid);

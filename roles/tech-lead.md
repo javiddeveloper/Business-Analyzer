@@ -9,6 +9,11 @@ Review checklist (apply what's visible in the diff):
 - [ ] Consistency: naming, structure, and style match the surrounding code you can see in the diff context.
 - [ ] Any project-specific standards listed in the knowledge base section below (if present).
 
+Severity, applied per finding:
+- **High** — wrong behaviour or data loss on the normal path, or a security hole.
+- **Medium** — edge-case failure, missing error handling, or impact beyond this change's own scope.
+- **Low** — readability, consistency, technical debt, missing test coverage.
+
 Decision rules:
 - APPROVE if nothing above is violated in a way that would cause a real bug, security issue, or clear regression. Minor style nits go in a comment, not a rejection.
 - REQUEST_CHANGES only for logic errors, security issues, missing critical error handling, or a clear violation of a documented knowledge-base standard.

@@ -103,6 +103,17 @@
   .verdict { display: inline-block; border-radius: 6px; padding: 3px 10px; font-size: 12px; }
   .verdict.approve { background: rgba(34,197,94,.15); color: var(--green); }
   .verdict.changes { background: rgba(239,68,68,.15); color: var(--red); }
+  .finding { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-top: 10px; background: var(--bg); }
+  .finding-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .sev { border-radius: 5px; padding: 2px 8px; font-size: 11px; flex: 0 0 auto; }
+  .sev.High { background: rgba(239,68,68,.16); color: #fca5a5; }
+  .sev.Medium { background: rgba(245,158,11,.16); color: #fcd34d; }
+  .sev.Low { background: rgba(59,130,246,.16); color: #93c5fd; }
+  .finding-loc { font-family: Consolas, "Courier New", monospace; font-size: 12px; color: var(--muted); word-break: break-all; }
+  .finding-note { white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+  .finding pre { background: #0b0d11; border: 1px solid var(--line); border-radius: 6px; padding: 8px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; }
+  .tag { font-size: 11px; color: var(--dim); }
+  .settings { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .empty { color: var(--dim); padding: 16px 0; text-align: center; }
   .error-box { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); color: #fca5a5; border-radius: 8px; padding: 10px; font-size: 13px; }
 
@@ -144,6 +155,11 @@
   <!-- ---- merge requests ---- -->
   <section class="card">
     <h3>Merge Requestها</h3>
+    <div class="settings">
+      <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
+      <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
+      <label class="check"><input type="checkbox" id="setAutoPost" /> ثبت خودکار نتیجه در حالت خودکار</label>
+    </div>
     <div id="mrError"></div>
     <div class="tabs" id="tabs"></div>
     <div id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
@@ -227,7 +243,28 @@ function renderStatus() {
     (ai.keySet ? '' : ' (کلید تنظیم نشده)');
 
   document.getElementById('autoReview').checked = !!st.autoReview;
+  document.getElementById('setInline').checked = st.inlineComments !== false;
+  document.getElementById('setSkipDrafts').checked = st.skipDrafts !== false;
+  document.getElementById('setAutoPost').checked = st.autoPost !== false;
 }
+
+// One handler for every settings checkbox — each maps to a field of the same
+// name on the server's settings object.
+async function bindSetting(elementId, field) {
+  const el = document.getElementById(elementId);
+  el.onchange = async () => {
+    try {
+      const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ [field]: el.checked }) });
+      if (S.status) S.status.settings = next;
+    } catch (err) {
+      alert('خطا در ذخیره تنظیمات: ' + err.message);
+      el.checked = !el.checked;
+    }
+  };
+}
+bindSetting('setInline', 'inlineComments');
+bindSetting('setSkipDrafts', 'skipDrafts');
+bindSetting('setAutoPost', 'autoPost');
 
 // ---- merge requests -------------------------------------------------------
 async function loadMergeRequests() {
@@ -298,8 +335,19 @@ function renderMrPanel() {
     const v = job.decision === 'APPROVE' ? '<span class="verdict approve">✅ APPROVE</span>'
       : job.decision === 'REQUEST_CHANGES' ? '<span class="verdict changes">🔴 REQUEST_CHANGES</span>'
       : '<span class="verdict">بدون تصمیم مشخص</span>';
-    statusLine = v + ' <span class="meta">· ' + esc(job.filesReviewed) + ' فایل · ' +
-      (job.posted ? 'روی گیت‌لب ثبت شد' : 'روی گیت‌لب ثبت نشده') + ' · ' + esc(job.trigger) + '</span>';
+    const st = job.stats || {};
+    const pub = job.publishResult || {};
+    const bits = [
+      esc(st.files || 0) + ' فایل بررسی شد',
+      st.skipped ? esc(st.skipped) + ' فایل رد شد' : '',
+      (job.findings || []).length + ' یافته',
+      job.posted ? (pub.inline ? esc(pub.inline) + ' کامنت خطی ثبت شد' : 'خلاصه روی گیت‌لب ثبت شد') : 'روی گیت‌لب ثبت نشده',
+      pub.skippedDuplicate ? esc(pub.skippedDuplicate) + ' مورد تکراری رد شد' : '',
+      st.promptTokens || st.completionTokens ? 'توکن: ' + esc(st.promptTokens) + '+' + esc(st.completionTokens) : '',
+      esc(job.trigger),
+    ].filter(Boolean);
+    statusLine = v + ' <span class="meta">· ' + bits.join(' · ') + '</span>' +
+      (job.summary ? '<div class="meta" style="margin-top:6px">' + esc(job.summary) + '</div>' : '');
   } else if (mr.lastReviewedSha && !isStale) {
     statusLine = '<span class="meta">این کامیت قبلاً ریویو شده است (نتیجه‌اش در این نشست نیست).</span>';
   }
@@ -322,7 +370,7 @@ function renderMrPanel() {
       (job && job.note && !job.posted ? '<button class="ghost" id="postBtn">💬 ثبت این نتیجه روی MR</button>' : '') +
     '</div>' +
     '<div style="margin-top:10px">' + statusLine + '</div>' +
-    (job && job.note ? '<div class="note">' + esc(job.note) + '</div>' : '');
+    renderFindings(job);
 
   const runBtn = document.getElementById('runBtn');
   if (runBtn) runBtn.onclick = () => runReview(mr);
@@ -330,6 +378,26 @@ function renderMrPanel() {
   if (postChk) postChk.onchange = (e) => { S.postToGitlab = e.target.checked; };
   const postBtn = document.getElementById('postBtn');
   if (postBtn) postBtn.onclick = () => postNote(mr);
+}
+
+function renderFindings(job) {
+  if (!job || job.status !== 'done') return '';
+  const findings = job.findings || [];
+  if (!findings.length) return '<div class="note">هیچ یافته‌ای ثبت نشد.</div>';
+  return findings.map((f) => {
+    const loc = f.line ? f.file + ':' + f.line : (f.file || 'کل MR');
+    return '<div class="finding">' +
+      '<div class="finding-head">' +
+        '<span class="sev ' + esc(f.severity) + '">' + esc(f.severity) + '</span>' +
+        '<strong style="min-width:0;word-break:break-word">' + esc(f.title) + '</strong>' +
+        '<span class="tag">' + esc(f.category) + (f.source === 'auto' ? ' · بررسی خودکار' : '') +
+          (f.postedInline ? ' · روی خط ثبت شد' : '') + '</span>' +
+      '</div>' +
+      '<div class="finding-loc">' + esc(loc) + (f.lineUnverified ? ' (خط ادعایی مدل: ' + esc(f.claimedLine) + ' — در دیف نبود)' : '') + '</div>' +
+      '<div class="finding-note">' + esc(f.note) + '</div>' +
+      (f.suggestion ? '<pre>' + esc(f.suggestion) + '</pre>' : '') +
+    '</div>';
+  }).join('');
 }
 
 async function runReview(mr) {
