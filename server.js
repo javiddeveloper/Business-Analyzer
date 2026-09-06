@@ -11,7 +11,10 @@ const knowledge = require('./lib/knowledge');
 const jobs = require('./lib/jobs');
 const state = require('./lib/state');
 const envFile = require('./lib/envFile');
-const { secret } = require('./lib/ai_bridge');
+const activity = require('./lib/activity');
+const ratings = require('./lib/ratings');
+const task = require('./lib/task');
+const { secret, listModels } = require('./lib/ai_bridge');
 
 const PORT = process.env.PORT || 8078;
 
@@ -91,6 +94,19 @@ async function handleWebhook(req, res) {
     return sendJson(res, 400, { error: 'missing project id or MR iid in payload' });
   }
 
+  // Logged regardless of whether a review actually runs below — this is the
+  // "which branch/task is this developer on right now, and since when" trail
+  // the Developers tab is built from, independent of PROJECT_PATH being set.
+  activity.recordEvent({
+    author: payload.user || attrs.author,
+    projectId, mrIid,
+    branch: attrs.source_branch,
+    targetBranch: attrs.target_branch,
+    task: task.extractTask(attrs.source_branch) || task.extractTask(attrs.title),
+    action, sha: attrs.last_commit && attrs.last_commit.id,
+    title: attrs.title, webUrl: attrs.url,
+  });
+
   if (!jobs.projectPathConfigured()) {
     return sendJson(res, 200, { skipped: 'PROJECT_PATH is not configured — set it from the dashboard settings before reviews can run' });
   }
@@ -133,29 +149,82 @@ async function handleStatus(req, res) {
   return sendJson(res, 200, out);
 }
 
+// Shared by /api/merge-requests and /api/developers so both agree on merge
+// order and task/branch derivation — gitlab.listOpenMergeRequests() already
+// orders oldest-created-first (the intended merge order), so array position
+// doubles as the number the dashboard shows on each tab/card.
+async function loadMappedMergeRequests() {
+  const mrs = await gitlab.listOpenMergeRequests();
+  return (Array.isArray(mrs) ? mrs : []).map((mr, i) => ({
+    projectId: mr.project_id,
+    iid: mr.iid,
+    title: mr.title,
+    author: (mr.author && (mr.author.name || mr.author.username)) || '',
+    authorKey: activity.authorKey(mr.author),
+    sourceBranch: mr.source_branch,
+    targetBranch: mr.target_branch,
+    targetIsDevelop: mr.target_branch === 'develop',
+    task: task.extractTask(mr.source_branch) || task.extractTask(mr.title),
+    webUrl: mr.web_url,
+    sha: mr.sha,
+    createdAt: mr.created_at,
+    updatedAt: mr.updated_at,
+    draft: !!(mr.draft || mr.work_in_progress),
+    mergeOrder: i + 1,
+    approved: state.isApproved(jobs.keyFor(mr.project_id, mr.iid)),
+    lastReviewedSha: state.lastReviewedSha(jobs.keyFor(mr.project_id, mr.iid)),
+  }));
+}
+
 async function handleMergeRequests(req, res) {
   try {
-    const mrs = await gitlab.listOpenMergeRequests();
-    // gitlab.listOpenMergeRequests() already orders oldest-created-first —
-    // that IS the intended merge order, so array position doubles as the
-    // "merge order" number the dashboard shows on each tab.
-    const listed = (Array.isArray(mrs) ? mrs : []).map((mr, i) => ({
-      projectId: mr.project_id,
-      iid: mr.iid,
-      title: mr.title,
-      author: (mr.author && (mr.author.name || mr.author.username)) || '',
-      sourceBranch: mr.source_branch,
-      targetBranch: mr.target_branch,
-      webUrl: mr.web_url,
-      sha: mr.sha,
-      createdAt: mr.created_at,
-      updatedAt: mr.updated_at,
-      draft: !!(mr.draft || mr.work_in_progress),
-      mergeOrder: i + 1,
-      approved: state.isApproved(jobs.keyFor(mr.project_id, mr.iid)),
-      lastReviewedSha: state.lastReviewedSha(jobs.keyFor(mr.project_id, mr.iid)),
-    }));
-    return sendJson(res, 200, listed);
+    return sendJson(res, 200, await loadMappedMergeRequests());
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
+}
+
+// One card per developer with an open MR: what they're on right now (from
+// GitLab's own MR list), plus the automatic activity/accuracy score and any
+// manual rating on file. A developer with zero open MRs simply doesn't
+// appear — there is nothing honest to say about someone with no current work.
+async function handleDevelopers(req, res) {
+  let mrs;
+  try {
+    mrs = await loadMappedMergeRequests();
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
+  const byAuthor = new Map();
+  for (const mr of mrs) {
+    if (!mr.authorKey) continue;
+    if (!byAuthor.has(mr.authorKey)) byAuthor.set(mr.authorKey, { author: mr.authorKey, displayName: mr.author, currentWork: [] });
+    byAuthor.get(mr.authorKey).currentWork.push({
+      projectId: mr.projectId, iid: mr.iid, title: mr.title,
+      sourceBranch: mr.sourceBranch, targetBranch: mr.targetBranch, targetIsDevelop: mr.targetIsDevelop,
+      task: mr.task, mergeOrder: mr.mergeOrder, updatedAt: mr.updatedAt, webUrl: mr.webUrl, draft: mr.draft,
+    });
+  }
+  const developers = Array.from(byAuthor.values()).map((dev) => ({
+    ...dev,
+    auto: activity.computeAutoScore(dev.author),
+    rating: ratings.get(dev.author),
+    ratingOverall: ratings.overall(ratings.get(dev.author)),
+  }));
+  developers.sort((a, b) => (a.currentWork[0]?.mergeOrder || 99) - (b.currentWork[0]?.mergeOrder || 99));
+  return sendJson(res, 200, { developers, ratingParams: ratings.PARAMS });
+}
+
+async function handleDeveloperRating(req, res, author) {
+  if (req.method === 'GET') return sendJson(res, 200, ratings.get(author));
+  const body = await readJsonBody(req);
+  if (!body) return sendJson(res, 400, { error: 'invalid JSON body' });
+  return sendJson(res, 200, ratings.set(author, body.scores || {}, body.note));
+}
+
+async function handleModels(req, res) {
+  try {
+    return sendJson(res, 200, await listModels());
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
   }
@@ -308,6 +377,10 @@ const server = http.createServer(async (req, res) => {
 
       if (req.method === 'GET' && pathname === '/api/status') return await handleStatus(req, res);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
+      if (req.method === 'GET' && pathname === '/api/developers') return await handleDevelopers(req, res);
+      if (req.method === 'GET' && pathname === '/api/models') return await handleModels(req, res);
+      const ratingMatch = pathname.match(/^\/api\/developers\/([^/]+)\/rating$/);
+      if (ratingMatch) return await handleDeveloperRating(req, res, decodeURIComponent(ratingMatch[1]));
       if (req.method === 'GET' && pathname === '/api/jobs') return sendJson(res, 200, jobs.list());
       if (req.method === 'POST' && pathname === '/api/review') return await handleStartReview(req, res);
       if (req.method === 'POST' && pathname === '/api/review/stop') return await handleStopReview(req, res);

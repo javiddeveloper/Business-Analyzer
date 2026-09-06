@@ -165,6 +165,37 @@
   .finding pre { background: #060a14; border: 1px solid var(--border); border-radius: 8px; padding: 8px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; direction: ltr; text-align: left; }
   .tag { font-size: 11px; color: var(--dim); }
   .settings-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+  .branch-pill {
+    display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 1px 8px;
+    font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr;
+  }
+  .branch-pill.develop { background: rgba(65,224,138,.15); color: var(--green); }
+  .branch-pill.other { background: rgba(255,179,71,.15); color: var(--amber); }
+  .task-pill { background: rgba(155,140,255,.15); color: var(--violet); border-radius: 6px; padding: 1px 8px; font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace; }
+
+  /* ---- top-level panel tabs (Merge Requests / Developers) ---- */
+  .panel-tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .panel-tab {
+    background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted);
+    padding: 8px 4px; border-radius: 0; font-size: 14px; cursor: pointer;
+  }
+  .panel-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+  .panel-tab:hover { color: var(--text); background: transparent; }
+
+  /* ---- developers view ---- */
+  .dev-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: rgba(0,0,0,.15); }
+  .dev-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .dev-name { font-weight: 700; font-size: 14px; }
+  .score-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 4px 10px; font-size: 12px; }
+  .score-badge .num { font-weight: 800; font-size: 15px; }
+  .score-good { background: rgba(65,224,138,.15); color: var(--green); }
+  .score-mid { background: rgba(255,179,71,.15); color: var(--amber); }
+  .score-bad { background: rgba(255,107,129,.15); color: var(--red); }
+  .work-item { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--border); font-size: 12px; }
+  .work-item:first-of-type { border-top: none; }
+  .rating-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; margin-top: 10px; font-size: 12px; }
+  .rating-grid select { width: 70px; margin-bottom: 0; padding: 4px 6px; }
+  details.dev-rating summary { cursor: pointer; color: var(--muted); font-size: 12px; margin-top: 8px; }
 
   /* ---- knowledge base ---- */
   .kb-item { border-bottom: 1px solid var(--border); padding: 10px 0; }
@@ -196,6 +227,8 @@
   .modal-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; }
   .modal-close:hover { color: var(--text); }
   .modal-body { overflow-y: auto; padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
+  /* Same author-style-beats-[hidden] gotcha as .banner above — explicit override needed. */
+  .modal-body[hidden] { display: none; }
   .group-title { font-size: 12px; font-weight: 700; color: var(--cyan); margin: 8px 0 0; }
   .field { display: flex; flex-direction: column; gap: 5px; }
   .field label { font-size: 12px; color: var(--muted); }
@@ -204,6 +237,7 @@
   .field input { flex: 1; font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr; text-align: left; margin-bottom: 0; }
   .reveal { position: absolute; inset-inline-start: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--dim); cursor: pointer; font-size: 13px; padding: 2px; }
   .modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--border); }
+  .modal-foot[hidden] { display: none; }
   .save-state { font-size: 12px; color: var(--muted); }
 </style>
 </head>
@@ -226,10 +260,14 @@
   <button id="bannerSettingsBtn">تنظیم مسیر پروژه</button>
 </div>
 
-<div class="layout">
-  <!-- ---- merge requests ---- -->
-  <section class="card">
-    <h3>Merge Requestها <span class="tag">(به ترتیب merge — قدیمی‌تر اول)</span></h3>
+<!-- ---- merge requests / developers ---- -->
+<section class="card">
+  <div class="panel-tabs">
+    <button class="panel-tab active" id="ptMr">Merge Requestها</button>
+    <button class="panel-tab" id="ptDev">👤 توسعه‌دهنده‌ها</button>
+  </div>
+
+  <div id="mrPanelWrap">
     <div class="settings-row">
       <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
       <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
@@ -241,25 +279,13 @@
       <div class="tabs" id="tabs"></div>
       <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
     </div>
-  </section>
+  </div>
 
-  <!-- ---- knowledge base ---- -->
-  <section class="card">
-    <h3>📚 پایگاه دانش</h3>
-    <p class="meta">هر یادداشت اینجا، خودکار در ریویوی هر MR به مدل داده می‌شود.</p>
-
-    <input type="text" id="kbTitle" placeholder="عنوان" />
-    <textarea id="kbContent" placeholder="متن استاندارد یا قانون تیم…"></textarea>
-    <div class="row">
-      <button id="kbSaveBtn">افزودن یادداشت</button>
-      <button class="ghost" id="kbCancelBtn" style="display:none">انصراف از ویرایش</button>
-      <input type="file" id="kbFile" accept=".md,.txt" style="flex:1; min-width:150px" />
-      <button class="ghost" id="kbUploadBtn">آپلود</button>
-    </div>
-
-    <div id="kbList" style="margin-top:14px"><div class="empty">در حال بارگذاری…</div></div>
-  </section>
-</div>
+  <div id="devPanelWrap" hidden>
+    <p class="meta">فقط کسانی که الان حداقل یک Merge Request باز دارند اینجا دیده می‌شوند. امتیاز خودکار از فعالیت اخیر و یافته‌های ریویوهای خودمان ساخته می‌شود؛ امتیاز دستی نظر خودت است و جدا نگه داشته می‌شود.</p>
+    <div id="devList"><div class="empty">در حال بارگذاری…</div></div>
+  </div>
+</section>
 
 <!-- ---- settings modal ---- -->
 <div class="modal-overlay" id="settingsOverlay" hidden>
@@ -271,8 +297,26 @@
       </div>
       <button class="modal-close" id="settingsCloseBtn">✕</button>
     </div>
+    <div class="panel-tabs" style="padding: 0 20px; margin-bottom: 0">
+      <button class="panel-tab active" id="stEnv">secrets.env</button>
+      <button class="panel-tab" id="stKb">📚 پایگاه دانش</button>
+    </div>
     <div class="modal-body" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
-    <div class="modal-foot">
+    <div class="modal-body" id="kbPanel" hidden>
+      <p class="meta">هر یادداشت اینجا، خودکار در ریویوی هر MR به مدل داده می‌شود.</p>
+      <input type="text" id="kbTitle" placeholder="عنوان" />
+      <textarea id="kbContent" placeholder="متن استاندارد یا قانون تیم…"></textarea>
+      <div class="row">
+        <button id="kbSaveBtn">افزودن یادداشت</button>
+        <button class="ghost" id="kbCancelBtn" style="display:none">انصراف از ویرایش</button>
+      </div>
+      <div class="row">
+        <input type="file" id="kbFile" accept=".md,.txt" style="flex:1; min-width:150px" />
+        <button class="ghost" id="kbUploadBtn">آپلود</button>
+      </div>
+      <div id="kbList" style="margin-top:14px"><div class="empty">در حال بارگذاری…</div></div>
+    </div>
+    <div class="modal-foot" id="settingsFoot">
       <span class="save-state" id="settingsSaveState"></span>
       <button id="settingsSaveBtn">ذخیره</button>
     </div>
@@ -389,9 +433,11 @@ document.getElementById('refreshBtn').onclick = async () => {
   btn.disabled = false; btn.textContent = '🔄 بروزرسانی';
 };
 
-// ---- settings modal (secrets.env via toolbar) ------------------------------
+// ---- settings modal (secrets.env + knowledge base — both admin config, so
+// both live behind the ⚙ gear rather than sitting in the main view) --------
 function openSettings() {
   document.getElementById('settingsOverlay').hidden = false;
+  switchSettingsTab('env');
   loadEnv();
 }
 function closeSettings() {
@@ -404,6 +450,25 @@ document.getElementById('settingsOverlay').addEventListener('click', (e) => {
   if (e.target.id === 'settingsOverlay') closeSettings();
 });
 
+function switchSettingsTab(which) {
+  document.getElementById('stEnv').classList.toggle('active', which === 'env');
+  document.getElementById('stKb').classList.toggle('active', which === 'kb');
+  document.getElementById('settingsBody').hidden = which !== 'env';
+  document.getElementById('kbPanel').hidden = which !== 'kb';
+  // The foot's Save button only applies to secrets.env — the knowledge base
+  // saves per-item via its own inline buttons.
+  document.getElementById('settingsFoot').hidden = which !== 'env';
+  if (which === 'kb') loadKb();
+}
+document.getElementById('stEnv').onclick = () => switchSettingsTab('env');
+document.getElementById('stKb').onclick = () => switchSettingsTab('kb');
+
+const AI_PROVIDERS = [
+  { value: 'openai-compatible', label: 'openai-compatible (GapGPT / OpenAI / پروکسی محلی)' },
+  { value: 'gemini', label: 'gemini' },
+  { value: 'claude-cli', label: 'claude-cli (اتصال به Claude Code CLI با اشتراک خودت، بدون API key)' },
+];
+
 async function loadEnv() {
   const body = document.getElementById('settingsBody');
   try {
@@ -413,7 +478,16 @@ async function loadEnv() {
     return;
   }
   S.envDirty = {};
+  S.modelOptions = [];
   renderEnv();
+  try {
+    const m = await api('/api/models');
+    S.modelOptions = m.models || [];
+    // A targeted update, not a full renderEnv() — that would wipe whatever
+    // the user already started typing in other fields while this was loading.
+    const list = document.getElementById('aiModelList');
+    if (list) list.innerHTML = S.modelOptions.map((id) => '<option value="' + esc(id) + '">').join('');
+  } catch (e) { /* model discovery is a convenience, not a requirement — a typed model still works */ }
 }
 
 function renderEnv() {
@@ -424,8 +498,23 @@ function renderEnv() {
     if (!g) { g = { name: entry.group, items: [] }; groups.push(g); }
     g.items.push(entry);
   }
+  const currentProvider = (S.env.find((e) => e.key === 'AI_PROVIDER') || {}).value || 'openai-compatible';
   body.innerHTML = groups.map((g) => {
     const fields = g.items.map((entry) => {
+      if (entry.key === 'AI_PROVIDER') {
+        const options = AI_PROVIDERS.map((p) => '<option value="' + esc(p.value) + '" ' + (p.value === entry.value ? 'selected' : '') + '>' + esc(p.label) + '</option>').join('');
+        return '<div class="field"><label>AI_PROVIDER</label><select data-key="AI_PROVIDER">' + options + '</select></div>';
+      }
+      if (entry.key === 'AI_MODEL') {
+        return '<div class="field">' +
+          '<label>AI_MODEL</label>' +
+          '<div class="field-input"><input type="text" data-key="AI_MODEL" list="aiModelList" value="' + esc(entry.value) + '" placeholder="مثلاً anthropic/claude-sonnet-4-20250514 — یا خالی برای پیش‌فرض" /></div>' +
+          '<datalist id="aiModelList"></datalist>' +
+          '<div class="hint">اگر لیست بالا (fetch شده از AI_BASE_URL) شامل مدل موردنظرت نبود، دستی تایپ کن. برای claude-cli، خالی یعنی مدل پیش‌فرض CLI.</div>' +
+        '</div>';
+      }
+      // AI_API_KEY is meaningless for claude-cli (auth comes from `claude login`) — hide the noise.
+      if (entry.key === 'AI_API_KEY' && currentProvider === 'claude-cli') return '';
       const inputType = entry.secret ? 'password' : 'text';
       const reveal = entry.secret ? '<button type="button" class="reveal" data-reveal="' + esc(entry.key) + '">👁</button>' : '';
       return '<div class="field">' +
@@ -439,6 +528,27 @@ function renderEnv() {
     }).join('');
     return '<div class="group-title">' + esc(g.name) + '</div>' + fields;
   }).join('');
+
+  const modelList = body.querySelector('#aiModelList');
+  if (modelList && S.modelOptions && S.modelOptions.length) {
+    modelList.innerHTML = S.modelOptions.map((id) => '<option value="' + esc(id) + '">').join('');
+  }
+
+  const providerSelect = body.querySelector('select[data-key="AI_PROVIDER"]');
+  if (providerSelect) {
+    providerSelect.onchange = () => {
+      // Carry forward whatever the user already typed elsewhere in the form —
+      // re-rendering to reflect the new provider must not erase in-progress edits.
+      body.querySelectorAll('input[data-key]').forEach((input) => {
+        const entry = S.env.find((e) => e.key === input.dataset.key);
+        if (entry) entry.value = input.value;
+      });
+      S.envDirty.AI_PROVIDER = providerSelect.value;
+      const entry = S.env.find((e) => e.key === 'AI_PROVIDER');
+      if (entry) entry.value = providerSelect.value;
+      renderEnv();
+    };
+  }
 
   body.querySelectorAll('input[data-key]').forEach((input) => {
     const original = input.value;
@@ -512,6 +622,15 @@ function jobStatusWord(job) {
   return job.decision === 'REQUEST_CHANGES' ? '🔴 REQUEST_CHANGES' : job.decision === 'APPROVE' ? '✅ APPROVE' : 'انجام شد';
 }
 
+// Green when the MR targets develop (the normal path); orange for anything
+// else, so an MR quietly aimed at a different branch stands out.
+function branchPill(mr) {
+  const cls = mr.targetIsDevelop ? 'develop' : 'other';
+  const icon = mr.targetIsDevelop ? '●' : '▲';
+  return '<span class="branch-pill ' + cls + '" title="' + esc(mr.sourceBranch + ' → ' + mr.targetBranch) + '">' + icon + ' ' + esc(mr.targetBranch) + '</span>' +
+    (mr.task ? ' <span class="task-pill">' + esc(mr.task) + '</span>' : '');
+}
+
 function renderTabs() {
   const tabs = document.getElementById('tabs');
   if (!S.mrs.length) { tabs.innerHTML = ''; return; }
@@ -527,6 +646,7 @@ function renderTabs() {
         '<span class="label">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</span>' +
       '</div>' +
       '<div class="tab-meta">' + esc(mr.author) + (mr.draft ? ' · Draft' : '') + (mr.approved ? ' · ✅ approved' : '') + '</div>' +
+      '<div class="tab-meta">' + branchPill(mr) + '</div>' +
       (statusWord ? '<div class="tab-meta">' + esc(statusWord) + (findingCount != null ? ' · ' + findingCount + ' یافته' : '') + '</div>' : '') +
     '</div>';
   }).join('');
@@ -585,7 +705,7 @@ function renderMrPanel() {
       (mr.webUrl ? '<a href="' + esc(mr.webUrl) + '" target="_blank" rel="noreferrer">باز کردن در گیت‌لب ↗</a>' : '') +
     '</div>' +
     '<div class="meta-grid">' +
-      '<div class="meta">شاخه: <span class="mono">' + esc(mr.sourceBranch) + ' → ' + esc(mr.targetBranch) + '</span></div>' +
+      '<div class="meta">شاخه: <span class="mono">' + esc(mr.sourceBranch) + ' → </span>' + branchPill(mr) + '</div>' +
       '<div class="meta">نویسنده: ' + esc(mr.author) + (mr.draft ? ' · <b>Draft</b>' : '') + '</div>' +
       '<div class="meta">کامیت فعلی: <span class="mono">' + esc((mr.sha || '').slice(0, 8)) + '</span>' +
         (isStale ? ' <b style="color:var(--amber)">(بعد از آخرین ریویو تغییر کرده)</b>' : '') + '</div>' +
@@ -775,6 +895,116 @@ async function deleteKb(id) {
 }
 
 document.getElementById('adminTokenValue').onchange = () => { loadStatus(); loadMergeRequests(); loadKb(); };
+
+// ---- panel tabs: Merge Requests / Developers ------------------------------
+document.getElementById('ptMr').onclick = () => switchPanel('mr');
+document.getElementById('ptDev').onclick = () => switchPanel('dev');
+
+function switchPanel(which) {
+  document.getElementById('ptMr').classList.toggle('active', which === 'mr');
+  document.getElementById('ptDev').classList.toggle('active', which === 'dev');
+  document.getElementById('mrPanelWrap').hidden = which !== 'mr';
+  document.getElementById('devPanelWrap').hidden = which !== 'dev';
+  if (which === 'dev') loadDevelopers();
+}
+
+// ---- developers ------------------------------------------------------------
+const DEV = { developers: [], ratingParams: [], openRatingFor: null };
+
+async function loadDevelopers() {
+  const box = document.getElementById('devList');
+  try {
+    const data = await api('/api/developers');
+    DEV.developers = data.developers;
+    DEV.ratingParams = data.ratingParams;
+  } catch (e) {
+    box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+    return;
+  }
+  renderDevelopers();
+}
+
+function scoreClass(score) {
+  if (score == null) return '';
+  if (score >= 75) return 'score-good';
+  if (score >= 45) return 'score-mid';
+  return 'score-bad';
+}
+
+function renderDevelopers() {
+  const box = document.getElementById('devList');
+  if (!DEV.developers.length) { box.innerHTML = '<div class="empty">هیچ توسعه‌دهنده‌ای با Merge Request باز پیدا نشد.</div>'; return; }
+
+  box.innerHTML = DEV.developers.map((dev) => {
+    const auto = dev.auto || {};
+    const autoBadge = auto.score == null
+      ? '<span class="score-badge">امتیاز خودکار: بدون داده</span>'
+      : '<span class="score-badge ' + scoreClass(auto.score) + '" title="' + esc(auto.reason || '') + '">امتیاز خودکار: <span class="num">' + auto.score + '</span></span>';
+    const manualBadge = dev.ratingOverall != null
+      ? '<span class="score-badge ' + scoreClass(dev.ratingOverall) + '">امتیاز دستی: <span class="num">' + dev.ratingOverall + '</span></span>'
+      : '<span class="score-badge">امتیاز دستی: ثبت نشده</span>';
+
+    const work = dev.currentWork.map((w) => (
+      '<div class="work-item">' +
+        '<span class="order-badge" title="ترتیب merge">' + esc(w.mergeOrder) + '</span>' +
+        '<a href="' + esc(w.webUrl) + '" target="_blank" rel="noreferrer">!' + esc(w.iid) + ' — ' + esc(w.title) + '</a>' +
+        (w.task ? ' <span class="task-pill">' + esc(w.task) + '</span>' : '') +
+        branchPill(w) +
+        (w.draft ? ' <span class="tag">Draft</span>' : '') +
+        ' <span class="tag">بروزرسانی: ' + esc(new Date(w.updatedAt).toLocaleString('fa-IR')) + '</span>' +
+      '</div>'
+    )).join('');
+
+    const ratingOpen = DEV.openRatingFor === dev.author;
+    const ratingForm = ratingOpen ? renderRatingForm(dev) : '';
+
+    return '<div class="dev-card">' +
+      '<div class="dev-head">' +
+        '<span class="dev-name">👤 ' + esc(dev.displayName) + '</span>' +
+        '<div class="row" style="gap:6px">' + autoBadge + manualBadge + '</div>' +
+      '</div>' +
+      work +
+      '<details class="dev-rating" ' + (ratingOpen ? 'open' : '') + '><summary data-toggle-rating="' + esc(dev.author) + '">امتیازدهی دستی</summary>' + ratingForm + '</details>' +
+    '</div>';
+  }).join('');
+
+  box.querySelectorAll('[data-toggle-rating]').forEach((el) => {
+    el.parentElement.addEventListener('toggle', (e) => {
+      DEV.openRatingFor = e.target.open ? el.dataset.toggleRating : null;
+      if (e.target.open) renderDevelopers();
+    });
+  });
+  box.querySelectorAll('[data-save-rating]').forEach((el) => {
+    el.onclick = () => saveRating(el.dataset.saveRating);
+  });
+}
+
+function renderRatingForm(dev) {
+  const scores = (dev.rating && dev.rating.scores) || {};
+  const note = (dev.rating && dev.rating.note) || '';
+  const rows = DEV.ratingParams.map((p) => {
+    const current = scores[p.key] || 3;
+    const options = [1, 2, 3, 4, 5].map((n) => '<option value="' + n + '" ' + (n === current ? 'selected' : '') + '>' + n + '</option>').join('');
+    return '<label>' + esc(p.label) + '</label><select data-param="' + esc(p.key) + '">' + options + '</select>';
+  }).join('');
+  return '<div class="rating-grid">' + rows + '</div>' +
+    '<textarea data-note placeholder="یادداشت (اختیاری)" style="min-height:60px;margin-top:8px">' + esc(note) + '</textarea>' +
+    '<button data-save-rating="' + esc(dev.author) + '">ذخیره امتیاز</button>' +
+    (dev.rating ? '<span class="tag" style="margin-inline-start:8px">آخرین بروزرسانی: ' + esc(new Date(dev.rating.updatedAt).toLocaleString('fa-IR')) + '</span>' : '');
+}
+
+async function saveRating(author) {
+  const card = Array.from(document.querySelectorAll('.dev-card')).find((c) => c.querySelector('[data-save-rating="' + CSS.escape(author) + '"]'));
+  const scores = {};
+  card.querySelectorAll('[data-param]').forEach((sel) => { scores[sel.dataset.param] = Number(sel.value); });
+  const note = card.querySelector('[data-note]').value;
+  try {
+    await api('/api/developers/' + encodeURIComponent(author) + '/rating', { method: 'POST', body: JSON.stringify({ scores, note }) });
+    await loadDevelopers();
+  } catch (e) {
+    alert('خطا در ذخیره امتیاز: ' + e.message);
+  }
+}
 
 // ---- boot -----------------------------------------------------------------
 loadStatus();
