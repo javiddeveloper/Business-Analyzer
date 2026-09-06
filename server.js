@@ -159,6 +159,15 @@ async function handleStartReview(req, res) {
   return sendJson(res, 200, job);
 }
 
+async function handleStopReview(req, res) {
+  const body = await readJsonBody(req);
+  if (!body || !body.projectId || !body.iid) {
+    return sendJson(res, 400, { error: 'projectId and iid are required' });
+  }
+  const stopped = jobs.stop(body.projectId, body.iid);
+  return sendJson(res, 200, { stopped });
+}
+
 async function handlePostNote(req, res) {
   const body = await readJsonBody(req);
   if (!body || !body.projectId || !body.iid) {
@@ -265,6 +274,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       if (req.method === 'GET' && pathname === '/api/jobs') return sendJson(res, 200, jobs.list());
       if (req.method === 'POST' && pathname === '/api/review') return await handleStartReview(req, res);
+      if (req.method === 'POST' && pathname === '/api/review/stop') return await handleStopReview(req, res);
       if (req.method === 'POST' && pathname === '/api/post-note') return await handlePostNote(req, res);
       if (pathname === '/api/settings') return await handleSettings(req, res);
       if (pathname === '/api/knowledge') return await handleKnowledgeCollection(req, res);

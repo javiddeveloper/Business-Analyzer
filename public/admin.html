@@ -50,7 +50,7 @@
   /* ---- layout ---- */
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
   @media (min-width: 1024px) {
-    .layout { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: start; }
+    .layout { grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); align-items: start; }
   }
   .card {
     background: var(--panel); border: 1px solid var(--line);
@@ -75,20 +75,32 @@
   label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
-  /* ---- MR tabs ---- */
+  /* ---- MR tabs: a vertical list so every open MR is visible at once,
+     instead of a horizontally-scrolling row where most tabs are off-screen. */
+  .mr-body { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
   .tabs {
-    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px;
-    border-bottom: 1px solid var(--line); margin-bottom: 12px;
+    flex: 0 0 260px; display: flex; flex-direction: column; gap: 6px;
+    max-height: 72vh; overflow-y: auto; padding-inline-start: 4px;
+    border-inline-start: 1px solid var(--line);
+  }
+  @media (max-width: 720px) {
+    .mr-body { flex-direction: column; }
+    .tabs { flex: 0 0 auto; width: 100%; max-height: 40vh; border-inline-start: none; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
   }
   .tab {
-    flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
+    display: flex; flex-direction: column; gap: 3px; text-align: start;
     background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
-    border-radius: 8px 8px 0 0; padding: 7px 12px; cursor: pointer;
-    font-size: 13px; max-width: 240px;
+    border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 12px;
   }
-  .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tab.active { background: var(--bg); color: var(--text); border-color: var(--blue); }
-  .tab:hover { color: var(--text); }
+  .tab .tab-top { display: flex; align-items: center; gap: 6px; }
+  .tab .label {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--text); font-size: 13px; flex: 1; min-width: 0;
+  }
+  .tab .tab-meta { color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab.active { background: rgba(59,130,246,.12); border-color: var(--blue); }
+  .tab:hover { border-color: #384258; }
+  .mr-content { flex: 1; min-width: 0; }
 
   /* ---- MR panel ---- */
   .meta { color: var(--muted); font-size: 12px; }
@@ -159,10 +171,13 @@
       <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
       <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
       <label class="check"><input type="checkbox" id="setAutoPost" /> ثبت خودکار نتیجه در حالت خودکار</label>
+      <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار وقتی نتیجه تمیز است (هرگز Merge نمی‌کند)</label>
     </div>
     <div id="mrError"></div>
-    <div class="tabs" id="tabs"></div>
-    <div id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
+    <div class="mr-body">
+      <div class="tabs" id="tabs"></div>
+      <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
+    </div>
   </section>
 
   <!-- ---- knowledge base ---- -->
@@ -246,6 +261,7 @@ function renderStatus() {
   document.getElementById('setInline').checked = st.inlineComments !== false;
   document.getElementById('setSkipDrafts').checked = st.skipDrafts !== false;
   document.getElementById('setAutoPost').checked = st.autoPost !== false;
+  document.getElementById('setAutoApprove').checked = !!st.autoApprove;
 }
 
 // One handler for every settings checkbox — each maps to a field of the same
@@ -265,6 +281,7 @@ async function bindSetting(elementId, field) {
 bindSetting('setInline', 'inlineComments');
 bindSetting('setSkipDrafts', 'skipDrafts');
 bindSetting('setAutoPost', 'autoPost');
+bindSetting('setAutoApprove', 'autoApprove');
 
 // ---- merge requests -------------------------------------------------------
 async function loadMergeRequests() {
@@ -295,7 +312,16 @@ function jobDotClass(job, mr) {
   if (!job) return (mr && mr.lastReviewedSha === mr.sha) ? 'ok' : '';
   if (job.status === 'running') return 'run';
   if (job.status === 'error') return 'warn';
+  if (job.status === 'stopped') return 'warn';
   return job.decision === 'REQUEST_CHANGES' ? 'err' : 'ok';
+}
+
+function jobStatusWord(job) {
+  if (!job) return '';
+  if (job.status === 'running') return 'در حال اجرا…';
+  if (job.status === 'error') return 'خطا';
+  if (job.status === 'stopped') return 'متوقف شد';
+  return job.decision === 'REQUEST_CHANGES' ? '🔴 REQUEST_CHANGES' : job.decision === 'APPROVE' ? '✅ APPROVE' : 'انجام شد';
 }
 
 function renderTabs() {
@@ -304,9 +330,15 @@ function renderTabs() {
   tabs.innerHTML = S.mrs.map((mr) => {
     const key = keyOf(mr.projectId, mr.iid);
     const job = S.jobs[key];
+    const statusWord = jobStatusWord(job);
+    const findingCount = job && job.status === 'done' ? (job.findings || []).length : null;
     return '<div class="tab ' + (key === S.activeKey ? 'active' : '') + '" data-key="' + esc(key) + '" title="' + esc(mr.title) + '">' +
-      '<span class="dot ' + jobDotClass(job, mr) + '"></span>' +
-      '<span class="label">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</span>' +
+      '<div class="tab-top">' +
+        '<span class="dot ' + jobDotClass(job, mr) + '"></span>' +
+        '<span class="label">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</span>' +
+      '</div>' +
+      '<div class="tab-meta">' + esc(mr.author) + (mr.draft ? ' · Draft' : '') + '</div>' +
+      (statusWord ? '<div class="tab-meta">' + esc(statusWord) + (findingCount != null ? ' · ' + findingCount + ' یافته' : '') + '</div>' : '') +
     '</div>';
   }).join('');
   tabs.querySelectorAll('.tab').forEach((el) => {
@@ -331,6 +363,7 @@ function renderMrPanel() {
   let statusLine = '<span class="meta">هنوز ریویو نشده.</span>';
   if (running) statusLine = '<span class="meta"><span class="dot run"></span> در حال ریویو… (' + esc(job.trigger) + ')</span>';
   else if (job && job.status === 'error') statusLine = '<div class="error-box">خطا: ' + esc(job.error) + '</div>';
+  else if (job && job.status === 'stopped') statusLine = '<div class="error-box" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.35);color:#fcd34d">متوقف شد قبل از پایان.</div>';
   else if (job && job.status === 'done') {
     const v = job.decision === 'APPROVE' ? '<span class="verdict approve">✅ APPROVE</span>'
       : job.decision === 'REQUEST_CHANGES' ? '<span class="verdict changes">🔴 REQUEST_CHANGES</span>'
@@ -343,6 +376,8 @@ function renderMrPanel() {
       (job.findings || []).length + ' یافته',
       job.posted ? (pub.inline ? esc(pub.inline) + ' کامنت خطی ثبت شد' : 'خلاصه روی گیت‌لب ثبت شد') : 'روی گیت‌لب ثبت نشده',
       pub.skippedDuplicate ? esc(pub.skippedDuplicate) + ' مورد تکراری رد شد' : '',
+      job.approved ? '✅ روی گیت‌لب approve شد' : '',
+      job.approveError ? 'خطای approve: ' + esc(job.approveError) : '',
       st.promptTokens || st.completionTokens ? 'توکن: ' + esc(st.promptTokens) + '+' + esc(st.completionTokens) : '',
       esc(job.trigger),
     ].filter(Boolean);
@@ -365,15 +400,18 @@ function renderMrPanel() {
       '<div class="meta">آخرین بروزرسانی: ' + esc(new Date(mr.updatedAt).toLocaleString('fa-IR')) + '</div>' +
     '</div>' +
     '<div class="row">' +
-      '<button id="runBtn" ' + (running ? 'disabled' : '') + '>' + (running ? 'در حال اجرا…' : '▶ اجرای ریویو') + '</button>' +
+      '<button id="runBtn" ' + (running ? 'disabled' : '') + '>' + (running ? '⏳ در حال اجرا…' : '▶ اجرای ریویو') + '</button>' +
+      (running ? '<button class="danger" id="stopBtn">⏹ توقف</button>' : '') +
       '<label class="check"><input type="checkbox" id="postChk" ' + (S.postToGitlab ? 'checked' : '') + ' /> کامنت روی گیت‌لب ثبت شود</label>' +
-      (job && job.note && !job.posted ? '<button class="ghost" id="postBtn">💬 ثبت این نتیجه روی MR</button>' : '') +
+      (job && job.status === 'done' && !job.posted ? '<button class="ghost" id="postBtn">💬 ثبت این نتیجه روی MR</button>' : '') +
     '</div>' +
     '<div style="margin-top:10px">' + statusLine + '</div>' +
     renderFindings(job);
 
   const runBtn = document.getElementById('runBtn');
   if (runBtn) runBtn.onclick = () => runReview(mr);
+  const stopBtn = document.getElementById('stopBtn');
+  if (stopBtn) stopBtn.onclick = () => stopReview(mr);
   const postChk = document.getElementById('postChk');
   if (postChk) postChk.onchange = (e) => { S.postToGitlab = e.target.checked; };
   const postBtn = document.getElementById('postBtn');
@@ -410,6 +448,15 @@ async function runReview(mr) {
     renderTabs(); renderMrPanel();
   } catch (e) {
     alert('خطا در شروع ریویو: ' + e.message);
+  }
+}
+
+async function stopReview(mr) {
+  try {
+    await api('/api/review/stop', { method: 'POST', body: JSON.stringify({ projectId: mr.projectId, iid: mr.iid }) });
+    await loadJobs();
+  } catch (e) {
+    alert('خطا در توقف: ' + e.message);
   }
 }
 
