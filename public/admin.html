@@ -71,6 +71,37 @@
   }
   .gear:hover { transform: rotate(90deg); border-color: var(--border-strong); color: var(--text); }
 
+  /* ---- toolbar model picker ---- */
+  .badge.pick { cursor: pointer; border: 1px solid var(--border); }
+  .badge.pick:hover { border-color: var(--border-strong); background: var(--panel); }
+  .engine-list { display: flex; flex-direction: column; gap: 8px; }
+  .engine-card {
+    display: flex; align-items: center; gap: 10px; text-align: start;
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 12px; cursor: pointer; color: var(--text);
+  }
+  .engine-card:hover { border-color: var(--border-strong); }
+  .engine-card.active { border-color: var(--cyan); background: rgba(52,227,227,.1); }
+  .engine-card .icon { font-size: 20px; flex: 0 0 auto; }
+  .engine-card .body { min-width: 0; flex: 1; }
+  .engine-card .name { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .engine-card .hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .engine-card .status { font-size: 11px; flex: 0 0 auto; }
+  .engine-card .status.ok { color: var(--green); }
+  .engine-card .status.warn { color: var(--amber); }
+  .engine-card .status.unknown { color: var(--muted); }
+
+  /* ---- top-level tabs: Merge Requests / Developers (own toolbar, not tied
+     to a single project's MR list, so a later multi-project switch only
+     needs to change what's inside the Merge Requests section) ---- */
+  .top-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .top-tab {
+    background: var(--panel); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 12px; padding: 9px 16px; font-size: 13px; cursor: pointer; backdrop-filter: blur(14px);
+  }
+  .top-tab.active { color: var(--cyan); border-color: var(--cyan); background: rgba(52,227,227,.08); }
+  .top-tab:hover { color: var(--text); }
+
   /* ---- layout ---- */
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
   @media (min-width: 1024px) {
@@ -230,6 +261,22 @@
   /* Same author-style-beats-[hidden] gotcha as .banner above — explicit override needed. */
   .modal-body[hidden] { display: none; }
   .group-title { font-size: 12px; font-weight: 700; color: var(--cyan); margin: 8px 0 0; }
+
+  /* ---- per-engine settings groups ---- */
+  .engine-group { border: 1px solid var(--border); border-radius: 12px; padding: 0 12px; background: rgba(0,0,0,.15); }
+  .engine-group[open] { border-color: var(--border-strong); padding-bottom: 12px; }
+  .engine-group > summary {
+    display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 0;
+    font-size: 13px; font-weight: 700; color: var(--text); list-style: none;
+  }
+  .engine-group > summary::-webkit-details-marker { display: none; }
+  .engine-group > summary::before { content: '▸'; color: var(--dim); font-size: 11px; }
+  .engine-group[open] > summary::before { content: '▾'; }
+  .engine-group > summary .status { margin-inline-start: auto; font-size: 11px; font-weight: 400; }
+  .engine-active-tag { background: rgba(52,227,227,.15); color: var(--cyan); border-radius: 6px; padding: 1px 8px; font-size: 11px; font-weight: 400; }
+  .engine-group .status.ok { color: var(--green); }
+  .engine-group .status.warn { color: var(--amber); }
+  .engine-group .status.unknown { color: var(--muted); }
   .field { display: flex; flex-direction: column; gap: 5px; }
   .field label { font-size: 12px; color: var(--muted); }
   .field .hint { font-size: 10px; color: var(--dim); line-height: 1.6; }
@@ -247,9 +294,8 @@
   <div class="brand"><span class="logo">🤖</span><h1>Coder Review</h1></div>
   <div class="badges">
     <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
-    <span class="badge" id="aiBadge"><span class="dot"></span> مدل: …</span>
+    <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
     <label class="check badge"><input type="checkbox" id="autoReview" /> ریویوی خودکار</label>
-    <input type="password" id="adminTokenValue" class="badge" style="width:150px; padding:5px 12px" placeholder="X-Admin-Token (فقط برای دسترسی از راه دور)" />
     <button class="ghost" id="refreshBtn">🔄 بروزرسانی</button>
     <button class="gear" id="settingsBtn" title="تنظیمات">⚙</button>
   </div>
@@ -260,32 +306,51 @@
   <button id="bannerSettingsBtn">تنظیم مسیر پروژه</button>
 </div>
 
-<!-- ---- merge requests / developers ---- -->
-<section class="card">
-  <div class="panel-tabs">
-    <button class="panel-tab active" id="ptMr">Merge Requestها</button>
-    <button class="panel-tab" id="ptDev">👤 توسعه‌دهنده‌ها</button>
-  </div>
+<!-- ---- top-level toolbar: which project view is showing. Developers lives
+     here (not inside the MR card) since it's headed toward covering every
+     configured project, not just the one the MR tabs are currently scoped
+     to. ---- -->
+<nav class="top-tabs">
+  <button class="top-tab active" id="ptMr">Merge Requestها</button>
+  <button class="top-tab" id="ptDev">👤 توسعه‌دهنده‌ها</button>
+</nav>
 
-  <div id="mrPanelWrap">
-    <div class="settings-row">
-      <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
-      <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
-      <label class="check"><input type="checkbox" id="setAutoPost" /> ثبت خودکار نتیجه در حالت خودکار</label>
-      <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
-    </div>
-    <div id="mrError"></div>
-    <div class="mr-body">
-      <div class="tabs" id="tabs"></div>
-      <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
-    </div>
+<!-- ---- merge requests ---- -->
+<section class="card" id="mrPanelWrap">
+  <div class="settings-row">
+    <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
+    <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
+    <label class="check"><input type="checkbox" id="setAutoPost" /> ثبت خودکار نتیجه در حالت خودکار</label>
+    <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
   </div>
-
-  <div id="devPanelWrap" hidden>
-    <p class="meta">فقط کسانی که الان حداقل یک Merge Request باز دارند اینجا دیده می‌شوند. امتیاز خودکار از فعالیت اخیر و یافته‌های ریویوهای خودمان ساخته می‌شود؛ امتیاز دستی نظر خودت است و جدا نگه داشته می‌شود.</p>
-    <div id="devList"><div class="empty">در حال بارگذاری…</div></div>
+  <div id="mrError"></div>
+  <div class="mr-body">
+    <div class="tabs" id="tabs"></div>
+    <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
   </div>
 </section>
+
+<!-- ---- developers ---- -->
+<section class="card" id="devPanelWrap" hidden>
+  <p class="meta">فقط کسانی که الان حداقل یک Merge Request باز دارند اینجا دیده می‌شوند. امتیاز خودکار از فعالیت اخیر و یافته‌های ریویوهای خودمان ساخته می‌شود؛ امتیاز دستی نظر خودت است و جدا نگه داشته می‌شود.</p>
+  <div id="devList"><div class="empty">در حال بارگذاری…</div></div>
+</section>
+
+<!-- ---- model picker modal ---- -->
+<div class="modal-overlay" id="modelOverlay" hidden>
+  <div class="modal" style="width:420px">
+    <div class="modal-head">
+      <div>
+        <h2>موتور هوش مصنوعی</h2>
+        <p class="modal-sub">کدام موتور فعال باشد؛ کلید/آدرس هر موتور جدا در secrets.env می‌ماند، پس جابه‌جایی هیچ‌کدام را پاک نمی‌کند.</p>
+      </div>
+      <button class="modal-close" id="modelCloseBtn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="engine-list" id="engineList"><div class="empty">در حال بارگذاری…</div></div>
+    </div>
+  </div>
+</div>
 
 <!-- ---- settings modal ---- -->
 <div class="modal-overlay" id="settingsOverlay" hidden>
@@ -336,6 +401,7 @@ const S = {
   editingId: null,
   postToGitlab: true,
   env: [],
+  engines: [],     // /api/engines catalog: label, icon, state, which is active
   envDirty: {},    // key -> new value the user actually typed
   settingsOpenedOnce: false,
 };
@@ -344,17 +410,34 @@ const keyOf = (projectId, iid) => projectId + '!' + iid;
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // ---- api ------------------------------------------------------------------
+// ADMIN_TOKEN is only ever needed when the dashboard is opened from another
+// machine (locally the server authorizes loopback without one), so there's no
+// permanent field for it in the toolbar. It's asked for exactly once, when a
+// request actually comes back 401, and remembered in this browser afterwards.
+function adminToken() {
+  try { return localStorage.getItem('crAdminToken') || ''; } catch (e) { return ''; }
+}
+function rememberAdminToken(v) {
+  try { v ? localStorage.setItem('crAdminToken', v) : localStorage.removeItem('crAdminToken'); } catch (e) {}
+}
 function headers() {
-  const token = document.getElementById('adminTokenValue') ? document.getElementById('adminTokenValue').value.trim() : '';
   const h = { 'Content-Type': 'application/json' };
+  const token = adminToken();
   if (token) h['X-Admin-Token'] = token;
   return h;
 }
-async function api(path, options = {}) {
+async function api(path, options = {}, retried = false) {
   const res = await fetch(path, { ...options, headers: headers() });
   const text = await res.text();
   let data;
   try { data = JSON.parse(text); } catch (e) { data = { error: text.slice(0, 200) }; }
+  if (res.status === 401 && !retried) {
+    const entered = prompt('این داشبورد از راه دور باز شده و ADMIN_TOKEN می‌خواهد. مقدارش را وارد کن:', adminToken());
+    if (entered) {
+      rememberAdminToken(entered.trim());
+      return api(path, options, true); // one retry — a wrong token must not loop
+    }
+  }
   if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
   return data;
 }
@@ -376,14 +459,26 @@ function renderStatus() {
   const pp = (S.status && S.status.projectPath) || {};
   const short = (s) => (String(s).length > 42 ? String(s).slice(0, 42) + '…' : String(s));
 
+  // The token's display name ("agent token"), not its machine username — a
+  // Project/Group Access Token's username is an unreadable
+  // project_<id>_bot_<hash>. The exact username stays in the tooltip, since
+  // that's the identity every comment and approval is attributed to.
   const gBadge = document.getElementById('gitlabBadge');
+  const who = g.name || g.user || '—';
   gBadge.innerHTML = '<span class="dot ' + (g.ok ? 'ok' : 'err') + '"></span> گیت‌لب: ' +
-    (g.ok ? esc((g.url || '').replace(/^https?:\/\//, '')) + ' (' + esc(g.user || '—') + ')' : esc(short(g.error || 'قطع')));
-  gBadge.title = g.ok ? 'اتصال برقرار است: ' + g.url : (g.error || '');
+    (g.ok ? esc((g.url || '').replace(/^https?:\/\//, '')) + ' (' + esc(who) + ')' : esc(short(g.error || 'قطع')));
+  gBadge.title = g.ok
+    ? 'اتصال برقرار است: ' + g.url +
+      '\nکامنت‌ها و approveها با این هویت ثبت می‌شوند:' +
+      '\n  ' + (g.user || '—') + (g.bot ? '  (کاربر ربات یک Access Token)' : '')
+    : (g.error || '');
 
-  document.getElementById('aiBadge').innerHTML =
-    '<span class="dot ' + (ai.keySet ? 'ok' : 'warn') + '"></span> مدل: ' + esc(ai.model || '—') +
-    (ai.keySet ? '' : ' (کلید تنظیم نشده)');
+  const aiState = ENGINE_STATE[ai.state] || ENGINE_STATE['missing-key'];
+  const aiBadge = document.getElementById('aiBadge');
+  aiBadge.innerHTML =
+    '<span class="dot ' + (ai.state === 'ready' ? 'ok' : ai.state === 'unverified' ? '' : 'warn') + '"></span> مدل: ' +
+    esc(ai.model || '—') + (ai.state === 'ready' ? '' : ' (' + esc(aiState.text.replace(/^[✓↺⚠]\s*/, '')) + ')');
+  aiBadge.title = 'موتور فعال: ' + esc(ai.provider) + ' — ' + esc(aiState.text) + ' (برای تعویض کلیک کن)';
 
   document.getElementById('autoReview').checked = !!st.autoReview;
   document.getElementById('setInline').checked = st.inlineComments !== false;
@@ -426,6 +521,67 @@ document.getElementById('autoReview').onchange = async (e) => {
   }
 };
 
+// ---- toolbar model picker (Claude / openai-compatible / 9Router / Gemini) --
+function openModelModal() {
+  document.getElementById('modelOverlay').hidden = false;
+  loadEngines();
+}
+function closeModelModal() {
+  document.getElementById('modelOverlay').hidden = true;
+}
+document.getElementById('aiBadge').onclick = openModelModal;
+document.getElementById('modelCloseBtn').onclick = closeModelModal;
+document.getElementById('modelOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'modelOverlay') closeModelModal();
+});
+
+// 'unverified' is deliberately not green: for claude-cli the dashboard knows
+// the CLI is installed but can't know whether `claude login` has been done
+// without spending a real model call.
+const ENGINE_STATE = {
+  ready: { cls: 'ok', text: '✓ کلید تنظیم شده' },
+  unverified: { cls: 'unknown', text: '↺ نصب‌شده — لاگین چک نشده' },
+  'not-installed': { cls: 'warn', text: '⚠ claude CLI نصب نیست' },
+  'missing-key': { cls: 'warn', text: '⚠ کلید ناقص' },
+};
+
+async function loadEngines() {
+  const box = document.getElementById('engineList');
+  let data;
+  try {
+    data = await api('/api/engines');
+  } catch (e) {
+    box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+    return;
+  }
+  box.innerHTML = data.engines.map((e) => (
+    '<div class="engine-card ' + (e.active ? 'active' : '') + '" data-id="' + esc(e.id) + '">' +
+      '<span class="icon">' + e.icon + '</span>' +
+      '<div class="body">' +
+        '<div class="name">' + esc(e.label) + (e.active ? ' · فعال' : '') + '</div>' +
+        '<div class="hint">' + esc(e.hint) + (e.model ? ' · ' + esc(e.model) : '') + '</div>' +
+      '</div>' +
+      '<span class="status ' + esc(ENGINE_STATE[e.state].cls) + '">' + esc(ENGINE_STATE[e.state].text) + '</span>' +
+    '</div>'
+  )).join('');
+  box.querySelectorAll('.engine-card').forEach((el) => {
+    el.onclick = () => selectEngine(el.dataset.id);
+  });
+}
+
+async function selectEngine(id) {
+  try {
+    await api('/api/engines', { method: 'POST', body: JSON.stringify({ id }) });
+    closeModelModal();
+    await loadStatus();
+    // If the settings modal is open behind this one, re-render it so the newly
+    // active engine's group is the one expanded.
+    if (!document.getElementById('settingsOverlay').hidden) await loadEnv();
+  } catch (e) {
+    alert('خطا در تغییر موتور: ' + e.message);
+  }
+}
+
 document.getElementById('refreshBtn').onclick = async () => {
   const btn = document.getElementById('refreshBtn');
   btn.disabled = true; btn.textContent = '⏳ …';
@@ -463,12 +619,6 @@ function switchSettingsTab(which) {
 document.getElementById('stEnv').onclick = () => switchSettingsTab('env');
 document.getElementById('stKb').onclick = () => switchSettingsTab('kb');
 
-const AI_PROVIDERS = [
-  { value: 'openai-compatible', label: 'openai-compatible (GapGPT / OpenAI / پروکسی محلی)' },
-  { value: 'gemini', label: 'gemini' },
-  { value: 'claude-cli', label: 'claude-cli (اتصال به Claude Code CLI با اشتراک خودت، بدون API key)' },
-];
-
 async function loadEnv() {
   const body = document.getElementById('settingsBody');
   try {
@@ -479,6 +629,9 @@ async function loadEnv() {
   }
   S.envDirty = {};
   S.modelOptions = [];
+  // Engine labels/icons/state come from the same /api/engines catalog the
+  // toolbar picker uses, so the two views can't drift apart.
+  try { S.engines = (await api('/api/engines')).engines; } catch (e) { S.engines = S.engines || []; }
   renderEnv();
   try {
     const m = await api('/api/models');
@@ -490,64 +643,71 @@ async function loadEnv() {
   } catch (e) { /* model discovery is a convenience, not a requirement — a typed model still works */ }
 }
 
+// The model field of whichever engine is active is the only one /api/models
+// can offer suggestions for — that endpoint queries the *active* engine's
+// endpoint, so offering a stale datalist on an inactive engine's field would
+// suggest models from a different provider entirely.
+const ENGINE_MODEL_KEY = {
+  'openai-compatible': 'AI_MODEL',
+  '9router': 'NINEROUTER_MODEL',
+  'gemini': 'GEMINI_MODEL',
+  'claude-cli': 'CLAUDE_MODEL',
+};
+
+function renderEnvField(entry, activeModelKey) {
+  const inputType = entry.secret ? 'password' : 'text';
+  const reveal = entry.secret ? '<button type="button" class="reveal" data-reveal="' + esc(entry.key) + '">👁</button>' : '';
+  const isActiveModel = entry.key === activeModelKey;
+  const hint = isActiveModel
+    ? (entry.hint ? entry.hint + ' — ' : '') + 'لیست پیشنهادی از همین موتور (که الان فعال است) خوانده می‌شود؛ اگر مدلت آنجا نبود دستی تایپ کن.'
+    : entry.hint;
+  return '<div class="field">' +
+    '<label>' + esc(entry.key) + (entry.required ? ' <span style="color:var(--red)">*</span>' : '') + '</label>' +
+    '<div class="field-input" style="' + (entry.secret ? 'padding-inline-start:26px' : '') + '">' +
+      '<input type="' + inputType + '" data-key="' + esc(entry.key) + '" value="' + esc(entry.value) + '"' +
+        (isActiveModel ? ' list="aiModelList"' : '') +
+        ' placeholder="' + (entry.required ? 'الزامی' : 'خالی') + '" />' +
+      reveal +
+    '</div>' +
+    (isActiveModel ? '<datalist id="aiModelList"></datalist>' : '') +
+    (hint ? '<div class="hint">' + esc(hint) + '</div>' : '') +
+  '</div>';
+}
+
 function renderEnv() {
   const body = document.getElementById('settingsBody');
   const groups = [];
   for (const entry of S.env) {
+    if (entry.internal) continue; // AI_PROVIDER — owned by the toolbar picker
     let g = groups.find((x) => x.name === entry.group);
-    if (!g) { g = { name: entry.group, items: [] }; groups.push(g); }
+    if (!g) { g = { name: entry.group, engine: entry.engine, items: [] }; groups.push(g); }
     g.items.push(entry);
   }
-  const currentProvider = (S.env.find((e) => e.key === 'AI_PROVIDER') || {}).value || 'openai-compatible';
+  const activeProvider = ((S.engines || []).find((e) => e.active) || {}).id || 'openai-compatible';
+  const activeModelKey = ENGINE_MODEL_KEY[activeProvider];
+
   body.innerHTML = groups.map((g) => {
-    const fields = g.items.map((entry) => {
-      if (entry.key === 'AI_PROVIDER') {
-        const options = AI_PROVIDERS.map((p) => '<option value="' + esc(p.value) + '" ' + (p.value === entry.value ? 'selected' : '') + '>' + esc(p.label) + '</option>').join('');
-        return '<div class="field"><label>AI_PROVIDER</label><select data-key="AI_PROVIDER">' + options + '</select></div>';
-      }
-      if (entry.key === 'AI_MODEL') {
-        return '<div class="field">' +
-          '<label>AI_MODEL</label>' +
-          '<div class="field-input"><input type="text" data-key="AI_MODEL" list="aiModelList" value="' + esc(entry.value) + '" placeholder="مثلاً anthropic/claude-sonnet-4-20250514 — یا خالی برای پیش‌فرض" /></div>' +
-          '<datalist id="aiModelList"></datalist>' +
-          '<div class="hint">اگر لیست بالا (fetch شده از AI_BASE_URL) شامل مدل موردنظرت نبود، دستی تایپ کن. برای claude-cli، خالی یعنی مدل پیش‌فرض CLI.</div>' +
-        '</div>';
-      }
-      // AI_API_KEY is meaningless for claude-cli (auth comes from `claude login`) — hide the noise.
-      if (entry.key === 'AI_API_KEY' && currentProvider === 'claude-cli') return '';
-      const inputType = entry.secret ? 'password' : 'text';
-      const reveal = entry.secret ? '<button type="button" class="reveal" data-reveal="' + esc(entry.key) + '">👁</button>' : '';
-      return '<div class="field">' +
-        '<label>' + esc(entry.key) + (entry.required ? ' <span style="color:var(--red)">*</span>' : '') + '</label>' +
-        '<div class="field-input" style="' + (entry.secret ? 'padding-inline-start:26px' : '') + '">' +
-          '<input type="' + inputType + '" data-key="' + esc(entry.key) + '" value="' + esc(entry.value) + '" placeholder="' + (entry.required ? 'الزامی' : 'خالی') + '" />' +
-          reveal +
-        '</div>' +
-        (entry.hint ? '<div class="hint">' + esc(entry.hint) + '</div>' : '') +
-      '</div>';
-    }).join('');
-    return '<div class="group-title">' + esc(g.name) + '</div>' + fields;
-  }).join('');
+    const fields = g.items.map((entry) => renderEnvField(entry, activeModelKey)).join('');
+    if (!g.engine) return '<div class="group-title">' + esc(g.name) + '</div>' + fields;
+
+    // One collapsible section per engine, open only for the active one.
+    const meta = (S.engines || []).find((e) => e.id === g.engine) || {};
+    const state = ENGINE_STATE[meta.state] || null;
+    const isActive = g.engine === activeProvider;
+    return '<details class="engine-group"' + (isActive ? ' open' : '') + '>' +
+      '<summary>' +
+        '<span>' + esc(meta.icon || '•') + ' ' + esc(g.name) + '</span>' +
+        (isActive ? '<span class="engine-active-tag">فعال</span>' : '') +
+        (state ? '<span class="status ' + esc(state.cls) + '">' + esc(state.text) + '</span>' : '') +
+      '</summary>' +
+      fields +
+    '</details>';
+  }).join('') +
+    '<p class="hint" style="margin:4px 0 0">موتور فعال از دکمه‌ی «مدل» در نوار بالای داشبورد عوض می‌شود — اینجا فقط تنظیمات هر موتور را می‌بینی.</p>';
 
   const modelList = body.querySelector('#aiModelList');
   if (modelList && S.modelOptions && S.modelOptions.length) {
     modelList.innerHTML = S.modelOptions.map((id) => '<option value="' + esc(id) + '">').join('');
-  }
-
-  const providerSelect = body.querySelector('select[data-key="AI_PROVIDER"]');
-  if (providerSelect) {
-    providerSelect.onchange = () => {
-      // Carry forward whatever the user already typed elsewhere in the form —
-      // re-rendering to reflect the new provider must not erase in-progress edits.
-      body.querySelectorAll('input[data-key]').forEach((input) => {
-        const entry = S.env.find((e) => e.key === input.dataset.key);
-        if (entry) entry.value = input.value;
-      });
-      S.envDirty.AI_PROVIDER = providerSelect.value;
-      const entry = S.env.find((e) => e.key === 'AI_PROVIDER');
-      if (entry) entry.value = providerSelect.value;
-      renderEnv();
-    };
   }
 
   body.querySelectorAll('input[data-key]').forEach((input) => {
@@ -894,7 +1054,6 @@ async function deleteKb(id) {
   } catch (e) { alert('خطا: ' + e.message); }
 }
 
-document.getElementById('adminTokenValue').onchange = () => { loadStatus(); loadMergeRequests(); loadKb(); };
 
 // ---- panel tabs: Merge Requests / Developers ------------------------------
 document.getElementById('ptMr').onclick = () => switchPanel('mr');

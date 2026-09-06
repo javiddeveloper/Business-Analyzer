@@ -14,7 +14,7 @@ const envFile = require('./lib/envFile');
 const activity = require('./lib/activity');
 const ratings = require('./lib/ratings');
 const task = require('./lib/task');
-const { secret, listModels } = require('./lib/ai_bridge');
+const { secret, listModels, listEngines, engineStatus } = require('./lib/ai_bridge');
 
 const PORT = process.env.PORT || 8078;
 
@@ -123,16 +123,19 @@ async function handleWebhook(req, res) {
 async function handleStatus(req, res) {
   const settings = state.getSettings();
   const provider = (secret('AI_PROVIDER') || 'openai-compatible').toLowerCase();
+  // Same source of truth as the toolbar's engine picker, so the header badge
+  // and that list can never disagree about whether an engine is configured.
+  const status = engineStatus(provider);
   const ai = {
     provider,
-    model: secret('AI_MODEL') || (provider === 'gemini' ? 'gemini-2.0-flash' : 'gpt-4o-mini'),
-    keySet: !!(provider === 'gemini' ? secret('GEMINI_API_KEY') : secret('AI_API_KEY')),
+    model: status.model || '(پیش‌فرض CLI)',
+    state: status.state,
   };
   const projectPath = secret('PROJECT_PATH');
   const out = {
     ai,
     settings,
-    gitlab: { url: gitlab.gitlabBase(), ok: false, user: null, error: null },
+    gitlab: { url: gitlab.gitlabBase(), ok: false, user: null, name: null, bot: false, error: null },
     projectPath: { set: !!projectPath, value: projectPath || '' },
   };
   if (!secret('GITLAB_TOKEN')) {
@@ -142,7 +145,14 @@ async function handleStatus(req, res) {
   try {
     const user = await gitlab.getCurrentUser();
     out.gitlab.ok = true;
-    out.gitlab.user = user.username || user.name || null;
+    // Both, not one: a Project/Group Access Token's username is an unreadable
+    // `project_<id>_bot_<hash>`, while its display name is what the human
+    // actually typed when creating it. The badge shows the name; the exact
+    // username stays available for the tooltip, since that's the identity
+    // every comment and approval on GitLab is attributed to.
+    out.gitlab.user = user.username || null;
+    out.gitlab.name = user.name || null;
+    out.gitlab.bot = !!user.bot;
   } catch (e) {
     out.gitlab.error = e.message;
   }
@@ -228,6 +238,23 @@ async function handleModels(req, res) {
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
   }
+}
+
+// Toolbar engine picker (Claude / openai-compatible / 9Router / Gemini): GET
+// lists the catalog with each engine's readiness (key set?) so the picker can
+// flag one that still needs a key; POST just flips AI_PROVIDER — every
+// engine's own key/base/model already lives in secrets.env under its own
+// keys (see HTTP_ENGINES in ai_bridge.js), so switching never overwrites
+// another engine's config the way retyping a shared AI_API_KEY field would.
+async function handleEngines(req, res) {
+  if (req.method === 'GET') return sendJson(res, 200, { engines: listEngines() });
+  const body = await readJsonBody(req);
+  const id = body && body.id;
+  if (!id || !['claude-cli', 'openai-compatible', '9router', 'gemini'].includes(id)) {
+    return sendJson(res, 400, { error: 'شناسه‌ی موتور نامعتبر است.' });
+  }
+  envFile.writeValues({ AI_PROVIDER: id });
+  return sendJson(res, 200, { engines: listEngines() });
 }
 
 async function handleStartReview(req, res) {
@@ -379,6 +406,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       if (req.method === 'GET' && pathname === '/api/developers') return await handleDevelopers(req, res);
       if (req.method === 'GET' && pathname === '/api/models') return await handleModels(req, res);
+      if (pathname === '/api/engines') return await handleEngines(req, res);
       const ratingMatch = pathname.match(/^\/api\/developers\/([^/]+)\/rating$/);
       if (ratingMatch) return await handleDeveloperRating(req, res, decodeURIComponent(ratingMatch[1]));
       if (req.method === 'GET' && pathname === '/api/jobs') return sendJson(res, 200, jobs.list());
