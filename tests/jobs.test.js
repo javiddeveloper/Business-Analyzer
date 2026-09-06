@@ -59,6 +59,18 @@ stub('../lib/publish', {
   },
 });
 
+stub('../lib/ai_bridge', {
+  secret: (k) => (k === 'PROJECT_PATH' ? '/fake/project' : ''),
+});
+
+stub('../lib/localRepo', {
+  async loadContext() { return { fileContents: {}, warning: null }; },
+});
+
+stub('../lib/reportFile', {
+  writeReport() { return { path: '/fake/project/review/MR-x.md' }; },
+});
+
 const jobs = require('../lib/jobs');
 
 test('different MRs review in parallel; the same MR does not start twice', async () => {

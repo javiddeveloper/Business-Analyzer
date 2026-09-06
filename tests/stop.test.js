@@ -8,6 +8,7 @@ const os = require('os');
 const fs = require('fs');
 
 process.env.CR_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'coder-review-stop-test-'));
+const FAKE_PROJECT_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'coder-review-stop-project-'));
 
 function stub(modulePath, exports) {
   const resolved = require.resolve(modulePath);
@@ -33,7 +34,7 @@ stub('../lib/gitlab', {
 // A model call that hangs until aborted — the shape of the real flaky-proxy
 // scenario that motivated the stop button in the first place.
 stub('../lib/ai_bridge', {
-  secret: () => '',
+  secret: (k) => (k === 'PROJECT_PATH' ? FAKE_PROJECT_PATH : ''),
   callModel: ({ signal }) => new Promise((resolve, reject) => {
     modelCalls++;
     if (signal.aborted) { sawAbortedSignal = true; return reject(Object.assign(new Error('aborted'), { name: 'AbortError' })); }

@@ -8,6 +8,10 @@ const os = require('os');
 const fs = require('fs');
 
 process.env.CR_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'coder-review-pipeline-'));
+// A plain (non-git) directory is enough: localRepo.loadContext detects the
+// missing .git and degrades to a warning instead of failing the review, and
+// reportFile just needs somewhere real to write review/MR-9.md.
+const FAKE_PROJECT_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'coder-review-project-'));
 
 function stub(modulePath, exports) {
   const resolved = require.resolve(modulePath);
@@ -51,7 +55,11 @@ stub('../lib/gitlab', {
 // The model finds the null-assertion bug; the hardcoded token is left to the
 // deterministic check on purpose, so the test proves both paths contribute.
 stub('../lib/ai_bridge', {
-  secret: (k) => (k === 'AI_MODEL' ? 'test-model' : ''),
+  secret: (k) => {
+    if (k === 'AI_MODEL') return 'test-model';
+    if (k === 'PROJECT_PATH') return FAKE_PROJECT_PATH;
+    return '';
+  },
   async callModel() {
     return {
       text: JSON.stringify({

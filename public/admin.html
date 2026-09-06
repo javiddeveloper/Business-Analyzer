@@ -5,47 +5,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Coder Review — داشبورد</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
+
   :root {
-    --bg: #0f1115;
-    --panel: #171a21;
-    --panel-2: #1d212a;
-    --line: #262b36;
-    --text: #e5e7eb;
-    --muted: #9ca3af;
-    --dim: #6b7280;
-    --blue: #3b82f6;
-    --green: #22c55e;
-    --red: #ef4444;
-    --amber: #f59e0b;
+    --font-primary: 'Vazirmatn', system-ui, sans-serif;
+    --bg: #0d1426;
+    --bg-2: #0a0f1e;
+    --panel: rgba(22, 30, 52, 0.72);
+    --panel-solid: #141b30;
+    --panel-2: #1a2340;
+    --border: rgba(120, 140, 200, 0.16);
+    --border-strong: rgba(120, 140, 200, 0.32);
+    --text: #e7ecf6;
+    --muted: #8b96b3;
+    --dim: #5b647e;
+    --cyan: #34e3e3;
+    --violet: #9b8cff;
+    --amber: #ffb347;
+    --green: #41e08a;
+    --red: #ff6b81;
+    --radius: 16px;
+    --shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.8);
   }
   * { box-sizing: border-box; }
+  input, textarea, button, select { font-family: inherit; }
+  html, body { margin: 0; }
   body {
-    font-family: Tahoma, Arial, sans-serif;
-    background: var(--bg); color: var(--text);
-    margin: 0; padding: 16px; font-size: 14px; line-height: 1.7;
+    background: linear-gradient(180deg, #111a30 0%, var(--bg) 45%, var(--bg-2) 100%) fixed;
+    color: var(--text); font-family: var(--font-primary);
+    padding: 16px; font-size: 14px; line-height: 1.7;
   }
-  h1 { font-size: 18px; margin: 0; }
+  h1 { font-size: 18px; margin: 0; font-weight: 800; }
   h3 { font-size: 15px; margin: 0 0 10px; }
-  a { color: var(--blue); }
+  a { color: var(--cyan); }
+  code, .mono { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; direction: ltr; unicode-bidi: embed; }
 
   /* ---- header ---- */
   header {
     display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
     justify-content: space-between; margin-bottom: 16px;
+    padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--panel); backdrop-filter: blur(14px);
   }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo { font-size: 22px; filter: drop-shadow(0 0 8px var(--cyan)); }
   .badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 100%; min-width: 0; }
   .badge {
     display: inline-flex; align-items: center; gap: 6px;
-    background: var(--panel); border: 1px solid var(--line);
+    background: var(--panel-2); border: 1px solid var(--border);
     border-radius: 999px; padding: 5px 12px; font-size: 12px; color: var(--muted);
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); flex: 0 0 auto; }
-  .dot.ok { background: var(--green); }
-  .dot.err { background: var(--red); }
-  .dot.run { background: var(--blue); animation: pulse 1s infinite; }
-  .dot.warn { background: var(--amber); }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dim); flex: 0 0 auto; }
+  .dot.ok { background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .dot.err { background: var(--red); box-shadow: 0 0 10px var(--red); }
+  .dot.run { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); animation: pulse 1s infinite; }
+  .dot.warn { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  .gear {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+    width: 34px; height: 34px; border-radius: 10px; font-size: 17px; flex-shrink: 0;
+    cursor: pointer; transition: transform .4s ease, border-color .2s, color .2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gear:hover { transform: rotate(90deg); border-color: var(--border-strong); color: var(--text); }
 
   /* ---- layout ---- */
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -53,125 +77,164 @@
     .layout { grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); align-items: start; }
   }
   .card {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; padding: 14px; min-width: 0;
+    background: var(--panel); border: 1px solid var(--border); backdrop-filter: blur(14px);
+    border-radius: var(--radius); padding: 14px; min-width: 0;
   }
+
+  .banner {
+    border: 1px solid rgba(255,179,71,.4); background: rgba(255,179,71,.1); color: #ffd8a8;
+    border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  /* An author rule setting `display` on .banner otherwise beats the UA
+     stylesheet's `[hidden]{display:none}`, since author styles always win
+     over UA styles regardless of matching specificity — so hiding it via the
+     `hidden` property from JS silently did nothing without this. */
+  .banner[hidden] { display: none; }
+  .banner button { margin-inline-start: auto; }
 
   /* ---- controls ---- */
   button {
-    background: var(--blue); color: #fff; border: none; border-radius: 6px;
-    padding: 7px 13px; cursor: pointer; font-family: inherit; font-size: 13px;
+    background: rgba(52,227,227,.14); color: var(--cyan); border: 1px solid var(--cyan);
+    border-radius: 8px; padding: 7px 13px; cursor: pointer; font-size: 13px; transition: background .15s;
   }
-  button:hover { opacity: .9; }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); }
-  button.danger { background: var(--red); }
+  button:hover { background: rgba(52,227,227,.24); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  button.ghost:hover { border-color: var(--border-strong); background: var(--panel-2); }
+  button.danger { background: rgba(255,107,129,.12); border-color: var(--red); color: var(--red); }
+  button.danger:hover { background: rgba(255,107,129,.22); }
   input[type=text], input[type=password], textarea {
-    width: 100%; background: var(--bg); color: var(--text);
-    border: 1px solid #2b3140; border-radius: 6px; padding: 8px;
-    font-family: inherit; font-size: 13px; margin-bottom: 8px;
+    width: 100%; background: rgba(0,0,0,.3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px;
+    font-size: 13px; margin-bottom: 8px; outline: none;
   }
+  input[type=text]:focus, input[type=password]:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(52,227,227,.12); }
   textarea { min-height: 110px; resize: vertical; line-height: 1.7; }
   label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
-  /* ---- MR tabs: a vertical list so every open MR is visible at once,
-     instead of a horizontally-scrolling row where most tabs are off-screen. */
+  /* ---- MR tabs: vertical so every open MR is visible at once ---- */
   .mr-body { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
   .tabs {
-    flex: 0 0 260px; display: flex; flex-direction: column; gap: 6px;
+    flex: 0 0 270px; display: flex; flex-direction: column; gap: 6px;
     max-height: 72vh; overflow-y: auto; padding-inline-start: 4px;
-    border-inline-start: 1px solid var(--line);
+    border-inline-start: 1px solid var(--border);
   }
   @media (max-width: 720px) {
     .mr-body { flex-direction: column; }
-    .tabs { flex: 0 0 auto; width: 100%; max-height: 40vh; border-inline-start: none; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    .tabs { flex: 0 0 auto; width: 100%; max-height: 40vh; border-inline-start: none; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
   }
   .tab {
     display: flex; flex-direction: column; gap: 3px; text-align: start;
-    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
-    border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 12px;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 10px; padding: 8px 10px; cursor: pointer; font-size: 12px; position: relative;
   }
   .tab .tab-top { display: flex; align-items: center; gap: 6px; }
-  .tab .label {
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    color: var(--text); font-size: 13px; flex: 1; min-width: 0;
+  .tab .order-badge {
+    flex: 0 0 auto; width: 18px; height: 18px; border-radius: 6px; background: rgba(155,140,255,.15);
+    color: var(--violet); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
   }
+  .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: 13px; flex: 1; min-width: 0; }
   .tab .tab-meta { color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tab.active { background: rgba(59,130,246,.12); border-color: var(--blue); }
-  .tab:hover { border-color: #384258; }
+  .tab.active { background: rgba(52,227,227,.1); border-color: var(--cyan); }
+  .tab:hover { border-color: var(--border-strong); }
   .mr-content { flex: 1; min-width: 0; }
 
   /* ---- MR panel ---- */
   .meta { color: var(--muted); font-size: 12px; }
   .meta-grid { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 10px 0 14px; }
   @media (min-width: 620px) { .meta-grid { grid-template-columns: 1fr 1fr; } }
-  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 12px; }
   .note {
-    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    background: rgba(0,0,0,.25); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px; white-space: pre-wrap; word-break: break-word;
     line-height: 1.9; margin-top: 12px; max-height: 60vh; overflow: auto;
   }
   .verdict { display: inline-block; border-radius: 6px; padding: 3px 10px; font-size: 12px; }
-  .verdict.approve { background: rgba(34,197,94,.15); color: var(--green); }
-  .verdict.changes { background: rgba(239,68,68,.15); color: var(--red); }
-  .finding { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-top: 10px; background: var(--bg); }
+  .verdict.approve { background: rgba(65,224,138,.15); color: var(--green); }
+  .verdict.changes { background: rgba(255,107,129,.15); color: var(--red); }
+  .empty { color: var(--dim); padding: 16px 0; text-align: center; }
+  .error-box { background: rgba(255,107,129,.1); border: 1px solid rgba(255,107,129,.35); color: #ffb3bf; border-radius: 10px; padding: 10px; font-size: 13px; }
+  .finding { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-top: 10px; background: rgba(0,0,0,.2); }
   .finding-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
   .sev { border-radius: 5px; padding: 2px 8px; font-size: 11px; flex: 0 0 auto; }
-  .sev.High { background: rgba(239,68,68,.16); color: #fca5a5; }
-  .sev.Medium { background: rgba(245,158,11,.16); color: #fcd34d; }
-  .sev.Low { background: rgba(59,130,246,.16); color: #93c5fd; }
-  .finding-loc { font-family: Consolas, "Courier New", monospace; font-size: 12px; color: var(--muted); word-break: break-all; }
+  .sev.High { background: rgba(255,107,129,.16); color: #ffb3bf; }
+  .sev.Medium { background: rgba(255,179,71,.16); color: #ffd8a8; }
+  .sev.Low { background: rgba(52,227,227,.16); color: #a8f0f0; }
+  .finding-loc { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--muted); word-break: break-all; direction: ltr; text-align: start; }
   .finding-note { white-space: pre-wrap; word-break: break-word; font-size: 13px; }
-  .finding pre { background: #0b0d11; border: 1px solid var(--line); border-radius: 6px; padding: 8px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; }
+  .finding pre { background: #060a14; border: 1px solid var(--border); border-radius: 8px; padding: 8px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; direction: ltr; text-align: left; }
   .tag { font-size: 11px; color: var(--dim); }
-  .settings { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-  .empty { color: var(--dim); padding: 16px 0; text-align: center; }
-  .error-box { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.35); color: #fca5a5; border-radius: 8px; padding: 10px; font-size: 13px; }
+  .settings-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
 
   /* ---- knowledge base ---- */
-  .kb-item { border-bottom: 1px solid var(--line); padding: 10px 0; }
+  .kb-item { border-bottom: 1px solid var(--border); padding: 10px 0; }
   .kb-item:last-child { border-bottom: none; }
   .kb-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .kb-title { cursor: pointer; flex: 1; min-width: 0; }
   .kb-title strong { display: block; word-break: break-word; }
   .kb-body {
-    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    background: rgba(0,0,0,.25); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px; margin-top: 10px; white-space: pre-wrap; word-break: break-word;
     line-height: 1.9; font-size: 13px; max-height: 45vh; overflow: auto;
   }
   .kb-actions { display: flex; gap: 6px; flex: 0 0 auto; }
   .kb-actions button { padding: 4px 9px; font-size: 12px; }
-  details.tokenbox summary { cursor: pointer; color: var(--muted); font-size: 12px; }
-  details.tokenbox { margin-bottom: 12px; }
+
+  /* ---- settings modal ---- */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 50; background: rgba(5,8,16,.7); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay[hidden] { display: none; }
+  .modal {
+    width: 620px; max-width: 100%; max-height: 88vh; display: flex; flex-direction: column;
+    background: var(--panel-solid); border: 1px solid var(--border-strong); border-radius: 20px; box-shadow: var(--shadow);
+  }
+  .modal-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 20px 12px; border-bottom: 1px solid var(--border); }
+  .modal-head h2 { margin: 0; font-size: 16px; }
+  .modal-sub { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { overflow-y: auto; padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
+  .group-title { font-size: 12px; font-weight: 700; color: var(--cyan); margin: 8px 0 0; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: var(--muted); }
+  .field .hint { font-size: 10px; color: var(--dim); line-height: 1.6; }
+  .field-input { position: relative; display: flex; }
+  .field input { flex: 1; font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr; text-align: left; margin-bottom: 0; }
+  .reveal { position: absolute; inset-inline-start: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--dim); cursor: pointer; font-size: 13px; padding: 2px; }
+  .modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--border); }
+  .save-state { font-size: 12px; color: var(--muted); }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🤖 Coder Review</h1>
+  <div class="brand"><span class="logo">🤖</span><h1>Coder Review</h1></div>
   <div class="badges">
     <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
     <span class="badge" id="aiBadge"><span class="dot"></span> مدل: …</span>
     <label class="check badge"><input type="checkbox" id="autoReview" /> ریویوی خودکار</label>
+    <input type="password" id="adminTokenValue" class="badge" style="width:150px; padding:5px 12px" placeholder="X-Admin-Token (فقط برای دسترسی از راه دور)" />
     <button class="ghost" id="refreshBtn">🔄 بروزرسانی</button>
+    <button class="gear" id="settingsBtn" title="تنظیمات">⚙</button>
   </div>
 </header>
 
-<details class="tokenbox">
-  <summary>تنظیمات دسترسی (توکن ادمین)</summary>
-  <input type="password" id="adminToken" placeholder="اگر ADMIN_TOKEN در secrets.env ست شده، اینجا وارد کن" />
-</details>
+<div id="pathBanner" class="banner" hidden>
+  ⚠️ مسیر پروژه‌ی محلی تنظیم نشده — بدون آن هیچ ریویویی اجرا نمی‌شود (نه دیف کامل دیده می‌شود، نه گزارش در <code>review/</code> نوشته می‌شود).
+  <button id="bannerSettingsBtn">تنظیم مسیر پروژه</button>
+</div>
 
 <div class="layout">
   <!-- ---- merge requests ---- -->
   <section class="card">
-    <h3>Merge Requestها</h3>
-    <div class="settings">
+    <h3>Merge Requestها <span class="tag">(به ترتیب merge — قدیمی‌تر اول)</span></h3>
+    <div class="settings-row">
       <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
       <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
       <label class="check"><input type="checkbox" id="setAutoPost" /> ثبت خودکار نتیجه در حالت خودکار</label>
-      <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار وقتی نتیجه تمیز است (هرگز Merge نمی‌کند)</label>
+      <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
     </div>
     <div id="mrError"></div>
     <div class="mr-body">
@@ -198,6 +261,24 @@
   </section>
 </div>
 
+<!-- ---- settings modal ---- -->
+<div class="modal-overlay" id="settingsOverlay" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>⚙ تنظیمات (secrets.env)</h2>
+        <p class="modal-sub">این مقادیر مستقیم در فایل <code>secrets.env</code> ذخیره می‌شوند — نیازی به ویرایش دستی فایل نیست. مقدار رمزها فقط با چهار کاراکتر آخر نمایش داده می‌شود.</p>
+      </div>
+      <button class="modal-close" id="settingsCloseBtn">✕</button>
+    </div>
+    <div class="modal-body" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
+    <div class="modal-foot">
+      <span class="save-state" id="settingsSaveState"></span>
+      <button id="settingsSaveBtn">ذخیره</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ---- state ----------------------------------------------------------------
 const S = {
@@ -210,6 +291,9 @@ const S = {
   kbBodies: {},    // id -> content
   editingId: null,
   postToGitlab: true,
+  env: [],
+  envDirty: {},    // key -> new value the user actually typed
+  settingsOpenedOnce: false,
 };
 
 const keyOf = (projectId, iid) => projectId + '!' + iid;
@@ -217,7 +301,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 
 // ---- api ------------------------------------------------------------------
 function headers() {
-  const token = document.getElementById('adminToken').value.trim();
+  const token = document.getElementById('adminTokenValue') ? document.getElementById('adminTokenValue').value.trim() : '';
   const h = { 'Content-Type': 'application/json' };
   if (token) h['X-Admin-Token'] = token;
   return h;
@@ -236,7 +320,7 @@ async function loadStatus() {
   try {
     S.status = await api('/api/status');
   } catch (e) {
-    S.status = { gitlab: { ok: false, error: e.message }, ai: {}, settings: {} };
+    S.status = { gitlab: { ok: false, error: e.message }, ai: {}, settings: {}, projectPath: { set: false } };
   }
   renderStatus();
 }
@@ -245,12 +329,12 @@ function renderStatus() {
   const g = (S.status && S.status.gitlab) || {};
   const ai = (S.status && S.status.ai) || {};
   const st = (S.status && S.status.settings) || {};
-  const gBadge = document.getElementById('gitlabBadge');
-  // A GitLab error can be a whole JSON body — elide it in the badge (full text
-  // stays in the tooltip) so it can't blow out the header on a narrow screen.
+  const pp = (S.status && S.status.projectPath) || {};
   const short = (s) => (String(s).length > 42 ? String(s).slice(0, 42) + '…' : String(s));
+
+  const gBadge = document.getElementById('gitlabBadge');
   gBadge.innerHTML = '<span class="dot ' + (g.ok ? 'ok' : 'err') + '"></span> گیت‌لب: ' +
-    (g.ok ? esc(g.url.replace(/^https?:\/\//, '')) + ' (' + esc(g.user || '—') + ')' : esc(short(g.error || 'قطع')));
+    (g.ok ? esc((g.url || '').replace(/^https?:\/\//, '')) + ' (' + esc(g.user || '—') + ')' : esc(short(g.error || 'قطع')));
   gBadge.title = g.ok ? 'اتصال برقرار است: ' + g.url : (g.error || '');
 
   document.getElementById('aiBadge').innerHTML =
@@ -262,10 +346,15 @@ function renderStatus() {
   document.getElementById('setSkipDrafts').checked = st.skipDrafts !== false;
   document.getElementById('setAutoPost').checked = st.autoPost !== false;
   document.getElementById('setAutoApprove').checked = !!st.autoApprove;
+
+  const banner = document.getElementById('pathBanner');
+  banner.hidden = !!pp.set;
+  if (!pp.set && !S.settingsOpenedOnce) {
+    S.settingsOpenedOnce = true;
+    openSettings();
+  }
 }
 
-// One handler for every settings checkbox — each maps to a field of the same
-// name on the server's settings object.
 async function bindSetting(elementId, field) {
   const el = document.getElementById(elementId);
   el.onchange = async () => {
@@ -282,6 +371,105 @@ bindSetting('setInline', 'inlineComments');
 bindSetting('setSkipDrafts', 'skipDrafts');
 bindSetting('setAutoPost', 'autoPost');
 bindSetting('setAutoApprove', 'autoApprove');
+
+document.getElementById('autoReview').onchange = async (e) => {
+  try {
+    const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ autoReview: e.target.checked }) });
+    if (S.status) S.status.settings = next;
+  } catch (err) {
+    alert('خطا در ذخیره تنظیمات: ' + err.message);
+    e.target.checked = !e.target.checked;
+  }
+};
+
+document.getElementById('refreshBtn').onclick = async () => {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true; btn.textContent = '⏳ …';
+  await Promise.all([loadStatus(), loadMergeRequests(), loadJobs()]);
+  btn.disabled = false; btn.textContent = '🔄 بروزرسانی';
+};
+
+// ---- settings modal (secrets.env via toolbar) ------------------------------
+function openSettings() {
+  document.getElementById('settingsOverlay').hidden = false;
+  loadEnv();
+}
+function closeSettings() {
+  document.getElementById('settingsOverlay').hidden = true;
+}
+document.getElementById('settingsBtn').onclick = openSettings;
+document.getElementById('bannerSettingsBtn').onclick = openSettings;
+document.getElementById('settingsCloseBtn').onclick = closeSettings;
+document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'settingsOverlay') closeSettings();
+});
+
+async function loadEnv() {
+  const body = document.getElementById('settingsBody');
+  try {
+    S.env = await api('/api/env');
+  } catch (e) {
+    body.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+    return;
+  }
+  S.envDirty = {};
+  renderEnv();
+}
+
+function renderEnv() {
+  const body = document.getElementById('settingsBody');
+  const groups = [];
+  for (const entry of S.env) {
+    let g = groups.find((x) => x.name === entry.group);
+    if (!g) { g = { name: entry.group, items: [] }; groups.push(g); }
+    g.items.push(entry);
+  }
+  body.innerHTML = groups.map((g) => {
+    const fields = g.items.map((entry) => {
+      const inputType = entry.secret ? 'password' : 'text';
+      const reveal = entry.secret ? '<button type="button" class="reveal" data-reveal="' + esc(entry.key) + '">👁</button>' : '';
+      return '<div class="field">' +
+        '<label>' + esc(entry.key) + (entry.required ? ' <span style="color:var(--red)">*</span>' : '') + '</label>' +
+        '<div class="field-input" style="' + (entry.secret ? 'padding-inline-start:26px' : '') + '">' +
+          '<input type="' + inputType + '" data-key="' + esc(entry.key) + '" value="' + esc(entry.value) + '" placeholder="' + (entry.required ? 'الزامی' : 'خالی') + '" />' +
+          reveal +
+        '</div>' +
+        (entry.hint ? '<div class="hint">' + esc(entry.hint) + '</div>' : '') +
+      '</div>';
+    }).join('');
+    return '<div class="group-title">' + esc(g.name) + '</div>' + fields;
+  }).join('');
+
+  body.querySelectorAll('input[data-key]').forEach((input) => {
+    const original = input.value;
+    input.oninput = () => {
+      if (input.value === original) delete S.envDirty[input.dataset.key];
+      else S.envDirty[input.dataset.key] = input.value;
+    };
+  });
+  body.querySelectorAll('[data-reveal]').forEach((btn) => {
+    btn.onclick = () => {
+      const input = body.querySelector('input[data-key="' + btn.dataset.reveal + '"]');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    };
+  });
+}
+
+document.getElementById('settingsSaveBtn').onclick = async () => {
+  const state_ = document.getElementById('settingsSaveState');
+  if (!Object.keys(S.envDirty).length) { state_.textContent = 'چیزی تغییر نکرده.'; return; }
+  state_.textContent = 'در حال ذخیره…';
+  try {
+    await api('/api/env', { method: 'POST', body: JSON.stringify({ values: S.envDirty }) });
+    state_.textContent = '✅ ذخیره شد.';
+    S.envDirty = {};
+    await loadEnv();
+    await loadStatus();
+  } catch (e) {
+    state_.textContent = '';
+    alert('خطا در ذخیره: ' + e.message);
+  }
+};
 
 // ---- merge requests -------------------------------------------------------
 async function loadMergeRequests() {
@@ -334,10 +522,11 @@ function renderTabs() {
     const findingCount = job && job.status === 'done' ? (job.findings || []).length : null;
     return '<div class="tab ' + (key === S.activeKey ? 'active' : '') + '" data-key="' + esc(key) + '" title="' + esc(mr.title) + '">' +
       '<div class="tab-top">' +
+        '<span class="order-badge" title="ترتیب merge">' + esc(mr.mergeOrder) + '</span>' +
         '<span class="dot ' + jobDotClass(job, mr) + '"></span>' +
         '<span class="label">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</span>' +
       '</div>' +
-      '<div class="tab-meta">' + esc(mr.author) + (mr.draft ? ' · Draft' : '') + '</div>' +
+      '<div class="tab-meta">' + esc(mr.author) + (mr.draft ? ' · Draft' : '') + (mr.approved ? ' · ✅ approved' : '') + '</div>' +
       (statusWord ? '<div class="tab-meta">' + esc(statusWord) + (findingCount != null ? ' · ' + findingCount + ' یافته' : '') + '</div>' : '') +
     '</div>';
   }).join('');
@@ -353,17 +542,18 @@ function renderMrPanel() {
     return;
   }
   const mr = S.mrs.find((m) => keyOf(m.projectId, m.iid) === S.activeKey);
-  if (!mr) { panel.innerHTML = '<div class="empty">یک MR را از بالا انتخاب کن.</div>'; return; }
+  if (!mr) { panel.innerHTML = '<div class="empty">یک MR را از کنار انتخاب کن.</div>'; return; }
 
   const key = keyOf(mr.projectId, mr.iid);
   const job = S.jobs[key];
   const running = job && job.status === 'running';
   const isStale = mr.lastReviewedSha && mr.sha && mr.lastReviewedSha !== mr.sha;
+  const pathReady = S.status && S.status.projectPath && S.status.projectPath.set;
 
   let statusLine = '<span class="meta">هنوز ریویو نشده.</span>';
   if (running) statusLine = '<span class="meta"><span class="dot run"></span> در حال ریویو… (' + esc(job.trigger) + ')</span>';
   else if (job && job.status === 'error') statusLine = '<div class="error-box">خطا: ' + esc(job.error) + '</div>';
-  else if (job && job.status === 'stopped') statusLine = '<div class="error-box" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.35);color:#fcd34d">متوقف شد قبل از پایان.</div>';
+  else if (job && job.status === 'stopped') statusLine = '<div class="error-box" style="background:rgba(255,179,71,.1);border-color:rgba(255,179,71,.35);color:#ffd8a8">متوقف شد قبل از پایان.</div>';
   else if (job && job.status === 'done') {
     const v = job.decision === 'APPROVE' ? '<span class="verdict approve">✅ APPROVE</span>'
       : job.decision === 'REQUEST_CHANGES' ? '<span class="verdict changes">🔴 REQUEST_CHANGES</span>'
@@ -377,7 +567,9 @@ function renderMrPanel() {
       job.posted ? (pub.inline ? esc(pub.inline) + ' کامنت خطی ثبت شد' : 'خلاصه روی گیت‌لب ثبت شد') : 'روی گیت‌لب ثبت نشده',
       pub.skippedDuplicate ? esc(pub.skippedDuplicate) + ' مورد تکراری رد شد' : '',
       job.approved ? '✅ روی گیت‌لب approve شد' : '',
-      job.approveError ? 'خطای approve: ' + esc(job.approveError) : '',
+      job.approveError ? 'approve نشد: ' + esc(job.approveError) : '',
+      job.reportPath ? '📄 گزارش نوشته شد در review/' : '',
+      job.reportError ? 'خطای نوشتن گزارش: ' + esc(job.reportError) : '',
       st.promptTokens || st.completionTokens ? 'توکن: ' + esc(st.promptTokens) + '+' + esc(st.completionTokens) : '',
       esc(job.trigger),
     ].filter(Boolean);
@@ -397,10 +589,11 @@ function renderMrPanel() {
       '<div class="meta">نویسنده: ' + esc(mr.author) + (mr.draft ? ' · <b>Draft</b>' : '') + '</div>' +
       '<div class="meta">کامیت فعلی: <span class="mono">' + esc((mr.sha || '').slice(0, 8)) + '</span>' +
         (isStale ? ' <b style="color:var(--amber)">(بعد از آخرین ریویو تغییر کرده)</b>' : '') + '</div>' +
-      '<div class="meta">آخرین بروزرسانی: ' + esc(new Date(mr.updatedAt).toLocaleString('fa-IR')) + '</div>' +
+      '<div class="meta">ترتیب merge: <b style="color:var(--violet)">#' + esc(mr.mergeOrder) + '</b>' + (mr.approved ? ' · ✅ approved' : '') + '</div>' +
     '</div>' +
+    (!pathReady ? '<div class="error-box" style="margin-bottom:10px">مسیر پروژه‌ی محلی تنظیم نشده — از دکمه‌ی ⚙ بالای صفحه تنظیمش کن.</div>' : '') +
     '<div class="row">' +
-      '<button id="runBtn" ' + (running ? 'disabled' : '') + '>' + (running ? '⏳ در حال اجرا…' : '▶ اجرای ریویو') + '</button>' +
+      '<button id="runBtn" ' + (running || !pathReady ? 'disabled' : '') + '>' + (running ? '⏳ در حال اجرا…' : '▶ اجرای ریویو') + '</button>' +
       (running ? '<button class="danger" id="stopBtn">⏹ توقف</button>' : '') +
       '<label class="check"><input type="checkbox" id="postChk" ' + (S.postToGitlab ? 'checked' : '') + ' /> کامنت روی گیت‌لب ثبت شود</label>' +
       (job && job.status === 'done' && !job.posted ? '<button class="ghost" id="postBtn">💬 ثبت این نتیجه روی MR</button>' : '') +
@@ -469,24 +662,6 @@ async function postNote(mr) {
     alert('خطا در ثبت کامنت: ' + e.message);
   }
 }
-
-// ---- settings -------------------------------------------------------------
-document.getElementById('autoReview').onchange = async (e) => {
-  try {
-    const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ autoReview: e.target.checked }) });
-    if (S.status) S.status.settings = next;
-  } catch (err) {
-    alert('خطا در ذخیره تنظیمات: ' + err.message);
-    e.target.checked = !e.target.checked;
-  }
-};
-
-document.getElementById('refreshBtn').onclick = async () => {
-  const btn = document.getElementById('refreshBtn');
-  btn.disabled = true; btn.textContent = '⏳ …';
-  await Promise.all([loadStatus(), loadMergeRequests(), loadJobs()]);
-  btn.disabled = false; btn.textContent = '🔄 بروزرسانی';
-};
 
 // ---- knowledge base -------------------------------------------------------
 async function loadKb() {
@@ -599,9 +774,9 @@ async function deleteKb(id) {
   } catch (e) { alert('خطا: ' + e.message); }
 }
 
-// ---- boot -----------------------------------------------------------------
-document.getElementById('adminToken').onchange = () => { loadStatus(); loadMergeRequests(); loadKb(); };
+document.getElementById('adminTokenValue').onchange = () => { loadStatus(); loadMergeRequests(); loadKb(); };
 
+// ---- boot -----------------------------------------------------------------
 loadStatus();
 loadMergeRequests().then(loadJobs);
 loadKb();

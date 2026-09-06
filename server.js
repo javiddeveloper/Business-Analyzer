@@ -10,6 +10,7 @@ const reviewer = require('./lib/reviewer');
 const knowledge = require('./lib/knowledge');
 const jobs = require('./lib/jobs');
 const state = require('./lib/state');
+const envFile = require('./lib/envFile');
 const { secret } = require('./lib/ai_bridge');
 
 const PORT = process.env.PORT || 8078;
@@ -90,6 +91,10 @@ async function handleWebhook(req, res) {
     return sendJson(res, 400, { error: 'missing project id or MR iid in payload' });
   }
 
+  if (!jobs.projectPathConfigured()) {
+    return sendJson(res, 200, { skipped: 'PROJECT_PATH is not configured — set it from the dashboard settings before reviews can run' });
+  }
+
   // Acknowledge immediately — GitLab's webhook timeout is short and an LLM call
   // plus a GitLab API round-trip can easily exceed it. The job runs in the
   // background and posts its own comment when done.
@@ -107,7 +112,13 @@ async function handleStatus(req, res) {
     model: secret('AI_MODEL') || (provider === 'gemini' ? 'gemini-2.0-flash' : 'gpt-4o-mini'),
     keySet: !!(provider === 'gemini' ? secret('GEMINI_API_KEY') : secret('AI_API_KEY')),
   };
-  const out = { ai, settings, gitlab: { url: gitlab.gitlabBase(), ok: false, user: null, error: null } };
+  const projectPath = secret('PROJECT_PATH');
+  const out = {
+    ai,
+    settings,
+    gitlab: { url: gitlab.gitlabBase(), ok: false, user: null, error: null },
+    projectPath: { set: !!projectPath, value: projectPath || '' },
+  };
   if (!secret('GITLAB_TOKEN')) {
     out.gitlab.error = 'GITLAB_TOKEN تنظیم نشده است.';
     return sendJson(res, 200, out);
@@ -125,7 +136,10 @@ async function handleStatus(req, res) {
 async function handleMergeRequests(req, res) {
   try {
     const mrs = await gitlab.listOpenMergeRequests();
-    const listed = (Array.isArray(mrs) ? mrs : []).map((mr) => ({
+    // gitlab.listOpenMergeRequests() already orders oldest-created-first —
+    // that IS the intended merge order, so array position doubles as the
+    // "merge order" number the dashboard shows on each tab.
+    const listed = (Array.isArray(mrs) ? mrs : []).map((mr, i) => ({
       projectId: mr.project_id,
       iid: mr.iid,
       title: mr.title,
@@ -134,8 +148,11 @@ async function handleMergeRequests(req, res) {
       targetBranch: mr.target_branch,
       webUrl: mr.web_url,
       sha: mr.sha,
+      createdAt: mr.created_at,
       updatedAt: mr.updated_at,
       draft: !!(mr.draft || mr.work_in_progress),
+      mergeOrder: i + 1,
+      approved: state.isApproved(jobs.keyFor(mr.project_id, mr.iid)),
       lastReviewedSha: state.lastReviewedSha(jobs.keyFor(mr.project_id, mr.iid)),
     }));
     return sendJson(res, 200, listed);
@@ -190,6 +207,21 @@ async function handleSettings(req, res) {
   return sendJson(res, 200, next);
 }
 
+// Settings toolbar: read/write the values that used to require hand-editing
+// secrets.env. GET returns secrets masked (see envFile.describe); POST only
+// overwrites keys whose value actually changed — the frontend never re-sends
+// a field the user didn't touch, so a masked placeholder can't clobber the
+// real secret.
+async function handleEnvSettings(req, res) {
+  if (req.method === 'GET') return sendJson(res, 200, envFile.describe());
+  const body = await readJsonBody(req);
+  if (!body || typeof body.values !== 'object' || !body.values) {
+    return sendJson(res, 400, { error: 'values object is required' });
+  }
+  const { written } = envFile.writeValues(body.values);
+  return sendJson(res, 200, { written, values: envFile.describe() });
+}
+
 async function handleKnowledgeCollection(req, res) {
   if (req.method === 'GET') return sendJson(res, 200, knowledge.list());
   if (req.method === 'POST') {
@@ -222,6 +254,10 @@ let autoTimer = null;
 async function autoTick() {
   const settings = state.getSettings();
   if (!settings.autoReview) return;
+  if (!jobs.projectPathConfigured()) {
+    console.error('[auto] PROJECT_PATH تنظیم نشده — از تنظیمات (⚙) در داشبورد وارد کن. ریویوی خودکار این دور را رد کرد.');
+    return;
+  }
   try {
     const mrs = await gitlab.listOpenMergeRequests();
     for (const mr of Array.isArray(mrs) ? mrs : []) {
@@ -277,6 +313,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'POST' && pathname === '/api/review/stop') return await handleStopReview(req, res);
       if (req.method === 'POST' && pathname === '/api/post-note') return await handlePostNote(req, res);
       if (pathname === '/api/settings') return await handleSettings(req, res);
+      if (pathname === '/api/env') return await handleEnvSettings(req, res);
       if (pathname === '/api/knowledge') return await handleKnowledgeCollection(req, res);
       const kbItemMatch = pathname.match(/^\/api\/knowledge\/([\w-]+)$/);
       if (kbItemMatch) return await handleKnowledgeItem(req, res, kbItemMatch[1]);
