@@ -101,16 +101,46 @@
   .engine-test-result.ok { color: var(--green); }
   .engine-test-result.err { color: var(--red); }
 
-  /* ---- top-level tabs: Merge Requests / Developers (own toolbar, not tied
-     to a single project's MR list, so a later multi-project switch only
-     needs to change what's inside the Merge Requests section) ---- */
-  .top-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
-  .top-tab {
-    background: var(--panel); border: 1px solid var(--border); color: var(--muted);
-    border-radius: 12px; padding: 9px 16px; font-size: 13px; cursor: pointer; backdrop-filter: blur(14px);
+  /* ---- developer analytics page ---- */
+  .dev-page-body { display: flex; gap: 14px; align-items: flex-start; min-width: 0; }
+  .dev-roster {
+    flex: 0 0 220px; display: flex; flex-direction: column; gap: 4px;
+    max-height: 75vh; overflow-y: auto; padding-inline-start: 4px; border-inline-start: 1px solid var(--border);
   }
-  .top-tab.active { color: var(--cyan); border-color: var(--cyan); background: rgba(52,227,227,.08); }
-  .top-tab:hover { color: var(--text); }
+  .dev-roster-item {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 10px; cursor: pointer; font-size: 13px; color: var(--text);
+  }
+  .dev-roster-item:hover { border-color: var(--border-strong); }
+  .dev-roster-item.active { border-color: var(--cyan); background: rgba(52,227,227,.1); }
+  .dev-main { flex: 1; min-width: 0; }
+  @media (max-width: 720px) {
+    .dev-page-body { flex-direction: column; }
+    .dev-roster { flex: 0 0 auto; width: 100%; max-height: 30vh; border-inline-start: none; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-direction: row; flex-wrap: wrap; }
+  }
+  .date-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 14px; }
+  .date-filter .field { min-width: 130px; }
+  .date-filter input[type=date] { margin-bottom: 0; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat-box { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+  .stat-box .n { font-size: 22px; font-weight: 800; }
+  .stat-box .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .stat-box.rt .n { color: var(--red); }
+  .stat-box.unk .n { color: var(--dim); }
+  .chart-wrap { margin-bottom: 18px; overflow-x: auto; }
+  .chart-legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 4px; vertical-align: -1px; }
+  .month-group { margin-bottom: 14px; }
+  .month-group h4 { font-size: 13px; color: var(--cyan); margin: 0 0 8px; }
+  .task-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 7px 0; border-top: 1px dashed var(--border); font-size: 12px;
+  }
+  .task-row:first-child { border-top: none; }
+  .rt-badge { border-radius: 6px; padding: 1px 8px; font-size: 11px; }
+  .rt-badge.yes { background: rgba(255,107,129,.15); color: var(--red); }
+  .rt-badge.no { background: rgba(65,224,138,.15); color: var(--green); }
+  .rt-badge.unk { background: rgba(120,140,200,.12); color: var(--dim); }
 
   /* ---- layout ---- */
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -223,17 +253,12 @@
   .panel-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
   .panel-tab:hover { color: var(--text); background: transparent; }
 
-  /* ---- developers view ---- */
-  .dev-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: rgba(0,0,0,.15); }
-  .dev-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-  .dev-name { font-weight: 700; font-size: 14px; }
+  /* ---- developer score badges & manual rating form (used on the analytics page) ---- */
   .score-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 4px 10px; font-size: 12px; }
   .score-badge .num { font-weight: 800; font-size: 15px; }
   .score-good { background: rgba(65,224,138,.15); color: var(--green); }
   .score-mid { background: rgba(255,179,71,.15); color: var(--amber); }
   .score-bad { background: rgba(255,107,129,.15); color: var(--red); }
-  .work-item { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--border); font-size: 12px; }
-  .work-item:first-of-type { border-top: none; }
   .rating-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; margin-top: 10px; font-size: 12px; }
   .rating-grid select { width: 70px; margin-bottom: 0; padding: 4px 6px; }
   details.dev-rating summary { cursor: pointer; color: var(--muted); font-size: 12px; margin-top: 8px; }
@@ -307,6 +332,7 @@
     <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
     <label class="check badge"><input type="checkbox" id="autoReview" /> ریویوی خودکار</label>
     <button class="ghost" id="refreshBtn">🔄 بروزرسانی</button>
+    <button class="ghost" id="devAnalyticsBtn">📊 آنالیز دولوپرها</button>
     <button class="gear" id="settingsBtn" title="تنظیمات">⚙</button>
   </div>
 </header>
@@ -316,16 +342,8 @@
   <button id="bannerSettingsBtn">تنظیم مسیر پروژه</button>
 </div>
 
-<!-- ---- top-level toolbar: which project view is showing. Developers lives
-     here (not inside the MR card) since it's headed toward covering every
-     configured project, not just the one the MR tabs are currently scoped
-     to. ---- -->
-<nav class="top-tabs">
-  <button class="top-tab active" id="ptMr">Merge Requestها</button>
-  <button class="top-tab" id="ptDev">👤 توسعه‌دهنده‌ها</button>
-</nav>
-
-<!-- ---- merge requests ---- -->
+<!-- ---- merge requests (the default/only view now that Developer Analytics
+     moved to its own full page behind the toolbar button) ---- -->
 <section class="card" id="mrPanelWrap">
   <div class="settings-row">
     <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
@@ -340,10 +358,21 @@
   </div>
 </section>
 
-<!-- ---- developers ---- -->
-<section class="card" id="devPanelWrap" hidden>
-  <p class="meta">فقط کسانی که الان حداقل یک Merge Request باز دارند اینجا دیده می‌شوند. امتیاز خودکار از فعالیت اخیر و یافته‌های ریویوهای خودمان ساخته می‌شود؛ امتیاز دستی نظر خودت است و جدا نگه داشته می‌شود.</p>
-  <div id="devList"><div class="empty">در حال بارگذاری…</div></div>
+<!-- ---- developer analytics: a full page, not a tab inside the MR card —
+     opened from the toolbar's "📊 آنالیز دولوپرها" button, replaces the MR
+     view while open. Roster on the right (RTL start side), selected
+     developer's chart/stats/task-list in the main area. ---- -->
+<section class="card" id="devPage" hidden>
+  <div class="row" style="justify-content:space-between; margin-bottom:12px">
+    <h3 style="margin:0">📊 آنالیز دولوپرها</h3>
+    <button class="ghost" id="devBackBtn">→ بازگشت به Merge Requestها</button>
+  </div>
+  <div class="dev-page-body">
+    <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
+    <div class="dev-main" id="devMain">
+      <div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div>
+    </div>
+  </div>
 </section>
 
 <!-- ---- model picker modal ---- -->
@@ -1098,32 +1127,25 @@ async function deleteKb(id) {
 }
 
 
-// ---- panel tabs: Merge Requests / Developers ------------------------------
-document.getElementById('ptMr').onclick = () => switchPanel('mr');
-document.getElementById('ptDev').onclick = () => switchPanel('dev');
+// ---- developer analytics page ----------------------------------------------
+// A full page (not a tab) behind the toolbar's "📊 آنالیز دولوپرها" button:
+// roster on the right (RTL start side), selected developer's chart/stats/
+// task-list in the main area. Fields here are deliberately per-record (see
+// lib/devAnalytics.js) so a later added metric is just another column/badge,
+// not a restructure.
+const DEV = { roster: [], selected: null, analytics: null, score: null, since: '', until: '' };
 
-function switchPanel(which) {
-  document.getElementById('ptMr').classList.toggle('active', which === 'mr');
-  document.getElementById('ptDev').classList.toggle('active', which === 'dev');
-  document.getElementById('mrPanelWrap').hidden = which !== 'mr';
-  document.getElementById('devPanelWrap').hidden = which !== 'dev';
-  if (which === 'dev') loadDevelopers();
+document.getElementById('devAnalyticsBtn').onclick = openDevPage;
+document.getElementById('devBackBtn').onclick = closeDevPage;
+
+function openDevPage() {
+  document.getElementById('mrPanelWrap').hidden = true;
+  document.getElementById('devPage').hidden = false;
+  if (!DEV.roster.length) loadDevRoster();
 }
-
-// ---- developers ------------------------------------------------------------
-const DEV = { developers: [], ratingParams: [], openRatingFor: null };
-
-async function loadDevelopers() {
-  const box = document.getElementById('devList');
-  try {
-    const data = await api('/api/developers');
-    DEV.developers = data.developers;
-    DEV.ratingParams = data.ratingParams;
-  } catch (e) {
-    box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
-    return;
-  }
-  renderDevelopers();
+function closeDevPage() {
+  document.getElementById('devPage').hidden = true;
+  document.getElementById('mrPanelWrap').hidden = false;
 }
 
 function scoreClass(score) {
@@ -1133,76 +1155,187 @@ function scoreClass(score) {
   return 'score-bad';
 }
 
-function renderDevelopers() {
-  const box = document.getElementById('devList');
-  if (!DEV.developers.length) { box.innerHTML = '<div class="empty">هیچ توسعه‌دهنده‌ای با Merge Request باز پیدا نشد.</div>'; return; }
+async function loadDevRoster() {
+  const box = document.getElementById('devRoster');
+  try {
+    const data = await api('/api/developers/roster');
+    DEV.roster = data.authors;
+  } catch (e) {
+    box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+    return;
+  }
+  renderDevRoster();
+}
 
-  box.innerHTML = DEV.developers.map((dev) => {
-    const auto = dev.auto || {};
-    const autoBadge = auto.score == null
-      ? '<span class="score-badge">امتیاز خودکار: بدون داده</span>'
-      : '<span class="score-badge ' + scoreClass(auto.score) + '" title="' + esc(auto.reason || '') + '">امتیاز خودکار: <span class="num">' + auto.score + '</span></span>';
-    const manualBadge = dev.ratingOverall != null
-      ? '<span class="score-badge ' + scoreClass(dev.ratingOverall) + '">امتیاز دستی: <span class="num">' + dev.ratingOverall + '</span></span>'
-      : '<span class="score-badge">امتیاز دستی: ثبت نشده</span>';
-
-    const work = dev.currentWork.map((w) => (
-      '<div class="work-item">' +
-        '<span class="order-badge" title="ترتیب merge">' + esc(w.mergeOrder) + '</span>' +
-        '<a href="' + esc(w.webUrl) + '" target="_blank" rel="noreferrer">!' + esc(w.iid) + ' — ' + esc(w.title) + '</a>' +
-        (w.task ? ' <span class="task-pill">' + esc(w.task) + '</span>' : '') +
-        branchPill(w) +
-        (w.draft ? ' <span class="tag">Draft</span>' : '') +
-        ' <span class="tag">بروزرسانی: ' + esc(new Date(w.updatedAt).toLocaleString('fa-IR')) + '</span>' +
-      '</div>'
-    )).join('');
-
-    const ratingOpen = DEV.openRatingFor === dev.author;
-    const ratingForm = ratingOpen ? renderRatingForm(dev) : '';
-
-    return '<div class="dev-card">' +
-      '<div class="dev-head">' +
-        '<span class="dev-name">👤 ' + esc(dev.displayName) + '</span>' +
-        '<div class="row" style="gap:6px">' + autoBadge + manualBadge + '</div>' +
-      '</div>' +
-      work +
-      '<details class="dev-rating" ' + (ratingOpen ? 'open' : '') + '><summary data-toggle-rating="' + esc(dev.author) + '">امتیازدهی دستی</summary>' + ratingForm + '</details>' +
-    '</div>';
-  }).join('');
-
-  box.querySelectorAll('[data-toggle-rating]').forEach((el) => {
-    el.parentElement.addEventListener('toggle', (e) => {
-      DEV.openRatingFor = e.target.open ? el.dataset.toggleRating : null;
-      if (e.target.open) renderDevelopers();
-    });
-  });
-  box.querySelectorAll('[data-save-rating]').forEach((el) => {
-    el.onclick = () => saveRating(el.dataset.saveRating);
+function renderDevRoster() {
+  const box = document.getElementById('devRoster');
+  if (!DEV.roster.length) { box.innerHTML = '<div class="empty">هیچ توسعه‌دهنده‌ای پیدا نشد.</div>'; return; }
+  box.innerHTML = DEV.roster.map((d) => (
+    '<div class="dev-roster-item ' + (DEV.selected === d.username ? 'active' : '') + '" data-username="' + esc(d.username) + '">👤 ' + esc(d.name) + '</div>'
+  )).join('');
+  box.querySelectorAll('[data-username]').forEach((el) => {
+    el.onclick = () => selectDeveloper(el.dataset.username);
   });
 }
 
-function renderRatingForm(dev) {
-  const scores = (dev.rating && dev.rating.scores) || {};
-  const note = (dev.rating && dev.rating.note) || '';
-  const rows = DEV.ratingParams.map((p) => {
-    const current = scores[p.key] || 3;
+async function selectDeveloper(username) {
+  DEV.selected = username;
+  renderDevRoster();
+  await loadDevMain();
+}
+
+async function loadDevMain() {
+  const main = document.getElementById('devMain');
+  if (!DEV.selected) { main.innerHTML = '<div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div>'; return; }
+  main.innerHTML = '<div class="empty">در حال محاسبه… (چند ثانیه طول می‌کشد — برای هر MR باید نویسنده‌های برنچش را از گیت‌لب بخوانیم)</div>';
+
+  const params = new URLSearchParams();
+  if (DEV.since) params.set('since', DEV.since);
+  if (DEV.until) params.set('until', DEV.until);
+
+  try {
+    const [analytics, score] = await Promise.all([
+      api('/api/developers/' + encodeURIComponent(DEV.selected) + '/analytics?' + params.toString()),
+      api('/api/developers/' + encodeURIComponent(DEV.selected) + '/score'),
+    ]);
+    DEV.analytics = analytics;
+    DEV.score = score;
+  } catch (e) {
+    main.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+    return;
+  }
+  renderDevMain();
+}
+
+function renderDevMain() {
+  const main = document.getElementById('devMain');
+  const a = DEV.analytics;
+  const scoreData = DEV.score || {};
+  const displayName = (DEV.roster.find((d) => d.username === DEV.selected) || {}).name || DEV.selected;
+
+  const auto = scoreData.auto || {};
+  const autoBadge = auto.score == null
+    ? '<span class="score-badge">امتیاز خودکار: بدون داده</span>'
+    : '<span class="score-badge ' + scoreClass(auto.score) + '" title="' + esc(auto.reason || '') + '">امتیاز خودکار: <span class="num">' + auto.score + '</span></span>';
+  const manualBadge = scoreData.ratingOverall != null
+    ? '<span class="score-badge ' + scoreClass(scoreData.ratingOverall) + '">امتیاز دستی: <span class="num">' + scoreData.ratingOverall + '</span></span>'
+    : '<span class="score-badge">امتیاز دستی: ثبت نشده</span>';
+
+  main.innerHTML =
+    '<div class="row" style="justify-content:space-between; margin-bottom:10px">' +
+      '<strong>👤 ' + esc(displayName) + '</strong>' +
+      '<div class="row" style="gap:6px">' + autoBadge + manualBadge + '</div>' +
+    '</div>' +
+    '<div class="date-filter">' +
+      '<div class="field"><label>از تاریخ</label><input type="date" id="devSince" value="' + esc(DEV.since) + '" /></div>' +
+      '<div class="field"><label>تا تاریخ</label><input type="date" id="devUntil" value="' + esc(DEV.until) + '" /></div>' +
+      '<button id="devFilterApply">اعمال فیلتر</button>' +
+      '<button class="ghost" id="devFilterClear">پاک کردن</button>' +
+    '</div>' +
+    '<div class="stat-grid">' +
+      '<div class="stat-box"><div class="n">' + a.totalMRs + '</div><div class="l">کل Merge Requestها (از گیت‌لب)</div></div>' +
+      '<div class="stat-box rt"><div class="n">' + a.roundTripMRs + '</div><div class="l">رفت‌وبرگشتی (بیش از یک نفر روی برنچ)</div></div>' +
+      '<div class="stat-box unk"><div class="n">' + a.uncheckedMRs + '</div><div class="l">نامشخص (برنچ حذف‌شده یا خارج از سقف بررسی)</div></div>' +
+    '</div>' +
+    '<div class="chart-legend">' +
+      '<span><span class="sw" style="background:var(--green)"></span>تمیز</span>' +
+      '<span><span class="sw" style="background:var(--red)"></span>رفت‌وبرگشتی</span>' +
+      '<span><span class="sw" style="background:var(--dim)"></span>نامشخص</span>' +
+    '</div>' +
+    '<div class="chart-wrap">' + renderMonthChart(a.months) + '</div>' +
+    renderRatingSection(scoreData) +
+    '<h4 style="margin:16px 0 6px">لیست تسک‌ها بر اساس ماه</h4>' +
+    (a.months.length ? a.months.map(renderMonthGroup).join('') : '<div class="empty">در این بازه چیزی پیدا نشد.</div>');
+
+  document.getElementById('devFilterApply').onclick = () => {
+    DEV.since = document.getElementById('devSince').value;
+    DEV.until = document.getElementById('devUntil').value;
+    loadDevMain();
+  };
+  document.getElementById('devFilterClear').onclick = () => {
+    DEV.since = ''; DEV.until = '';
+    loadDevMain();
+  };
+  const saveBtn = main.querySelector('[data-save-rating]');
+  if (saveBtn) saveBtn.onclick = () => saveDevRating(DEV.selected);
+}
+
+function renderMonthGroup(m) {
+  const rows = m.tasks.map((t) => {
+    const rtBadge = t.roundTrip === true ? '<span class="rt-badge yes">رفت‌وبرگشتی</span>'
+      : t.roundTrip === false ? '<span class="rt-badge no">تمیز</span>'
+      : '<span class="rt-badge unk">نامشخص</span>';
+    return '<div class="task-row">' +
+      (t.task ? '<span class="task-pill">' + esc(t.task) + '</span>' : '') +
+      '<a href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
+      branchPill(t) +
+      rtBadge +
+      '<span class="tag">' + esc(t.state) + '</span>' +
+      (t.branchAuthorCount != null ? '<span class="tag">' + t.branchAuthorCount + ' نویسنده روی برنچ</span>' : '') +
+    '</div>';
+  }).join('');
+  return '<div class="month-group"><h4>' + esc(m.month) + ' — ' + m.mrCount + ' MR</h4>' + rows + '</div>';
+}
+
+// A small dependency-free stacked bar chart: per month, mrCount split into
+// clean / round-trip / unknown segments — exactly the numbers in the stat
+// boxes and task list below it, just visualized. Point 7 ("more params
+// later") just means another segment/color here, not a rewrite.
+function renderMonthChart(months) {
+  if (!months.length) return '<div class="empty">داده‌ای برای رسم نمودار نیست.</div>';
+  const W = Math.max(360, months.length * 70);
+  const H = 170;
+  const barW = 40;
+  const gap = (W - months.length * barW) / (months.length + 1);
+  const maxCount = Math.max(1, ...months.map((m) => m.mrCount));
+  const scale = (H - 40) / maxCount;
+
+  let bars = '';
+  months.forEach((m, i) => {
+    const x = gap + i * (barW + gap);
+    const clean = Math.max(0, m.mrCount - m.roundTripCount - m.uncheckedCount);
+    const segments = [
+      { count: clean, color: 'var(--green)' },
+      { count: m.roundTripCount, color: 'var(--red)' },
+      { count: m.uncheckedCount, color: 'var(--dim)' },
+    ];
+    let y = H - 20;
+    for (const seg of segments) {
+      const h = seg.count * scale;
+      if (h > 0) {
+        y -= h;
+        bars += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + barW + '" height="' + h.toFixed(1) + '" fill="' + seg.color + '" rx="2"></rect>';
+      }
+    }
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 4) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(m.month) + '</text>';
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (y - 4).toFixed(1) + '" text-anchor="middle" font-size="10" fill="var(--text)">' + m.mrCount + '</text>';
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' + bars + '</svg>';
+}
+
+function renderRatingSection(scoreData) {
+  const params = scoreData.ratingParams || [];
+  const rows = params.map((p) => {
+    const current = (scoreData.rating && scoreData.rating.scores[p.key]) || 3;
     const options = [1, 2, 3, 4, 5].map((n) => '<option value="' + n + '" ' + (n === current ? 'selected' : '') + '>' + n + '</option>').join('');
     return '<label>' + esc(p.label) + '</label><select data-param="' + esc(p.key) + '">' + options + '</select>';
   }).join('');
-  return '<div class="rating-grid">' + rows + '</div>' +
-    '<textarea data-note placeholder="یادداشت (اختیاری)" style="min-height:60px;margin-top:8px">' + esc(note) + '</textarea>' +
-    '<button data-save-rating="' + esc(dev.author) + '">ذخیره امتیاز</button>' +
-    (dev.rating ? '<span class="tag" style="margin-inline-start:8px">آخرین بروزرسانی: ' + esc(new Date(dev.rating.updatedAt).toLocaleString('fa-IR')) + '</span>' : '');
+  return '<details class="dev-rating" style="margin:14px 0"><summary>امتیازدهی دستی</summary>' +
+    '<div class="rating-grid">' + rows + '</div>' +
+    '<textarea data-note placeholder="یادداشت (اختیاری)" style="min-height:60px;margin-top:8px">' + esc((scoreData.rating && scoreData.rating.note) || '') + '</textarea>' +
+    '<button data-save-rating="1">ذخیره امتیاز</button>' +
+    (scoreData.rating ? '<span class="tag" style="margin-inline-start:8px">آخرین بروزرسانی: ' + esc(new Date(scoreData.rating.updatedAt).toLocaleString('fa-IR')) + '</span>' : '') +
+  '</details>';
 }
 
-async function saveRating(author) {
-  const card = Array.from(document.querySelectorAll('.dev-card')).find((c) => c.querySelector('[data-save-rating="' + CSS.escape(author) + '"]'));
+async function saveDevRating(author) {
+  const main = document.getElementById('devMain');
   const scores = {};
-  card.querySelectorAll('[data-param]').forEach((sel) => { scores[sel.dataset.param] = Number(sel.value); });
-  const note = card.querySelector('[data-note]').value;
+  main.querySelectorAll('[data-param]').forEach((sel) => { scores[sel.dataset.param] = Number(sel.value); });
+  const note = main.querySelector('[data-note]').value;
   try {
     await api('/api/developers/' + encodeURIComponent(author) + '/rating', { method: 'POST', body: JSON.stringify({ scores, note }) });
-    await loadDevelopers();
+    await loadDevMain();
   } catch (e) {
     alert('خطا در ذخیره امتیاز: ' + e.message);
   }

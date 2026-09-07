@@ -14,6 +14,7 @@ const envFile = require('./lib/envFile');
 const activity = require('./lib/activity');
 const ratings = require('./lib/ratings');
 const task = require('./lib/task');
+const devAnalytics = require('./lib/devAnalytics');
 const { secret, listModels, listEngines, engineStatus, testEngine, ENGINES } = require('./lib/ai_bridge');
 
 const PORT = process.env.PORT || 8078;
@@ -225,11 +226,51 @@ async function handleDevelopers(req, res) {
   return sendJson(res, 200, { developers, ratingParams: ratings.PARAMS });
 }
 
+// Standalone from handleDevelopers (which only covers people with an open
+// MR right now) — the analytics page can select anyone in the full roster,
+// including someone with nothing open at the moment.
+async function handleDeveloperScore(req, res, author) {
+  return sendJson(res, 200, {
+    auto: activity.computeAutoScore(author),
+    rating: ratings.get(author),
+    ratingOverall: ratings.overall(ratings.get(author)),
+    ratingParams: ratings.PARAMS,
+  });
+}
+
 async function handleDeveloperRating(req, res, author) {
   if (req.method === 'GET') return sendJson(res, 200, ratings.get(author));
   const body = await readJsonBody(req);
   if (!body) return sendJson(res, 400, { error: 'invalid JSON body' });
   return sendJson(res, 200, ratings.set(author, body.scores || {}, body.note));
+}
+
+// Roster for the Developer Analytics page's right-hand list — everyone who
+// has ever opened an MR (from GitLab's own history), not just people with
+// something open right now like handleDevelopers above.
+async function handleDeveloperRoster(req, res) {
+  try {
+    const authors = await gitlab.listAllAuthors();
+    return sendJson(res, 200, { authors });
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
+}
+
+// The analytics page itself: total MR history, the "round trip" signal
+// (>1 person committed to the branch), grouped by month — see
+// lib/devAnalytics.js for how each is computed. ?since=&until= (YYYY-MM-DD)
+// scope it to a date range; omitted means all-time.
+async function handleDeveloperAnalytics(req, res, author, query) {
+  try {
+    const data = await devAnalytics.buildDeveloperAnalytics(author, {
+      since: query.get('since') || undefined,
+      until: query.get('until') || undefined,
+    });
+    return sendJson(res, 200, data);
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
 }
 
 async function handleModels(req, res) {
@@ -402,7 +443,8 @@ function scheduleAutoTick() {
 
 const server = http.createServer(async (req, res) => {
   try {
-    const pathname = new URL(req.url, 'http://internal').pathname;
+    const url = new URL(req.url, 'http://internal');
+    const pathname = url.pathname;
 
     if (req.method === 'POST' && pathname === '/webhook/gitlab') {
       return await handleWebhook(req, res);
@@ -422,11 +464,16 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && pathname === '/api/status') return await handleStatus(req, res);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       if (req.method === 'GET' && pathname === '/api/developers') return await handleDevelopers(req, res);
+      if (req.method === 'GET' && pathname === '/api/developers/roster') return await handleDeveloperRoster(req, res);
       if (req.method === 'GET' && pathname === '/api/models') return await handleModels(req, res);
       if (pathname === '/api/engines') return await handleEngines(req, res);
       if (req.method === 'POST' && pathname === '/api/engines/test') return await handleEngineTest(req, res);
+      const analyticsMatch = pathname.match(/^\/api\/developers\/([^/]+)\/analytics$/);
+      if (analyticsMatch) return await handleDeveloperAnalytics(req, res, decodeURIComponent(analyticsMatch[1]), url.searchParams);
       const ratingMatch = pathname.match(/^\/api\/developers\/([^/]+)\/rating$/);
       if (ratingMatch) return await handleDeveloperRating(req, res, decodeURIComponent(ratingMatch[1]));
+      const scoreMatch = pathname.match(/^\/api\/developers\/([^/]+)\/score$/);
+      if (scoreMatch) return await handleDeveloperScore(req, res, decodeURIComponent(scoreMatch[1]));
       if (req.method === 'GET' && pathname === '/api/jobs') return sendJson(res, 200, jobs.list());
       if (req.method === 'POST' && pathname === '/api/review') return await handleStartReview(req, res);
       if (req.method === 'POST' && pathname === '/api/review/stop') return await handleStopReview(req, res);
