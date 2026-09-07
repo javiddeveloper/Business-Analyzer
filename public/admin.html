@@ -368,7 +368,13 @@
     <button class="ghost" id="devBackBtn">→ بازگشت به Merge Requestها</button>
   </div>
   <div class="dev-page-body">
-    <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
+    <div>
+      <div class="row" style="justify-content:space-between; margin-bottom:6px">
+        <span class="tag" id="devRosterCacheNote"></span>
+        <button class="ghost" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب" style="padding:2px 8px; font-size:11px">🔄</button>
+      </div>
+      <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
+    </div>
     <div class="dev-main" id="devMain">
       <div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div>
     </div>
@@ -1155,11 +1161,13 @@ function scoreClass(score) {
   return 'score-bad';
 }
 
-async function loadDevRoster() {
+async function loadDevRoster(force) {
   const box = document.getElementById('devRoster');
   try {
-    const data = await api('/api/developers/roster');
+    const data = await api('/api/developers/roster' + (force ? '?refresh=1' : ''));
     DEV.roster = data.authors;
+    DEV.rosterCachedAt = data.cachedAt;
+    DEV.rosterFromCache = data.fromCache;
   } catch (e) {
     box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
     return;
@@ -1167,8 +1175,20 @@ async function loadDevRoster() {
   renderDevRoster();
 }
 
+// e.g. "3 دقیقه پیش" — used for both the roster and the per-developer cache notes.
+function relativeTime(ms) {
+  const sec = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (sec < 60) return 'همین الان';
+  const min = Math.round(sec / 60);
+  if (min < 60) return min + ' دقیقه پیش';
+  const hr = Math.round(min / 60);
+  return hr + ' ساعت پیش';
+}
+
 function renderDevRoster() {
   const box = document.getElementById('devRoster');
+  const note = document.getElementById('devRosterCacheNote');
+  if (note) note.textContent = DEV.rosterCachedAt ? (DEV.rosterFromCache ? 'کش‌شده — ' : 'تازه — ') + relativeTime(DEV.rosterCachedAt) : '';
   if (!DEV.roster.length) { box.innerHTML = '<div class="empty">هیچ توسعه‌دهنده‌ای پیدا نشد.</div>'; return; }
   box.innerHTML = DEV.roster.map((d) => (
     '<div class="dev-roster-item ' + (DEV.selected === d.username ? 'active' : '') + '" data-username="' + esc(d.username) + '">👤 ' + esc(d.name) + '</div>'
@@ -1180,18 +1200,25 @@ function renderDevRoster() {
 
 async function selectDeveloper(username) {
   DEV.selected = username;
+  DEV.analytics = null; // otherwise the previous person's rendered data lingers, with no loading indicator, while this one's cache miss is computing
   renderDevRoster();
   await loadDevMain();
 }
 
-async function loadDevMain() {
+async function loadDevMain(force) {
   const main = document.getElementById('devMain');
   if (!DEV.selected) { main.innerHTML = '<div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div>'; return; }
-  main.innerHTML = '<div class="empty">در حال محاسبه… (چند ثانیه طول می‌کشد — برای هر MR باید نویسنده‌های برنچش را از گیت‌لب بخوانیم)</div>';
+  // A cache hit answers in well under a second; only a genuine miss/refresh
+  // pays the "read every MR's branch authors" cost, so this message only
+  // shows up when it's actually true.
+  if (force || !DEV.analytics) {
+    main.innerHTML = '<div class="empty">در حال محاسبه… (چند ثانیه طول می‌کشد — برای هر MR باید نویسنده‌های برنچش را از گیت‌لب بخوانیم)</div>';
+  }
 
   const params = new URLSearchParams();
   if (DEV.since) params.set('since', DEV.since);
   if (DEV.until) params.set('until', DEV.until);
+  if (force) params.set('refresh', '1');
 
   try {
     const [analytics, score] = await Promise.all([
@@ -1221,10 +1248,18 @@ function renderDevMain() {
     ? '<span class="score-badge ' + scoreClass(scoreData.ratingOverall) + '">امتیاز دستی: <span class="num">' + scoreData.ratingOverall + '</span></span>'
     : '<span class="score-badge">امتیاز دستی: ثبت نشده</span>';
 
+  const cacheNote = a.cachedAt
+    ? '<span class="tag">' + (a.fromCache ? 'کش‌شده — ' : 'همین الان محاسبه شد — ') + esc(relativeTime(a.cachedAt)) + '</span>'
+    : '';
+
   main.innerHTML =
     '<div class="row" style="justify-content:space-between; margin-bottom:10px">' +
       '<strong>👤 ' + esc(displayName) + '</strong>' +
       '<div class="row" style="gap:6px">' + autoBadge + manualBadge + '</div>' +
+    '</div>' +
+    '<div class="row" style="gap:8px; margin-bottom:10px">' +
+      cacheNote +
+      '<button class="ghost" id="devRefreshBtn">🔄 بروزرسانی این فرد</button>' +
     '</div>' +
     '<div class="date-filter">' +
       '<div class="field"><label>از تاریخ</label><input type="date" id="devSince" value="' + esc(DEV.since) + '" /></div>' +
@@ -1256,6 +1291,7 @@ function renderDevMain() {
     DEV.since = ''; DEV.until = '';
     loadDevMain();
   };
+  document.getElementById('devRefreshBtn').onclick = () => loadDevMain(true);
   const saveBtn = main.querySelector('[data-save-rating]');
   if (saveBtn) saveBtn.onclick = () => saveDevRating(DEV.selected);
 }
@@ -1271,7 +1307,7 @@ function renderMonthGroup(m) {
       branchPill(t) +
       rtBadge +
       '<span class="tag">' + esc(t.state) + '</span>' +
-      (t.branchAuthorCount != null ? '<span class="tag">' + t.branchAuthorCount + ' نویسنده روی برنچ</span>' : '') +
+      (t.otherAuthors && t.otherAuthors.length ? '<span class="tag" style="color:var(--red)">کامیت از: ' + esc(t.otherAuthors.join('، ')) + '</span>' : '') +
     '</div>';
   }).join('');
   return '<div class="month-group"><h4>' + esc(m.month) + ' — ' + m.mrCount + ' MR</h4>' + rows + '</div>';

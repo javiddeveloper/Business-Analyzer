@@ -15,6 +15,13 @@ const activity = require('./lib/activity');
 const ratings = require('./lib/ratings');
 const task = require('./lib/task');
 const devAnalytics = require('./lib/devAnalytics');
+const cache = require('./lib/cache');
+
+// Roster changes rarely (someone joins/leaves the project); one developer's
+// analytics can shift sooner (a new commit landing on an open MR's branch),
+// so it gets a shorter shelf life.
+const ROSTER_CACHE_TTL_MS = 15 * 60 * 1000;
+const ANALYTICS_CACHE_TTL_MS = 20 * 60 * 1000;
 const { secret, listModels, listEngines, engineStatus, testEngine, ENGINES } = require('./lib/ai_bridge');
 
 const PORT = process.env.PORT || 8078;
@@ -247,11 +254,14 @@ async function handleDeveloperRating(req, res, author) {
 
 // Roster for the Developer Analytics page's right-hand list — everyone who
 // has ever opened an MR (from GitLab's own history), not just people with
-// something open right now like handleDevelopers above.
-async function handleDeveloperRoster(req, res) {
+// something open right now like handleDevelopers above. Cached: it's a
+// multi-page GitLab crawl (MR history + project members) for something that
+// changes at most a few times a month.
+async function handleDeveloperRoster(req, res, query) {
   try {
-    const authors = await gitlab.listAllAuthors();
-    return sendJson(res, 200, { authors });
+    const force = query.get('refresh') === '1';
+    const { value, at, fromCache } = await cache.cached('dev-roster', 'all', ROSTER_CACHE_TTL_MS, () => gitlab.listAllAuthors(), { force });
+    return sendJson(res, 200, { authors: value, cachedAt: at, fromCache });
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
   }
@@ -260,14 +270,24 @@ async function handleDeveloperRoster(req, res) {
 // The analytics page itself: total MR history, the "round trip" signal
 // (>1 person committed to the branch), grouped by month — see
 // lib/devAnalytics.js for how each is computed. ?since=&until= (YYYY-MM-DD)
-// scope it to a date range; omitted means all-time.
+// scope it to a date range; omitted means all-time. Cached per (author,
+// since, until): this is the call that fires a repository/commits lookup
+// per MR and can take 15+ seconds even with apiFetch's timeout, so it's the
+// one most worth not re-paying on every click. ?refresh=1 bypasses the cache
+// — someone just pushed a fix-up commit and wants the round-trip count to
+// reflect it right now, not in up to 20 minutes.
 async function handleDeveloperAnalytics(req, res, author, query) {
   try {
-    const data = await devAnalytics.buildDeveloperAnalytics(author, {
-      since: query.get('since') || undefined,
-      until: query.get('until') || undefined,
-    });
-    return sendJson(res, 200, data);
+    const since = query.get('since') || undefined;
+    const until = query.get('until') || undefined;
+    const force = query.get('refresh') === '1';
+    const key = `${author}|${since || ''}|${until || ''}`;
+    const { value, at, fromCache } = await cache.cached(
+      'dev-analytics', key, ANALYTICS_CACHE_TTL_MS,
+      () => devAnalytics.buildDeveloperAnalytics(author, { since, until }),
+      { force }
+    );
+    return sendJson(res, 200, { ...value, cachedAt: at, fromCache });
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
   }
@@ -464,7 +484,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && pathname === '/api/status') return await handleStatus(req, res);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       if (req.method === 'GET' && pathname === '/api/developers') return await handleDevelopers(req, res);
-      if (req.method === 'GET' && pathname === '/api/developers/roster') return await handleDeveloperRoster(req, res);
+      if (req.method === 'GET' && pathname === '/api/developers/roster') return await handleDeveloperRoster(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/models') return await handleModels(req, res);
       if (pathname === '/api/engines') return await handleEngines(req, res);
       if (req.method === 'POST' && pathname === '/api/engines/test') return await handleEngineTest(req, res);
