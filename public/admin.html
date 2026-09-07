@@ -926,7 +926,8 @@ function renderMrPanel() {
     const bits = [
       job.reviewMode === 'agent'
         ? '🤖 ایجنت کل پروژه' + (st.turns ? ' (' + esc(st.turns) + ' گام)' : '')
-        : '📄 فقط دیف' + (st.batches ? ' (' + esc(st.batches) + ' دسته)' : ''),
+        : '📄 فقط دیف' + (st.batches ? ' (' + esc(st.batches) + ' دسته)' : '') +
+          (job.fallbackEngine ? ' — با موتور جایگزین «' + esc(job.fallbackEngine) + '»' : ''),
       esc(st.files || 0) + ' فایل بررسی شد',
       st.skipped ? esc(st.skipped) + ' فایل رد شد' : '',
       (job.findings || []).length + ' یافته',
