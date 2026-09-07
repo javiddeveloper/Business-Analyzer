@@ -71,6 +71,35 @@
   }
   .gear:hover { transform: rotate(90deg); border-color: var(--border-strong); color: var(--text); }
 
+  /* ---- toolbar project switcher ---- */
+  .project-picker {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 30px 5px 12px; font-size: 12px; cursor: pointer;
+    max-width: 220px; appearance: none; -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  }
+  .project-picker:hover { border-color: var(--border-strong); }
+
+  /* ---- toggle switch: for settings that deserve more visual weight than a
+     plain checkbox — a bare checkbox reads as decoration in a busy toolbar,
+     easy to leave on/off by accident; a switch reads as a real state. ---- */
+  .switch-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .switch-badge.on { color: var(--green); }
+  .switch { position: relative; width: 38px; height: 22px; flex: 0 0 auto; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: 999px; background: rgba(120,140,200,.25);
+    border: 1px solid var(--border-strong); transition: background .2s, border-color .2s;
+  }
+  .switch .thumb {
+    position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--text); transition: inset-inline-start .2s;
+  }
+  .switch input:checked ~ .track { background: var(--green); border-color: var(--green); }
+  .switch input:checked ~ .thumb { inset-inline-start: calc(100% - 18px); background: #06210f; }
+
   /* ---- toolbar model picker ---- */
   .badge.pick { cursor: pointer; border: 1px solid var(--border); }
   .badge.pick:hover { border-color: var(--border-strong); background: var(--panel); }
@@ -102,14 +131,14 @@
   .engine-test-result.err { color: var(--red); }
 
   /* ---- developer analytics page ---- */
-  .dev-page-body { display: flex; gap: 14px; align-items: flex-start; min-width: 0; }
+  .dev-page-body { display: flex; gap: 20px; align-items: flex-start; min-width: 0; }
   .dev-roster {
-    flex: 0 0 220px; display: flex; flex-direction: column; gap: 4px;
-    max-height: 75vh; overflow-y: auto; padding-inline-start: 4px; border-inline-start: 1px solid var(--border);
+    flex: 0 0 240px; display: flex; flex-direction: column; gap: 6px;
+    max-height: 75vh; overflow-y: auto; padding-inline-start: 6px; padding-inline-end: 2px; border-inline-start: 1px solid var(--border);
   }
   .dev-roster-item {
     background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 8px 10px; cursor: pointer; font-size: 13px; color: var(--text);
+    padding: 10px 12px; cursor: pointer; font-size: 13px; color: var(--text);
   }
   .dev-roster-item:hover { border-color: var(--border-strong); }
   .dev-roster-item.active { border-color: var(--cyan); background: rgba(52,227,227,.1); }
@@ -118,29 +147,34 @@
     .dev-page-body { flex-direction: column; }
     .dev-roster { flex: 0 0 auto; width: 100%; max-height: 30vh; border-inline-start: none; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-direction: row; flex-wrap: wrap; }
   }
-  .date-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-bottom: 14px; }
+  .date-filter { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 18px; }
   .date-filter .field { min-width: 130px; }
   .date-filter input[type=date] { margin-bottom: 0; }
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
-  .stat-box { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
-  .stat-box .n { font-size: 22px; font-weight: 800; }
-  .stat-box .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .stat-box { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .stat-box .n { font-size: 24px; font-weight: 800; }
+  .stat-box .l { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
   .stat-box.rt .n { color: var(--red); }
   .stat-box.unk .n { color: var(--dim); }
-  .chart-wrap { margin-bottom: 18px; overflow-x: auto; }
-  .chart-legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .chart-wrap { margin-bottom: 22px; overflow-x: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .chart-legend { display: flex; gap: 16px; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
   .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 4px; vertical-align: -1px; }
-  .month-group { margin-bottom: 14px; }
-  .month-group h4 { font-size: 13px; color: var(--cyan); margin: 0 0 8px; }
-  .task-row {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-    padding: 7px 0; border-top: 1px dashed var(--border); font-size: 12px;
+  .month-group { margin-bottom: 22px; }
+  .month-group h4 { font-size: 13px; color: var(--cyan); margin: 0 0 10px; }
+  .task-cards { display: flex; flex-direction: column; gap: 8px; }
+  .task-card {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--panel-2); font-size: 12px; transition: border-color .15s;
   }
-  .task-row:first-child { border-top: none; }
-  .rt-badge { border-radius: 6px; padding: 1px 8px; font-size: 11px; }
+  .task-card:hover { border-color: var(--border-strong); }
+  .task-card .task-title { flex: 1 1 260px; min-width: 0; color: var(--text); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-card .task-project { font-size: 10px; color: var(--dim); }
+  .rt-badge { border-radius: 6px; padding: 2px 9px; font-size: 11px; }
   .rt-badge.yes { background: rgba(255,107,129,.15); color: var(--red); }
   .rt-badge.no { background: rgba(65,224,138,.15); color: var(--green); }
   .rt-badge.unk { background: rgba(120,140,200,.12); color: var(--dim); }
+  .rt-badge.na { background: rgba(120,140,200,.08); color: var(--dim); }
 
   /* ---- layout ---- */
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -149,8 +183,16 @@
   }
   .card {
     background: var(--panel); border: 1px solid var(--border); backdrop-filter: blur(14px);
-    border-radius: var(--radius); padding: 14px; min-width: 0;
+    border-radius: var(--radius); padding: 20px; min-width: 0;
   }
+
+  /* ---- a titled, bordered group for a cluster of related settings — a flat
+     row of checkboxes with no label reads as clutter; a boxed group with a
+     heading reads as "these go together, on purpose". ---- */
+  .settings-group { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+  .settings-group .settings-group-title { font-size: 12px; font-weight: 700; color: var(--cyan); margin: 0 0 10px; }
+  .settings-row { display: flex; flex-wrap: wrap; gap: 14px 20px; margin-bottom: 0; }
+  .section-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
   .banner {
     border: 1px solid rgba(255,179,71,.4); background: rgba(255,179,71,.1); color: #ffd8a8;
@@ -185,10 +227,10 @@
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
   /* ---- MR tabs: vertical so every open MR is visible at once ---- */
-  .mr-body { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+  .mr-body { display: flex; gap: 18px; align-items: flex-start; min-width: 0; }
   .tabs {
-    flex: 0 0 270px; display: flex; flex-direction: column; gap: 6px;
-    max-height: 72vh; overflow-y: auto; padding-inline-start: 4px;
+    flex: 0 0 280px; display: flex; flex-direction: column; gap: 8px;
+    max-height: 72vh; overflow-y: auto; padding-inline-start: 6px; padding-inline-end: 2px;
     border-inline-start: 1px solid var(--border);
   }
   @media (max-width: 720px) {
@@ -196,9 +238,9 @@
     .tabs { flex: 0 0 auto; width: 100%; max-height: 40vh; border-inline-start: none; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
   }
   .tab {
-    display: flex; flex-direction: column; gap: 3px; text-align: start;
+    display: flex; flex-direction: column; gap: 4px; text-align: start;
     background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
-    border-radius: 10px; padding: 8px 10px; cursor: pointer; font-size: 12px; position: relative;
+    border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 12px; position: relative;
   }
   .tab .tab-top { display: flex; align-items: center; gap: 6px; }
   .tab .order-badge {
@@ -213,7 +255,7 @@
 
   /* ---- MR panel ---- */
   .meta { color: var(--muted); font-size: 12px; }
-  .meta-grid { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 10px 0 14px; }
+  .meta-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 14px 0; }
   @media (min-width: 620px) { .meta-grid { grid-template-columns: 1fr 1fr; } }
   .note {
     background: rgba(0,0,0,.25); border: 1px solid var(--border); border-radius: 10px;
@@ -225,8 +267,8 @@
   .verdict.changes { background: rgba(255,107,129,.15); color: var(--red); }
   .empty { color: var(--dim); padding: 16px 0; text-align: center; }
   .error-box { background: rgba(255,107,129,.1); border: 1px solid rgba(255,107,129,.35); color: #ffb3bf; border-radius: 10px; padding: 10px; font-size: 13px; }
-  .finding { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-top: 10px; background: rgba(0,0,0,.2); }
-  .finding-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .finding { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-top: 14px; background: rgba(0,0,0,.2); }
+  .finding-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
   .sev { border-radius: 5px; padding: 2px 8px; font-size: 11px; flex: 0 0 auto; }
   .sev.High { background: rgba(255,107,129,.16); color: #ffb3bf; }
   .sev.Medium { background: rgba(255,179,71,.16); color: #ffd8a8; }
@@ -235,7 +277,6 @@
   .finding-note { white-space: pre-wrap; word-break: break-word; font-size: 13px; }
   .finding pre { background: #060a14; border: 1px solid var(--border); border-radius: 8px; padding: 8px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; direction: ltr; text-align: left; }
   .tag { font-size: 11px; color: var(--dim); }
-  .settings-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .branch-pill {
     display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 1px 8px;
     font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr;
@@ -328,9 +369,13 @@
 <header>
   <div class="brand"><span class="logo">🤖</span><h1>Coder Review</h1></div>
   <div class="badges">
+    <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
     <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
     <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
-    <label class="check badge"><input type="checkbox" id="autoReview" /> ریویوی خودکار</label>
+    <label class="switch-badge" id="autoReviewLabel" title="با روشن بودن این، هر MR باز به‌صورت خودکار (بدون کلیک دستی) ریویو می‌شود">
+      <span class="switch"><input type="checkbox" id="autoReview" /><span class="track"></span><span class="thumb"></span></span>
+      🔁 ریویوی خودکار
+    </label>
     <button class="ghost" id="refreshBtn">🔄 بروزرسانی</button>
     <button class="ghost" id="devAnalyticsBtn">📊 آنالیز دولوپرها</button>
     <button class="gear" id="settingsBtn" title="تنظیمات">⚙</button>
@@ -345,12 +390,15 @@
 <!-- ---- merge requests (the default/only view now that Developer Analytics
      moved to its own full page behind the toolbar button) ---- -->
 <section class="card" id="mrPanelWrap">
-  <div class="settings-row">
-    <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
-    <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
-    <label class="check"><input type="checkbox" id="setAutoPost" title="پیش‌فرض خاموش — بدون این، ریویوی خودکار/وب‌هوک فقط review/MR-<iid>.md را می‌نویسد و چیزی روی خود MR نمی‌گذارد" /> کامنت روی گیت‌لب در حالت خودکار/وب‌هوک هم ثبت شود</label>
-    <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
-    <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> 🤖 ریویوی کل پروژه با ایجنت (claude-cli)</label>
+  <div class="settings-group">
+    <p class="settings-group-title">تنظیمات ریویو</p>
+    <div class="settings-row">
+      <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
+      <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
+      <label class="check"><input type="checkbox" id="setAutoPost" title="پیش‌فرض خاموش — بدون این، ریویوی خودکار/وب‌هوک فقط review/MR-<iid>.md را می‌نویسد و چیزی روی خود MR نمی‌گذارد" /> کامنت روی گیت‌لب در حالت خودکار/وب‌هوک هم ثبت شود</label>
+      <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
+      <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> 🤖 ریویوی کل پروژه با ایجنت (claude-cli)</label>
+    </div>
   </div>
   <div id="mrError"></div>
   <div class="mr-body">
@@ -411,6 +459,7 @@
     <div class="panel-tabs" style="padding: 0 20px; margin-bottom: 0">
       <button class="panel-tab active" id="stEnv">secrets.env</button>
       <button class="panel-tab" id="stKb">📚 پایگاه دانش</button>
+      <button class="panel-tab" id="stProjects">📁 پروژه‌ها</button>
     </div>
     <div class="modal-body" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
     <div class="modal-body" id="kbPanel" hidden>
@@ -426,6 +475,15 @@
         <button class="ghost" id="kbUploadBtn">آپلود</button>
       </div>
       <div id="kbList" style="margin-top:14px"><div class="empty">در حال بارگذاری…</div></div>
+    </div>
+    <div class="modal-body" id="projectsPanel" hidden>
+      <p class="meta">هر پروژه یک ریپازیتوری گیت‌لب است، با مسیر چک‌اوت محلی خودش. تب MRها همیشه فقط «پروژه‌ی فعال» بالای صفحه را نشان می‌دهد؛ آنالیز دولوپرها همیشه همه‌ی این پروژه‌ها را با هم می‌بیند.</p>
+      <div id="projectsList" style="margin-bottom:14px"><div class="empty">در حال بارگذاری…</div></div>
+      <div class="group-title">افزودن / ویرایش پروژه</div>
+      <input type="text" id="projNewId" placeholder="شناسه‌ی عددی پروژه در گیت‌لب (Project ID)" />
+      <input type="text" id="projNewName" placeholder="نام نمایشی (اختیاری)" />
+      <input type="text" id="projNewPath" placeholder="مسیر چک‌اوت محلی روی همین سرور (مثلاً D:\\Projects\\repo)" />
+      <button id="projSaveBtn">ذخیره پروژه</button>
     </div>
     <div class="modal-foot" id="settingsFoot">
       <span class="save-state" id="settingsSaveState"></span>
@@ -507,6 +565,12 @@ function renderStatus() {
   const pp = (S.status && S.status.projectPath) || {};
   const short = (s) => (String(s).length > 42 ? String(s).slice(0, 42) + '…' : String(s));
 
+  if (S.status && S.status.projects) {
+    S.projects = S.status.projects;
+    S.activeProjectId = S.status.activeProject ? S.status.activeProject.id : S.activeProjectId;
+    renderProjectPicker();
+  }
+
   // The token's display name ("agent token"), not its machine username — a
   // Project/Group Access Token's username is an unreadable
   // project_<id>_bot_<hash>. The exact username stays in the tooltip, since
@@ -529,6 +593,7 @@ function renderStatus() {
   aiBadge.title = 'موتور فعال: ' + esc(ai.provider) + ' — ' + esc(aiState.text) + ' (برای تعویض کلیک کن)';
 
   document.getElementById('autoReview').checked = !!st.autoReview;
+  document.getElementById('autoReviewLabel').classList.toggle('on', !!st.autoReview);
   document.getElementById('setInline').checked = st.inlineComments !== false;
   document.getElementById('setSkipDrafts').checked = st.skipDrafts !== false;
   document.getElementById('setAutoPost').checked = st.autoPost !== false;
@@ -562,12 +627,14 @@ bindSetting('setAutoApprove', 'autoApprove');
 bindSetting('setAgentMode', 'agentMode');
 
 document.getElementById('autoReview').onchange = async (e) => {
+  document.getElementById('autoReviewLabel').classList.toggle('on', e.target.checked);
   try {
     const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ autoReview: e.target.checked }) });
     if (S.status) S.status.settings = next;
   } catch (err) {
     alert('خطا در ذخیره تنظیمات: ' + err.message);
     e.target.checked = !e.target.checked;
+    document.getElementById('autoReviewLabel').classList.toggle('on', e.target.checked);
   }
 };
 
@@ -692,15 +759,100 @@ document.getElementById('settingsOverlay').addEventListener('click', (e) => {
 function switchSettingsTab(which) {
   document.getElementById('stEnv').classList.toggle('active', which === 'env');
   document.getElementById('stKb').classList.toggle('active', which === 'kb');
+  document.getElementById('stProjects').classList.toggle('active', which === 'projects');
   document.getElementById('settingsBody').hidden = which !== 'env';
   document.getElementById('kbPanel').hidden = which !== 'kb';
+  document.getElementById('projectsPanel').hidden = which !== 'projects';
   // The foot's Save button only applies to secrets.env — the knowledge base
-  // saves per-item via its own inline buttons.
+  // and projects tabs save per-item via their own inline buttons.
   document.getElementById('settingsFoot').hidden = which !== 'env';
   if (which === 'kb') loadKb();
+  if (which === 'projects') loadProjectsPanel();
 }
 document.getElementById('stEnv').onclick = () => switchSettingsTab('env');
 document.getElementById('stKb').onclick = () => switchSettingsTab('kb');
+document.getElementById('stProjects').onclick = () => switchSettingsTab('projects');
+
+// ---- projects tab (settings modal) + toolbar switcher ----------------------
+async function loadProjectsPanel() {
+  const box = document.getElementById('projectsList');
+  try {
+    const data = await api('/api/projects');
+    S.projects = data.projects;
+    S.activeProjectId = data.activeId;
+  } catch (e) {
+    box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+    return;
+  }
+  renderProjectsPanel();
+}
+function renderProjectsPanel() {
+  const box = document.getElementById('projectsList');
+  if (!S.projects || !S.projects.length) { box.innerHTML = '<div class="empty">هنوز پروژه‌ای اضافه نشده.</div>'; return; }
+  box.innerHTML = S.projects.map((p) => (
+    '<div class="row" style="justify-content:space-between; border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:6px">' +
+      '<div style="min-width:0">' +
+        '<strong>' + esc(p.name) + '</strong> ' + (String(p.id) === String(S.activeProjectId) ? '<span class="tag" style="color:var(--cyan)">فعال</span>' : '') +
+        (p.fromEnv ? ' <span class="tag">(از secrets.env)</span>' : '') +
+        '<div class="tag mono" style="direction:ltr;text-align:start">شناسه: ' + esc(p.id) + (p.path ? ' — ' + esc(p.path) : ' — مسیر تنظیم نشده') + '</div>' +
+      '</div>' +
+      '<div class="row" style="flex:0 0 auto">' +
+        '<button class="ghost" data-edit-project="' + esc(p.id) + '" style="padding:4px 9px;font-size:12px">✏️ ویرایش</button>' +
+        (p.fromEnv ? '' : '<button class="danger" data-remove-project="' + esc(p.id) + '" style="padding:4px 9px;font-size:12px">حذف</button>') +
+      '</div>' +
+    '</div>'
+  )).join('');
+  box.querySelectorAll('[data-edit-project]').forEach((btn) => {
+    btn.onclick = () => {
+      const p = S.projects.find((x) => String(x.id) === btn.dataset.editProject);
+      if (!p) return;
+      document.getElementById('projNewId').value = p.id;
+      document.getElementById('projNewName').value = p.name || '';
+      document.getElementById('projNewPath').value = p.path || '';
+    };
+  });
+  box.querySelectorAll('[data-remove-project]').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm('این پروژه از لیست حذف شود؟')) return;
+      await api('/api/projects/' + encodeURIComponent(btn.dataset.removeProject), { method: 'DELETE' });
+      await loadProjectsPanel();
+      await loadStatus();
+    };
+  });
+}
+document.getElementById('projSaveBtn').onclick = async () => {
+  const id = document.getElementById('projNewId').value.trim();
+  const name = document.getElementById('projNewName').value.trim();
+  const path = document.getElementById('projNewPath').value.trim();
+  if (!id) { alert('شناسه‌ی عددی پروژه (Project ID) لازم است.'); return; }
+  try {
+    await api('/api/projects', { method: 'POST', body: JSON.stringify({ id, name, path }) });
+    document.getElementById('projNewId').value = '';
+    document.getElementById('projNewName').value = '';
+    document.getElementById('projNewPath').value = '';
+    await loadProjectsPanel();
+    await loadStatus();
+  } catch (e) {
+    alert('خطا در ذخیره پروژه: ' + e.message);
+  }
+};
+
+function renderProjectPicker() {
+  const picker = document.getElementById('projectPicker');
+  const list = S.projects || [];
+  if (!list.length) { picker.innerHTML = '<option>پروژه‌ای تنظیم نشده</option>'; picker.disabled = true; return; }
+  picker.disabled = false;
+  picker.innerHTML = list.map((p) => '<option value="' + esc(p.id) + '"' + (String(p.id) === String(S.activeProjectId) ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('');
+}
+document.getElementById('projectPicker').onchange = async (e) => {
+  try {
+    await api('/api/projects/active', { method: 'POST', body: JSON.stringify({ id: e.target.value }) });
+    S.activeProjectId = e.target.value;
+    await Promise.all([loadStatus(), loadMergeRequests(), loadJobs()]);
+  } catch (err) {
+    alert('خطا در تعویض پروژه: ' + err.message);
+  }
+};
 
 async function loadEnv() {
   const body = document.getElementById('settingsBody');
@@ -959,13 +1111,15 @@ function renderMrPanel() {
       '<div class="meta">ترتیب merge: <b style="color:var(--violet)">#' + esc(mr.mergeOrder) + '</b>' + (mr.approved ? ' · ✅ approved' : '') + '</div>' +
     '</div>' +
     (!pathReady ? '<div class="error-box" style="margin-bottom:10px">مسیر پروژه‌ی محلی تنظیم نشده — از دکمه‌ی ⚙ بالای صفحه تنظیمش کن.</div>' : '') +
+    '<hr class="section-divider" />' +
     '<div class="row">' +
       '<button id="runBtn" ' + (running || !pathReady ? 'disabled' : '') + '>' + (running ? '⏳ در حال اجرا…' : '▶ اجرای ریویو') + '</button>' +
       (running ? '<button class="danger" id="stopBtn">⏹ توقف</button>' : '') +
       '<label class="check"><input type="checkbox" id="postChk" ' + (S.postToGitlab ? 'checked' : '') + ' /> کامنت روی گیت‌لب ثبت شود</label>' +
       (job && job.status === 'done' && !job.posted ? '<button class="ghost" id="postBtn">💬 ثبت این نتیجه روی MR</button>' : '') +
     '</div>' +
-    '<div style="margin-top:10px">' + statusLine + '</div>' +
+    '<div style="margin-top:12px">' + statusLine + '</div>' +
+    (job && job.status === 'done' ? '<hr class="section-divider" />' : '') +
     renderFindings(job);
 
   const runBtn = document.getElementById('runBtn');
@@ -1148,7 +1302,7 @@ async function deleteKb(id) {
 // task-list in the main area. Fields here are deliberately per-record (see
 // lib/devAnalytics.js) so a later added metric is just another column/badge,
 // not a restructure.
-const DEV = { roster: [], selected: null, analytics: null, score: null, since: '', until: '' };
+const DEV = { roster: [], selected: null, analytics: null, score: null, since: '', until: '', ratingMonth: null };
 
 document.getElementById('devAnalyticsBtn').onclick = openDevPage;
 document.getElementById('devBackBtn').onclick = closeDevPage;
@@ -1210,6 +1364,7 @@ function renderDevRoster() {
 async function selectDeveloper(username) {
   DEV.selected = username;
   DEV.analytics = null; // otherwise the previous person's rendered data lingers, with no loading indicator, while this one's cache miss is computing
+  DEV.ratingMonth = null; // reset to "current month" for the newly-selected person, not whatever month the last person happened to be showing
   renderDevRoster();
   await loadDevMain();
 }
@@ -1253,9 +1408,10 @@ function renderDevMain() {
   const autoBadge = auto.score == null
     ? '<span class="score-badge">امتیاز خودکار: بدون داده</span>'
     : '<span class="score-badge ' + scoreClass(auto.score) + '" title="' + esc(auto.reason || '') + '">امتیاز خودکار: <span class="num">' + auto.score + '</span></span>';
+  const monthLabel = ' (' + esc(scoreData.month || '') + ')';
   const manualBadge = scoreData.ratingOverall != null
-    ? '<span class="score-badge ' + scoreClass(scoreData.ratingOverall) + '">امتیاز دستی: <span class="num">' + scoreData.ratingOverall + '</span></span>'
-    : '<span class="score-badge">امتیاز دستی: ثبت نشده</span>';
+    ? '<span class="score-badge ' + scoreClass(scoreData.ratingOverall) + '">امتیاز دستی' + monthLabel + ': <span class="num">' + scoreData.ratingOverall + '</span></span>'
+    : '<span class="score-badge">امتیاز دستی' + monthLabel + ': ثبت نشده</span>';
 
   const cacheNote = a.cachedAt
     ? '<span class="tag">' + (a.fromCache ? 'کش‌شده — ' : 'همین الان محاسبه شد — ') + esc(relativeTime(a.cachedAt)) + '</span>'
@@ -1277,14 +1433,16 @@ function renderDevMain() {
       '<button class="ghost" id="devFilterClear">پاک کردن</button>' +
     '</div>' +
     '<div class="stat-grid">' +
-      '<div class="stat-box"><div class="n">' + a.totalMRs + '</div><div class="l">کل Merge Requestها (از گیت‌لب)</div></div>' +
-      '<div class="stat-box rt"><div class="n">' + a.roundTripMRs + '</div><div class="l">رفت‌وبرگشتی (بیش از یک نفر روی برنچ)</div></div>' +
+      '<div class="stat-box"><div class="n">' + a.totalMRs + '</div><div class="l">کل Merge Requestها (همه‌ی پروژه‌ها، از گیت‌لب)</div></div>' +
+      '<div class="stat-box"><div class="n">' + a.reportedMRs + '</div><div class="l">دارای گزارش ریویو (پایه‌ی محاسبه‌ی رفت‌وبرگشتی)</div></div>' +
+      '<div class="stat-box rt"><div class="n">' + a.roundTripMRs + '</div><div class="l">رفت‌وبرگشتی (کامیت از فرد دیگری غیر از نویسنده)</div></div>' +
       '<div class="stat-box unk"><div class="n">' + a.uncheckedMRs + '</div><div class="l">نامشخص (برنچ حذف‌شده یا خارج از سقف بررسی)</div></div>' +
     '</div>' +
     '<div class="chart-legend">' +
       '<span><span class="sw" style="background:var(--green)"></span>تمیز</span>' +
       '<span><span class="sw" style="background:var(--red)"></span>رفت‌وبرگشتی</span>' +
       '<span><span class="sw" style="background:var(--dim)"></span>نامشخص</span>' +
+      '<span><span class="sw" style="background:var(--border-strong)"></span>بدون گزارش ریویو</span>' +
     '</div>' +
     '<div class="chart-wrap">' + renderMonthChart(a.months) + '</div>' +
     renderRatingSection(scoreData) +
@@ -1303,74 +1461,139 @@ function renderDevMain() {
   document.getElementById('devRefreshBtn').onclick = () => loadDevMain(true);
   const saveBtn = main.querySelector('[data-save-rating]');
   if (saveBtn) saveBtn.onclick = () => saveDevRating(DEV.selected);
+  const monthSelect = document.getElementById('ratingMonthSelect');
+  if (monthSelect) monthSelect.onchange = (e) => switchRatingMonth(DEV.selected, e.target.value);
 }
 
 function renderMonthGroup(m) {
-  const rows = m.tasks.map((t) => {
-    const rtBadge = t.roundTrip === true ? '<span class="rt-badge yes">رفت‌وبرگشتی</span>'
+  const cards = m.tasks.map((t) => {
+    // "بدون گزارش" (never actually reviewed by coder-review) is deliberately
+    // distinct from "نامشخص" (reviewed, but the branch/commit history
+    // couldn't be verified) — see lib/devAnalytics.js's hasReviewReport.
+    const rtBadge = !t.hasReport ? '<span class="rt-badge na" title="این MR هنوز از این ابزار ریویو نگرفته — امتیاز رفت‌وبرگشتی برایش محاسبه نمی‌شود">بدون گزارش ریویو</span>'
+      : t.roundTrip === true ? '<span class="rt-badge yes">رفت‌وبرگشتی</span>'
       : t.roundTrip === false ? '<span class="rt-badge no">تمیز</span>'
       : '<span class="rt-badge unk">نامشخص</span>';
-    return '<div class="task-row">' +
+    return '<div class="task-card">' +
       (t.task ? '<span class="task-pill">' + esc(t.task) + '</span>' : '') +
-      '<a href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
+      '<a class="task-title" href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(t.title) + '">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
       branchPill(t) +
       rtBadge +
       '<span class="tag">' + esc(t.state) + '</span>' +
+      (t.projectName ? '<span class="tag task-project">📁 ' + esc(t.projectName) + '</span>' : '') +
       (t.otherAuthors && t.otherAuthors.length ? '<span class="tag" style="color:var(--red)">کامیت از: ' + esc(t.otherAuthors.join('، ')) + '</span>' : '') +
     '</div>';
   }).join('');
-  return '<div class="month-group"><h4>' + esc(m.month) + ' — ' + m.mrCount + ' MR</h4>' + rows + '</div>';
+  return '<div class="month-group"><h4>' + esc(m.month) + ' — ' + m.mrCount + ' MR</h4><div class="task-cards">' + cards + '</div></div>';
 }
 
 // A small dependency-free stacked bar chart: per month, mrCount split into
-// clean / round-trip / unknown segments — exactly the numbers in the stat
-// boxes and task list below it, just visualized. Point 7 ("more params
-// later") just means another segment/color here, not a rewrite.
-function renderMonthChart(months) {
-  if (!months.length) return '<div class="empty">داده‌ای برای رسم نمودار نیست.</div>';
-  const W = Math.max(360, months.length * 70);
-  const H = 170;
-  const barW = 40;
-  const gap = (W - months.length * barW) / (months.length + 1);
+// clean / round-trip / unknown / no-report segments — exactly the numbers in
+// the stat boxes and task list below it, just visualized. Gridlines give a
+// scale to read the bars against; a native <title> per segment gives a
+// hover tooltip with the exact count, without pulling in a charting library.
+// Point 7 ("more params later") just means another segment/color here, not
+// a rewrite. `months` is already newest-first (see devAnalytics.js); the
+// chart reverses it back to chronological left-to-right, which is how a
+// time series actually reads.
+function renderMonthChart(monthsNewestFirst) {
+  if (!monthsNewestFirst.length) return '<div class="empty">داده‌ای برای رسم نمودار نیست.</div>';
+  const months = monthsNewestFirst.slice().reverse();
+  const H = 200;
+  const padTop = 16, padBottom = 26, padStart = 8;
+  const plotH = H - padTop - padBottom;
+  const barW = 44;
+  const gap = 26;
+  const W = Math.max(380, padStart * 2 + months.length * (barW + gap));
   const maxCount = Math.max(1, ...months.map((m) => m.mrCount));
-  const scale = (H - 40) / maxCount;
+  const scale = plotH / maxCount;
+
+  // Gridlines at 0/25/50/75/100% of the tallest bar, each labeled with the
+  // count it represents — turns "how tall is that bar" into an actual read.
+  let grid = '';
+  const gridSteps = 4;
+  for (let s = 0; s <= gridSteps; s++) {
+    const y = padTop + plotH - (plotH * s) / gridSteps;
+    const value = Math.round((maxCount * s) / gridSteps);
+    grid += '<line x1="' + padStart + '" y1="' + y.toFixed(1) + '" x2="' + (W - padStart) + '" y2="' + y.toFixed(1) + '" stroke="var(--border)" stroke-width="1" stroke-dasharray="' + (s === 0 ? '0' : '3,4') + '"></line>';
+    grid += '<text x="' + padStart + '" y="' + (y - 3).toFixed(1) + '" font-size="9" fill="var(--dim)">' + value + '</text>';
+  }
 
   let bars = '';
   months.forEach((m, i) => {
-    const x = gap + i * (barW + gap);
-    const clean = Math.max(0, m.mrCount - m.roundTripCount - m.uncheckedCount);
+    const x = padStart + 10 + i * (barW + gap);
+    const clean = Math.max(0, m.mrCount - m.roundTripCount - m.uncheckedCount - m.noReportCount);
     const segments = [
-      { count: clean, color: 'var(--green)' },
-      { count: m.roundTripCount, color: 'var(--red)' },
-      { count: m.uncheckedCount, color: 'var(--dim)' },
+      { count: clean, color: 'var(--green)', label: 'تمیز' },
+      { count: m.roundTripCount, color: 'var(--red)', label: 'رفت‌وبرگشتی' },
+      { count: m.uncheckedCount, color: 'var(--dim)', label: 'نامشخص' },
+      { count: m.noReportCount || 0, color: 'var(--border-strong)', label: 'بدون گزارش ریویو' },
     ];
-    let y = H - 20;
+    let y = padTop + plotH;
     for (const seg of segments) {
       const h = seg.count * scale;
       if (h > 0) {
         y -= h;
-        bars += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + barW + '" height="' + h.toFixed(1) + '" fill="' + seg.color + '" rx="2"></rect>';
+        bars += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + barW + '" height="' + h.toFixed(1) + '" fill="' + seg.color + '" rx="3">' +
+          '<title>' + esc(m.month) + ' — ' + esc(seg.label) + ': ' + seg.count + '</title></rect>';
       }
     }
-    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 4) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(m.month) + '</text>';
-    bars += '<text x="' + (x + barW / 2) + '" y="' + (y - 4).toFixed(1) + '" text-anchor="middle" font-size="10" fill="var(--text)">' + m.mrCount + '</text>';
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(m.month) + '</text>';
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + m.mrCount + '</text>';
   });
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' + bars + '</svg>';
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' + grid + bars + '</svg>';
 }
 
+// Last 12 calendar months (this month first), union'd with whatever months
+// already have a saved rating — so an old rating from further back than a
+// year ago is still reachable in the picker, not silently hidden.
+function recentMonthOptions(availableMonths) {
+  const months = [];
+  const d = new Date();
+  for (let i = 0; i < 12; i++) {
+    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    d.setMonth(d.getMonth() - 1);
+  }
+  for (const m of availableMonths || []) if (!months.includes(m)) months.push(m);
+  return months.sort().reverse();
+}
+
+// Manual rating is per calendar month (a person's speed/quality this month,
+// not one lifetime number) — DEV.ratingMonth tracks which month's form is
+// showing; switching it re-fetches just that month's rating.
 function renderRatingSection(scoreData) {
   const params = scoreData.ratingParams || [];
+  const month = DEV.ratingMonth || scoreData.month;
+  const monthOptions = recentMonthOptions(scoreData.availableMonths)
+    .map((m) => '<option value="' + esc(m) + '" ' + (m === month ? 'selected' : '') + '>' + esc(m) + (scoreData.availableMonths && scoreData.availableMonths.includes(m) ? ' ✓' : '') + '</option>')
+    .join('');
   const rows = params.map((p) => {
     const current = (scoreData.rating && scoreData.rating.scores[p.key]) || 3;
     const options = [1, 2, 3, 4, 5].map((n) => '<option value="' + n + '" ' + (n === current ? 'selected' : '') + '>' + n + '</option>').join('');
     return '<label>' + esc(p.label) + '</label><select data-param="' + esc(p.key) + '">' + options + '</select>';
   }).join('');
-  return '<details class="dev-rating" style="margin:14px 0"><summary>امتیازدهی دستی</summary>' +
+  return '<details class="dev-rating" style="margin:18px 0" open><summary>امتیازدهی دستی (بر اساس ماه)</summary>' +
+    '<div class="row" style="margin:10px 0 4px">' +
+      '<label style="font-size:12px;color:var(--muted)">ماه:</label>' +
+      '<select id="ratingMonthSelect" style="width:140px;margin-bottom:0">' + monthOptions + '</select>' +
+      (scoreData.availableMonths && scoreData.availableMonths.length ? '<span class="tag">✓ یعنی برای آن ماه قبلاً امتیاز ثبت شده</span>' : '') +
+    '</div>' +
     '<div class="rating-grid">' + rows + '</div>' +
     '<textarea data-note placeholder="یادداشت (اختیاری)" style="min-height:60px;margin-top:8px">' + esc((scoreData.rating && scoreData.rating.note) || '') + '</textarea>' +
-    '<button data-save-rating="1">ذخیره امتیاز</button>' +
+    '<button data-save-rating="1">ذخیره امتیاز این ماه</button>' +
     (scoreData.rating ? '<span class="tag" style="margin-inline-start:8px">آخرین بروزرسانی: ' + esc(new Date(scoreData.rating.updatedAt).toLocaleString('fa-IR')) + '</span>' : '') +
   '</details>';
+}
+
+async function switchRatingMonth(author, month) {
+  DEV.ratingMonth = month;
+  try {
+    DEV.score = await api('/api/developers/' + encodeURIComponent(author) + '/score?month=' + encodeURIComponent(month));
+  } catch (e) {
+    alert('خطا در بارگذاری امتیاز این ماه: ' + e.message);
+    return;
+  }
+  renderDevMain();
 }
 
 async function saveDevRating(author) {
@@ -1378,9 +1601,11 @@ async function saveDevRating(author) {
   const scores = {};
   main.querySelectorAll('[data-param]').forEach((sel) => { scores[sel.dataset.param] = Number(sel.value); });
   const note = main.querySelector('[data-note]').value;
+  const month = DEV.ratingMonth || (DEV.score && DEV.score.month);
   try {
-    await api('/api/developers/' + encodeURIComponent(author) + '/rating', { method: 'POST', body: JSON.stringify({ scores, note }) });
-    await loadDevMain();
+    await api('/api/developers/' + encodeURIComponent(author) + '/rating', { method: 'POST', body: JSON.stringify({ month, scores, note }) });
+    DEV.score = await api('/api/developers/' + encodeURIComponent(author) + '/score?month=' + encodeURIComponent(month));
+    renderDevMain();
   } catch (e) {
     alert('خطا در ذخیره امتیاز: ' + e.message);
   }

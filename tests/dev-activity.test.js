@@ -57,23 +57,31 @@ test('recordEvent and eventsFor round-trip, and authorKey prefers username over 
 
 test('ratings.set clamps to 1-5, keeps unspecified params, and overall() averages onto a 20-100 scale', () => {
   const ratings = require('../lib/ratings');
-  assert.equal(ratings.get('new-dev'), null);
+  const month = '2026-09';
+  assert.equal(ratings.get('new-dev', month), null);
 
-  ratings.set('new-dev', { quality: 5, speed: 5 }, 'شروع خوبی داشته');
-  let r = ratings.get('new-dev');
+  ratings.set('new-dev', month, { quality: 5, speed: 5 }, 'شروع خوبی داشته');
+  let r = ratings.get('new-dev', month);
   assert.equal(r.scores.quality, 5);
   assert.equal(r.scores.speed, 5);
   assert.equal(r.scores.communication, null, 'params never set stay null, not a fabricated default');
   assert.equal(ratings.overall(r), 100);
 
-  // Partial update must not wipe the params set earlier.
-  ratings.set('new-dev', { quality: 1 });
-  r = ratings.get('new-dev');
+  // Partial update must not wipe the params set earlier, within the same month.
+  ratings.set('new-dev', month, { quality: 1 });
+  r = ratings.get('new-dev', month);
   assert.equal(r.scores.quality, 1);
   assert.equal(r.scores.speed, 5, 'an unrelated update does not reset a previously-set param');
 
-  ratings.set('new-dev', { speed: 99 }); // out of range
-  assert.equal(ratings.get('new-dev').scores.speed, 5, 'out-of-range values are clamped, not stored as-is');
+  ratings.set('new-dev', month, { speed: 99 }); // out of range
+  assert.equal(ratings.get('new-dev', month).scores.speed, 5, 'out-of-range values are clamped, not stored as-is');
+
+  // A different month starts fresh — this month's rating isn't every month's rating.
+  assert.equal(ratings.get('new-dev', '2026-08'), null);
+  ratings.set('new-dev', '2026-08', { quality: 3 });
+  assert.equal(ratings.get('new-dev', month).scores.quality, 1, 'writing an earlier month does not touch this one');
+  assert.deepEqual(ratings.listMonths('new-dev'), ['2026-09', '2026-08'], 'most recent month first');
+  assert.equal(ratings.latest('new-dev').scores.quality, 1, 'latest() is the most recent calendar month with a rating');
 });
 
 // ---- jobs.js wiring -------------------------------------------------------------

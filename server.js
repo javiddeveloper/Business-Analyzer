@@ -16,6 +16,7 @@ const ratings = require('./lib/ratings');
 const task = require('./lib/task');
 const devAnalytics = require('./lib/devAnalytics');
 const cache = require('./lib/cache');
+const projects = require('./lib/projects');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -115,8 +116,8 @@ async function handleWebhook(req, res) {
     title: attrs.title, webUrl: attrs.url,
   });
 
-  if (!jobs.projectPathConfigured()) {
-    return sendJson(res, 200, { skipped: 'PROJECT_PATH is not configured — set it from the dashboard settings before reviews can run' });
+  if (!jobs.projectPathConfigured(projectId)) {
+    return sendJson(res, 200, { skipped: 'this project has no local path configured — set it from the dashboard settings before reviews can run' });
   }
 
   // Acknowledge immediately — GitLab's webhook timeout is short and an LLM call
@@ -142,12 +143,15 @@ async function handleStatus(req, res) {
     model: status.model || '(پیش‌فرض CLI)',
     state: status.state,
   };
-  const projectPath = secret('PROJECT_PATH');
+  const activeProject = projects.getProject(projects.getActiveProjectId());
+  const projectPath = (activeProject && activeProject.path) || '';
   const out = {
     ai,
     settings,
     gitlab: { url: gitlab.gitlabBase(), ok: false, user: null, name: null, bot: false, error: null },
-    projectPath: { set: !!projectPath, value: projectPath || '' },
+    projectPath: { set: !!projectPath, value: projectPath },
+    activeProject,
+    projects: projects.listProjects(),
   };
   if (!secret('GITLAB_TOKEN')) {
     out.gitlab.error = 'GITLAB_TOKEN تنظیم نشده است.';
@@ -174,8 +178,9 @@ async function handleStatus(req, res) {
 // order and task/branch derivation — gitlab.listOpenMergeRequests() already
 // orders oldest-created-first (the intended merge order), so array position
 // doubles as the number the dashboard shows on each tab/card.
-async function loadMappedMergeRequests() {
-  const mrs = await gitlab.listOpenMergeRequests();
+async function loadMappedMergeRequests(projectId) {
+  const id = projectId || projects.getActiveProjectId();
+  const mrs = await gitlab.listOpenMergeRequests(id);
   return (Array.isArray(mrs) ? mrs : []).map((mr, i) => ({
     projectId: mr.project_id,
     iid: mr.iid,
@@ -205,6 +210,40 @@ async function handleMergeRequests(req, res) {
   }
 }
 
+// ---- multi-project (toolbar switcher) --------------------------------------
+//
+// One dashboard, several GitLab projects: the MR list/review/webhook/auto-
+// review side only ever looks at *one* project at a time (whichever the
+// toolbar dropdown has selected) — reviewing two repos' MRs interleaved in
+// the same tab strip would be confusing, not useful. Developer Analytics is
+// the opposite: a person's work isn't scoped to one repo, so it always
+// queries every configured project regardless of which one is "active" here.
+async function handleProjects(req, res) {
+  if (req.method === 'GET') {
+    return sendJson(res, 200, { projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
+  }
+  const body = await readJsonBody(req);
+  if (!body || !body.id) return sendJson(res, 400, { error: 'id (شناسه‌ی عددی پروژه در گیت‌لب) لازم است' });
+  try {
+    const entry = projects.upsertProject({ id: body.id, name: body.name, path: body.path });
+    return sendJson(res, 200, { project: entry, projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
+  } catch (e) {
+    return sendJson(res, 400, { error: e.message });
+  }
+}
+
+async function handleActiveProject(req, res) {
+  const body = await readJsonBody(req);
+  if (!body || !body.id) return sendJson(res, 400, { error: 'id لازم است' });
+  const activeId = projects.setActiveProjectId(body.id);
+  return sendJson(res, 200, { activeId });
+}
+
+async function handleDeleteProject(req, res, id) {
+  projects.removeProject(id);
+  return sendJson(res, 200, { projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
+}
+
 // One card per developer with an open MR: what they're on right now (from
 // GitLab's own MR list), plus the automatic activity/accuracy score and any
 // manual rating on file. A developer with zero open MRs simply doesn't
@@ -226,33 +265,40 @@ async function handleDevelopers(req, res) {
       task: mr.task, mergeOrder: mr.mergeOrder, updatedAt: mr.updatedAt, webUrl: mr.webUrl, draft: mr.draft,
     });
   }
-  const developers = Array.from(byAuthor.values()).map((dev) => ({
-    ...dev,
-    auto: activity.computeAutoScore(dev.author),
-    rating: ratings.get(dev.author),
-    ratingOverall: ratings.overall(ratings.get(dev.author)),
-  }));
+  const developers = Array.from(byAuthor.values()).map((dev) => {
+    const rating = ratings.latest(dev.author);
+    return { ...dev, auto: activity.computeAutoScore(dev.author), rating, ratingOverall: ratings.overall(rating) };
+  });
   developers.sort((a, b) => (a.currentWork[0]?.mergeOrder || 99) - (b.currentWork[0]?.mergeOrder || 99));
   return sendJson(res, 200, { developers, ratingParams: ratings.PARAMS });
 }
 
 // Standalone from handleDevelopers (which only covers people with an open
 // MR right now) — the analytics page can select anyone in the full roster,
-// including someone with nothing open at the moment.
-async function handleDeveloperScore(req, res, author) {
+// including someone with nothing open at the moment. ?month=YYYY-MM picks
+// which month's manual rating to show; omitted means the current month.
+async function handleDeveloperScore(req, res, author, query) {
+  const month = (query && query.get('month')) || ratings.currentMonthKey();
+  const rating = ratings.get(author, month);
   return sendJson(res, 200, {
     auto: activity.computeAutoScore(author),
-    rating: ratings.get(author),
-    ratingOverall: ratings.overall(ratings.get(author)),
+    month,
+    availableMonths: ratings.listMonths(author),
+    rating,
+    ratingOverall: ratings.overall(rating),
     ratingParams: ratings.PARAMS,
   });
 }
 
-async function handleDeveloperRating(req, res, author) {
-  if (req.method === 'GET') return sendJson(res, 200, ratings.get(author));
+async function handleDeveloperRating(req, res, author, query) {
+  if (req.method === 'GET') {
+    const month = (query && query.get('month')) || ratings.currentMonthKey();
+    return sendJson(res, 200, ratings.get(author, month));
+  }
   const body = await readJsonBody(req);
   if (!body) return sendJson(res, 400, { error: 'invalid JSON body' });
-  return sendJson(res, 200, ratings.set(author, body.scores || {}, body.note));
+  const month = body.month || ratings.currentMonthKey();
+  return sendJson(res, 200, ratings.set(author, month, body.scores || {}, body.note));
 }
 
 // Roster for the Developer Analytics page's right-hand list — everyone who
@@ -263,7 +309,16 @@ async function handleDeveloperRating(req, res, author) {
 async function handleDeveloperRoster(req, res, query) {
   try {
     const force = query.get('refresh') === '1';
-    const { value, at, fromCache } = await cache.cached('dev-roster', 'all', ROSTER_CACHE_TTL_MS, () => gitlab.listAllAuthors(), { force });
+    const { value, at, fromCache } = await cache.cached('dev-roster', 'all', ROSTER_CACHE_TTL_MS, async () => {
+      const configured = projects.listProjects();
+      const ids = configured.length ? configured.map((p) => p.id) : [undefined];
+      const lists = await Promise.all(ids.map((id) => gitlab.listAllAuthors(id)));
+      const seen = new Map();
+      for (const author of lists.flat()) {
+        if (!seen.has(author.username)) seen.set(author.username, author);
+      }
+      return Array.from(seen.values());
+    }, { force });
     return sendJson(res, 200, { authors: value, cachedAt: at, fromCache });
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
@@ -428,27 +483,37 @@ async function handleKnowledgeItem(req, res, id) {
 // behind-NAT setup where no webhook can reach us at all.
 let autoTimer = null;
 
+// Auto-review watches every configured project, not just the one currently
+// selected in the toolbar — someone flipping through the MR tabs for project
+// A shouldn't pause auto-review for project B running in the background.
 async function autoTick() {
   const settings = state.getSettings();
   if (!settings.autoReview) return;
-  if (!jobs.projectPathConfigured()) {
-    console.error('[auto] PROJECT_PATH تنظیم نشده — از تنظیمات (⚙) در داشبورد وارد کن. ریویوی خودکار این دور را رد کرد.');
+  const configured = projects.listProjects();
+  if (!configured.length) {
+    console.error('[auto] هیچ پروژه‌ای تنظیم نشده — از تنظیمات (⚙) در داشبورد یک پروژه اضافه کن.');
     return;
   }
-  try {
-    const mrs = await gitlab.listOpenMergeRequests();
-    for (const mr of Array.isArray(mrs) ? mrs : []) {
-      const key = jobs.keyFor(mr.project_id, mr.iid);
-      if (settings.skipDrafts && (mr.draft || mr.work_in_progress)) continue;
-      // Nothing new since the last successful review of this MR.
-      if (mr.sha && state.lastReviewedSha(key) === mr.sha) continue;
-      const running = jobs.get(mr.project_id, mr.iid);
-      if (running && running.status === 'running') continue;
-      console.log(`[auto] reviewing !${mr.iid} (${mr.title})`);
-      jobs.start({ projectId: mr.project_id, mrIid: mr.iid, mr, post: settings.autoPost, trigger: 'auto' });
+  for (const project of configured) {
+    if (!jobs.projectPathConfigured(project.id)) {
+      console.error(`[auto] مسیر محلی پروژه «${project.name}» تنظیم نشده — این پروژه در این دور رد شد.`);
+      continue;
     }
-  } catch (e) {
-    console.error('[auto] poll failed:', e.message);
+    try {
+      const mrs = await gitlab.listOpenMergeRequests(project.id);
+      for (const mr of Array.isArray(mrs) ? mrs : []) {
+        const key = jobs.keyFor(mr.project_id, mr.iid);
+        if (settings.skipDrafts && (mr.draft || mr.work_in_progress)) continue;
+        // Nothing new since the last successful review of this MR.
+        if (mr.sha && state.lastReviewedSha(key) === mr.sha) continue;
+        const running = jobs.get(mr.project_id, mr.iid);
+        if (running && running.status === 'running') continue;
+        console.log(`[auto] reviewing !${mr.iid} (${mr.title}) — ${project.name}`);
+        jobs.start({ projectId: mr.project_id, mrIid: mr.iid, mr, post: settings.autoPost, trigger: 'auto' });
+      }
+    } catch (e) {
+      console.error(`[auto] poll failed for «${project.name}»:`, e.message);
+    }
   }
 }
 
@@ -494,9 +559,13 @@ const server = http.createServer(async (req, res) => {
       const analyticsMatch = pathname.match(/^\/api\/developers\/([^/]+)\/analytics$/);
       if (analyticsMatch) return await handleDeveloperAnalytics(req, res, decodeURIComponent(analyticsMatch[1]), url.searchParams);
       const ratingMatch = pathname.match(/^\/api\/developers\/([^/]+)\/rating$/);
-      if (ratingMatch) return await handleDeveloperRating(req, res, decodeURIComponent(ratingMatch[1]));
+      if (ratingMatch) return await handleDeveloperRating(req, res, decodeURIComponent(ratingMatch[1]), url.searchParams);
       const scoreMatch = pathname.match(/^\/api\/developers\/([^/]+)\/score$/);
-      if (scoreMatch) return await handleDeveloperScore(req, res, decodeURIComponent(scoreMatch[1]));
+      if (scoreMatch) return await handleDeveloperScore(req, res, decodeURIComponent(scoreMatch[1]), url.searchParams);
+      if (pathname === '/api/projects') return await handleProjects(req, res);
+      if (req.method === 'POST' && pathname === '/api/projects/active') return await handleActiveProject(req, res);
+      const projectMatch = pathname.match(/^\/api\/projects\/([^/]+)$/);
+      if (projectMatch && req.method === 'DELETE') return await handleDeleteProject(req, res, decodeURIComponent(projectMatch[1]));
       if (req.method === 'GET' && pathname === '/api/jobs') return sendJson(res, 200, jobs.list());
       if (req.method === 'POST' && pathname === '/api/review') return await handleStartReview(req, res);
       if (req.method === 'POST' && pathname === '/api/review/stop') return await handleStopReview(req, res);
