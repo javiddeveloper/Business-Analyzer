@@ -348,8 +348,9 @@
   <div class="settings-row">
     <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
     <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
-    <label class="check"><input type="checkbox" id="setAutoPost" /> ثبت خودکار نتیجه در حالت خودکار</label>
+    <label class="check"><input type="checkbox" id="setAutoPost" title="پیش‌فرض خاموش — بدون این، ریویوی خودکار/وب‌هوک فقط review/MR-<iid>.md را می‌نویسد و چیزی روی خود MR نمی‌گذارد" /> کامنت روی گیت‌لب در حالت خودکار/وب‌هوک هم ثبت شود</label>
     <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
+    <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> 🤖 ریویوی کل پروژه با ایجنت (claude-cli)</label>
   </div>
   <div id="mrError"></div>
   <div class="mr-body">
@@ -444,7 +445,9 @@ const S = {
   kbOpen: null,    // id of the expanded entry
   kbBodies: {},    // id -> content
   editingId: null,
-  postToGitlab: true,
+  // Matches the team's manual review process: report goes in review/MR-<iid>.md,
+  // GitLab only gets a comment when explicitly asked for one. Off by default.
+  postToGitlab: false,
   env: [],
   engines: [],     // /api/engines catalog: label, icon, state, which is active
   envDirty: {},    // key -> new value the user actually typed
@@ -530,6 +533,7 @@ function renderStatus() {
   document.getElementById('setSkipDrafts').checked = st.skipDrafts !== false;
   document.getElementById('setAutoPost').checked = st.autoPost !== false;
   document.getElementById('setAutoApprove').checked = !!st.autoApprove;
+  document.getElementById('setAgentMode').checked = st.agentMode !== false;
 
   const banner = document.getElementById('pathBanner');
   banner.hidden = !!pp.set;
@@ -555,6 +559,7 @@ bindSetting('setInline', 'inlineComments');
 bindSetting('setSkipDrafts', 'skipDrafts');
 bindSetting('setAutoPost', 'autoPost');
 bindSetting('setAutoApprove', 'autoApprove');
+bindSetting('setAgentMode', 'agentMode');
 
 document.getElementById('autoReview').onchange = async (e) => {
   try {
@@ -919,6 +924,9 @@ function renderMrPanel() {
     const st = job.stats || {};
     const pub = job.publishResult || {};
     const bits = [
+      job.reviewMode === 'agent'
+        ? '🤖 ایجنت کل پروژه' + (st.turns ? ' (' + esc(st.turns) + ' گام)' : '')
+        : '📄 فقط دیف' + (st.batches ? ' (' + esc(st.batches) + ' دسته)' : ''),
       esc(st.files || 0) + ' فایل بررسی شد',
       st.skipped ? esc(st.skipped) + ' فایل رد شد' : '',
       (job.findings || []).length + ' یافته',

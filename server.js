@@ -121,8 +121,11 @@ async function handleWebhook(req, res) {
 
   // Acknowledge immediately — GitLab's webhook timeout is short and an LLM call
   // plus a GitLab API round-trip can easily exceed it. The job runs in the
-  // background and posts its own comment when done.
-  jobs.start({ projectId, mrIid, mr: attrs, post: true, trigger: 'webhook' });
+  // background; whether it also comments on the MR follows the same
+  // autoPost setting the auto-review poller uses — a webhook firing is just
+  // as "unattended" as a poll tick, so it shouldn't have its own separate
+  // (and previously hardcoded-on) posting policy.
+  jobs.start({ projectId, mrIid, mr: attrs, post: state.getSettings().autoPost, trigger: 'webhook' });
   return sendJson(res, 200, { accepted: true, project: projectId, mr: mrIid });
 }
 
@@ -344,7 +347,7 @@ async function handleStartReview(req, res) {
     projectId: body.projectId,
     mrIid: body.iid,
     mr: { title: body.title, web_url: body.webUrl },
-    post: body.post !== false,
+    post: body.post === true, // explicit opt-in — matches the dashboard checkbox's own default of unchecked
     trigger: 'manual',
   });
   return sendJson(res, 200, job);
