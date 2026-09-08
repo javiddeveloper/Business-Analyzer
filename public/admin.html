@@ -161,14 +161,25 @@
   .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 4px; vertical-align: -1px; }
   .month-group { margin-bottom: 22px; }
   .month-group h4 { font-size: 13px; color: var(--cyan); margin: 0 0 10px; }
-  .task-cards { display: flex; flex-direction: column; gap: 8px; }
+  .task-cards { display: flex; flex-direction: column; gap: 10px; }
+  /* Two stacked rows — title, then the badges. Letting the title share a
+     wrapping row with a dozen badges left cards with a tall empty band
+     whenever it happened to wrap. */
   .task-card {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-    padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px;
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px;
     background: var(--panel-2); font-size: 12px; transition: border-color .15s;
   }
+  .task-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .mr-link {
+    border-radius: 6px; padding: 3px 10px; font-size: 11px; text-decoration: none;
+    background: rgba(120,140,200,.14); color: var(--text); font-variant-numeric: tabular-nums;
+  }
+  .mr-link.merged { background: rgba(65,224,138,.15); color: var(--green); }
+  .mr-link:hover { background: rgba(120,140,200,.3); }
   .task-card:hover { border-color: var(--border-strong); }
-  .task-card .task-title { flex: 1 1 260px; min-width: 0; color: var(--text); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-card .task-title { flex: 1 1 auto; min-width: 0; color: var(--text); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .task-card .task-project { font-size: 10px; color: var(--dim); }
   .rt-badge { border-radius: 6px; padding: 2px 9px; font-size: 11px; }
   .rt-badge.yes { background: rgba(255,107,129,.15); color: var(--red); }
@@ -1486,6 +1497,23 @@ function renderDevMain() {
 // exactly the thing worth noticing, and it appears nowhere in GitLab.
 // Grouped by Jira status, since "5 In Progress, 2 In Review" is the shape
 // of the question being asked.
+// The merge requests that reference this ticket, as links — knowing a
+// ticket "has an MR" is only half an answer when the next thing anyone wants
+// is to open it. A ticket can legitimately have several (a follow-up fix, a
+// split across projects), so all of them are listed.
+function mrLinks(t) {
+  const mrs = t.mrs || [];
+  if (!mrs.length) {
+    return '<span class="rt-badge unk" title="در این بازه هیچ Merge Requestی با این کد تسک از این فرد پیدا نشد">بدون MR</span>';
+  }
+  return mrs.map((m) => {
+    const merged = m.state === 'merged';
+    const title = 'وضعیت: ' + (m.state || '?') + (m.targetBranch ? ' — به ' + m.targetBranch : '') + (m.projectName ? ' — ' + m.projectName : '');
+    return '<a class="mr-link' + (merged ? ' merged' : '') + '" href="' + esc(m.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(title) + '">' +
+      (merged ? '✔ ' : '') + '!' + esc(m.iid) + '</a>';
+  }).join('');
+}
+
 // Estimate vs. logged time on one task. Colour follows the same log2 drift
 // the score uses (devScore.js), so a card that looks bad and a component
 // that scores badly are saying the same thing rather than two different ones.
@@ -1573,18 +1601,20 @@ function renderJiraTasks(a) {
       '<h4>' + esc(status) + ' — ' + items.length + ' تسک</h4>' +
       '<div class="task-cards">' + items.map((t) => (
         '<div class="task-card">' +
-          '<span class="task-pill">' + esc(t.key) + '</span>' +
-          '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer" title="' + esc(t.summary) + '">' + esc(t.summary || '(بدون عنوان)') + '</a>' +
+          '<div class="task-head">' +
+            '<span class="task-pill">' + esc(t.key) + '</span>' +
+            '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer" title="' + esc(t.summary) + '">' + esc(t.summary || '(بدون عنوان)') + '</a>' +
+          '</div>' +
+          '<div class="task-meta">' +
           (t.type ? '<span class="tag">' + esc(t.type) + '</span>' : '') +
-          (t.hasMr
-            ? '<span class="rt-badge no">MR دارد</span>'
-            : '<span class="rt-badge unk" title="در این بازه هیچ Merge Requestی با این کد تسک از این فرد پیدا نشد">بدون MR</span>') +
+          mrLinks(t) +
           estimateBadge(t) +
           dueBadge(t) +
           (t.sprint ? '<span class="tag">🏃 ' + esc(t.sprint) + '</span>' : '') +
           (t.priority ? '<span class="tag">' + esc(t.priority) + '</span>' : '') +
           (t.storyPoints != null ? '<span class="tag">SP ' + esc(t.storyPoints) + '</span>' : '') +
           (t.updated ? '<span class="tag">آخرین تغییر: ' + esc(String(t.updated).slice(0, 10)) + '</span>' : '') +
+          '</div>' +
         '</div>'
       )).join('') + '</div>' +
     '</div>'
@@ -1613,14 +1643,18 @@ function renderMonthGroup(m) {
       : '';
     const jiraAssignee = t.jiraAssignee ? '<span class="tag">👤 ' + esc(t.jiraAssignee) + ' (جیرا)</span>' : '';
     return '<div class="task-card">' +
-      (t.task ? '<span class="task-pill">' + esc(t.task) + '</span>' : '') +
-      '<a class="task-title" href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(t.title) + '">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
+      '<div class="task-head">' +
+        (t.task ? '<span class="task-pill">' + esc(t.task) + '</span>' : '') +
+        '<a class="task-title" href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(t.title) + '">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
+      '</div>' +
+      '<div class="task-meta">' +
       branchPill(t) +
       rtBadge +
       jiraBadge + jiraAssignee +
       '<span class="tag">' + esc(t.state) + '</span>' +
       (t.projectName ? '<span class="tag task-project">📁 ' + esc(t.projectName) + '</span>' : '') +
       (t.otherAuthors && t.otherAuthors.length ? '<span class="tag" style="color:var(--red)">کامیت از: ' + esc(t.otherAuthors.join('، ')) + '</span>' : '') +
+      '</div>' +
     '</div>';
   }).join('');
   return '<div class="month-group"><h4>' + esc(m.month) + ' — ' + m.mrCount + ' MR</h4><div class="task-cards">' + cards + '</div></div>';

@@ -374,10 +374,25 @@ async function handleDeveloperAnalytics(req, res, author, query) {
           t.jiraUrl = issue ? issue.url : null;
         }
       }
-      // `hasMr` is computed here rather than in the browser so the flag
-      // means the same thing everywhere it's read later.
-      const keysWithMr = new Set(taskKeys.filter(Boolean));
-      value.jiraTasks = assigned.issues.map((t) => ({ ...t, hasMr: keysWithMr.has(t.key) }));
+      // Each Jira task carries the merge requests that reference it, not
+      // just a yes/no flag: "this ticket has an MR" is only half an answer
+      // when the next thing anyone wants is to open it. Built from the MR
+      // list already computed above, so no extra GitLab calls.
+      const mrsByTask = new Map();
+      for (const m of value.months) {
+        for (const t of m.tasks) {
+          if (!t.task) continue;
+          if (!mrsByTask.has(t.task)) mrsByTask.set(t.task, []);
+          mrsByTask.get(t.task).push({
+            iid: t.iid, webUrl: t.webUrl, state: t.state,
+            projectName: t.projectName, targetBranch: t.targetBranch,
+          });
+        }
+      }
+      value.jiraTasks = assigned.issues.map((t) => {
+        const mrs = mrsByTask.get(t.key) || [];
+        return { ...t, hasMr: mrs.length > 0, mrs };
+      });
       // Jira's own count for the query, which can exceed what we fetched —
       // the page says "showing N of M" rather than passing a capped list off
       // as the complete one.
