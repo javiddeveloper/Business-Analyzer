@@ -19,6 +19,8 @@ const cache = require('./lib/cache');
 const projects = require('./lib/projects');
 const jira = require('./lib/jira');
 const devScore = require('./lib/devScore');
+const monthly = require('./lib/monthly');
+const xlsx = require('./lib/xlsx');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -223,6 +225,49 @@ async function handleMrContext(req, res, projectId, mrIid, query) {
   }
 }
 
+// Monthly performance as a real .xlsx — data sheet plus a live Excel chart
+// (lib/xlsx.js). Reuses the very same analytics payload the dashboard shows,
+// so the spreadsheet and the screen can't disagree; the per-month scoring
+// lives in lib/monthly.js and runs through devScore like everything else.
+async function handleDeveloperExport(req, res, author, query) {
+  try {
+    const since = query.get('since') || undefined;
+    const until = query.get('until') || undefined;
+    const analytics = await loadDeveloperAnalytics(author, { since, until, force: false });
+    const reviews = activity.reviewsFor(author);
+    const rows = monthly.buildMonthlyRows({
+      analytics,
+      jiraTasks: analytics.jiraTasks || [],
+      reviews,
+    });
+
+    if (!rows.length) return sendJson(res, 404, { error: 'برای این بازه هیچ داده‌ای برای خروجی گرفتن نبود.' });
+
+    const sheetRows = monthly.toSheetRows(rows);
+    const buf = xlsx.build([{
+      name: 'عملکرد ماهانه',
+      rows: sheetRows,
+      chart: {
+        title: `روند ماهانه — ${author}`,
+        categoryCol: 'A',
+        // Score, MR count and round trips: the three that answer "how did
+        // this month go" at a glance. The rest is in the table beside it.
+        series: [{ col: 'B' }, { col: 'C' }, { col: 'D' }],
+      },
+    }]);
+
+    const filename = `coder-review-${String(author).replace(/[^A-Za-z0-9._-]/g, '_')}-monthly.xlsx`;
+    res.writeHead(200, {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buf.length,
+    });
+    return res.end(buf);
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
+}
+
 // Shared by /api/merge-requests and /api/developers so both agree on merge
 // order and task/branch derivation — gitlab.listOpenMergeRequests() already
 // orders oldest-created-first (the intended merge order), so array position
@@ -383,11 +428,12 @@ async function handleDeveloperRoster(req, res, query) {
 // one most worth not re-paying on every click. ?refresh=1 bypasses the cache
 // — someone just pushed a fix-up commit and wants the round-trip count to
 // reflect it right now, not in up to 20 minutes.
-async function handleDeveloperAnalytics(req, res, author, query) {
-  try {
-    const since = query.get('since') || undefined;
-    const until = query.get('until') || undefined;
-    const force = query.get('refresh') === '1';
+// Builds one developer's full analytics payload — GitLab months, Jira
+// enrichment, the composite score. Split out from the HTTP handler so the
+// Excel export runs the exact same code rather than a parallel
+// reimplementation that could drift from what the page shows.
+async function loadDeveloperAnalytics(author, { since, until, force = false } = {}) {
+  {
     const key = `${author}|${since || ''}|${until || ''}`;
     const { value, at, fromCache } = await cache.cached(
       'dev-analytics', key, ANALYTICS_CACHE_TTL_MS,
@@ -460,7 +506,18 @@ async function handleDeveloperAnalytics(req, res, author, query) {
       reviews,
       lastActivityMs,
     });
-    return sendJson(res, 200, { ...value, cachedAt: at, fromCache });
+    return { ...value, cachedAt: at, fromCache };
+  }
+}
+
+async function handleDeveloperAnalytics(req, res, author, query) {
+  try {
+    const value = await loadDeveloperAnalytics(author, {
+      since: query.get('since') || undefined,
+      until: query.get('until') || undefined,
+      force: query.get('refresh') === '1',
+    });
+    return sendJson(res, 200, value);
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
   }
@@ -679,6 +736,10 @@ const server = http.createServer(async (req, res) => {
       if (analyticsMatch) return await handleDeveloperAnalytics(req, res, decodeURIComponent(analyticsMatch[1]), url.searchParams);
       const ratingMatch = pathname.match(/^\/api\/developers\/([^/]+)\/rating$/);
       if (ratingMatch) return await handleDeveloperRating(req, res, decodeURIComponent(ratingMatch[1]), url.searchParams);
+      const exportMatch = pathname.match(/^\/api\/developers\/([^/]+)\/export\.xlsx$/);
+      if (req.method === 'GET' && exportMatch) {
+        return await handleDeveloperExport(req, res, decodeURIComponent(exportMatch[1]), url.searchParams);
+      }
       const scoreMatch = pathname.match(/^\/api\/developers\/([^/]+)\/score$/);
       if (scoreMatch) return await handleDeveloperScore(req, res, decodeURIComponent(scoreMatch[1]), url.searchParams);
       if (pathname === '/api/projects') return await handleProjects(req, res);

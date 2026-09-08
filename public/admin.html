@@ -1533,6 +1533,7 @@ function renderDevMain() {
       '<div class="field"><label>تا تاریخ</label><input type="date" id="devUntil" value="' + esc(DEV.until) + '" /></div>' +
       '<button id="devFilterApply">اعمال فیلتر</button>' +
       '<button class="ghost" id="devFilterClear">پاک کردن</button>' +
+      '<button class="ghost" id="devExportBtn" title="خروجی اکسل عملکرد ماهانه، همراه با نمودار">📊 خروجی اکسل</button>' +
     '</div>' +
     '<div class="stat-grid">' +
       '<div class="stat-box"><div class="n">' + a.totalMRs + '</div><div class="l">کل Merge Requestها (همه‌ی پروژه‌ها، از گیت‌لب)</div></div>' +
@@ -1563,6 +1564,16 @@ function renderDevMain() {
     loadDevMain();
   };
   document.getElementById('devRefreshBtn').onclick = () => loadDevMain(true);
+  // A plain navigation, not fetch(): the browser's own download handling
+  // gets the filename from Content-Disposition, and nothing has to buffer
+  // the workbook in JS.
+  document.getElementById('devExportBtn').onclick = () => {
+    const q = [];
+    if (DEV.since) q.push('since=' + encodeURIComponent(DEV.since));
+    if (DEV.until) q.push('until=' + encodeURIComponent(DEV.until));
+    window.location.href = '/api/developers/' + encodeURIComponent(DEV.selected) + '/export.xlsx' +
+      (q.length ? '?' + q.join('&') : '');
+  };
   const saveBtn = main.querySelector('[data-save-rating]');
   if (saveBtn) saveBtn.onclick = () => saveDevRating(DEV.selected);
   const monthSelect = document.getElementById('ratingMonthSelect');
