@@ -175,6 +175,11 @@
   .rt-badge.no { background: rgba(65,224,138,.15); color: var(--green); }
   .rt-badge.unk { background: rgba(120,140,200,.12); color: var(--dim); }
   .rt-badge.na { background: rgba(120,140,200,.08); color: var(--dim); }
+  .jira-badge {
+    display: inline-flex; align-items: center; gap: 3px; border-radius: 6px; padding: 2px 9px;
+    font-size: 11px; background: rgba(155,140,255,.15); color: var(--violet); text-decoration: none;
+  }
+  a.jira-badge:hover { background: rgba(155,140,255,.28); }
 
   /* ---- layout ---- */
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -1474,11 +1479,21 @@ function renderMonthGroup(m) {
       : t.roundTrip === true ? '<span class="rt-badge yes">رفت‌وبرگشتی</span>'
       : t.roundTrip === false ? '<span class="rt-badge no">تمیز</span>'
       : '<span class="rt-badge unk">نامشخص</span>';
+    // Jira enrichment (server.js, only when Jira is configured): a task key
+    // with no matching issue (placeholder branch names like "EM-0000" show
+    // up for real) simply gets no badge, not an error.
+    const jiraBadge = t.jiraStatus
+      ? (t.jiraUrl
+          ? '<a class="jira-badge" href="' + esc(t.jiraUrl) + '" target="_blank" rel="noreferrer">🧩 ' + esc(t.jiraStatus) + '</a>'
+          : '<span class="jira-badge">🧩 ' + esc(t.jiraStatus) + '</span>')
+      : '';
+    const jiraAssignee = t.jiraAssignee ? '<span class="tag">👤 ' + esc(t.jiraAssignee) + ' (جیرا)</span>' : '';
     return '<div class="task-card">' +
       (t.task ? '<span class="task-pill">' + esc(t.task) + '</span>' : '') +
       '<a class="task-title" href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(t.title) + '">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
       branchPill(t) +
       rtBadge +
+      jiraBadge + jiraAssignee +
       '<span class="tag">' + esc(t.state) + '</span>' +
       (t.projectName ? '<span class="tag task-project">📁 ' + esc(t.projectName) + '</span>' : '') +
       (t.otherAuthors && t.otherAuthors.length ? '<span class="tag" style="color:var(--red)">کامیت از: ' + esc(t.otherAuthors.join('، ')) + '</span>' : '') +

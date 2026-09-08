@@ -17,6 +17,7 @@ const task = require('./lib/task');
 const devAnalytics = require('./lib/devAnalytics');
 const cache = require('./lib/cache');
 const projects = require('./lib/projects');
+const jira = require('./lib/jira');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -345,6 +346,24 @@ async function handleDeveloperAnalytics(req, res, author, query) {
       () => devAnalytics.buildDeveloperAnalytics(author, { since, until }),
       { force }
     );
+    // Jira status/assignee per task — kept out of the dev-analytics cache
+    // above (and re-applied on every request) since Jira's own per-issue
+    // cache has a much shorter TTL; baking it into the 20-minute analytics
+    // cache would mean a status change takes up to 20 minutes to show up
+    // instead of up to 10. A no-op (no extra calls at all) when Jira isn't
+    // configured — see lib/jira.js's isConfigured().
+    if (jira.isConfigured()) {
+      const taskKeys = value.months.flatMap((m) => m.tasks.map((t) => t.task));
+      const issues = await jira.fetchIssuesByKeys(taskKeys);
+      for (const m of value.months) {
+        for (const t of m.tasks) {
+          const issue = t.task ? issues.get(t.task) : null;
+          t.jiraStatus = issue ? issue.status : null;
+          t.jiraAssignee = issue ? issue.assignee : null;
+          t.jiraUrl = issue ? issue.url : null;
+        }
+      }
+    }
     return sendJson(res, 200, { ...value, cachedAt: at, fromCache });
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
