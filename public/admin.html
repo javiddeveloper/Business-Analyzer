@@ -171,6 +171,8 @@
     background: var(--panel-2); font-size: 12px; transition: border-color .15s;
   }
   .task-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .task-desc { font-size: 12px; line-height: 1.9; color: var(--text); white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
+  .task-desc.muted-desc { color: var(--dim); font-style: italic; }
   .task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
   .mr-link {
     border-radius: 6px; padding: 3px 10px; font-size: 11px; text-decoration: none;
@@ -531,6 +533,7 @@ const S = {
   // Matches the team's manual review process: report goes in review/MR-<iid>.md,
   // GitLab only gets a comment when explicitly asked for one. Off by default.
   postToGitlab: false,
+  mrContext: {},   // key -> { jira, commits } for the open MR, loaded lazily
   env: [],
   engines: [],     // /api/engines catalog: label, icon, state, which is active
   envDirty: {},    // key -> new value the user actually typed
@@ -1075,6 +1078,76 @@ function renderTabs() {
   });
 }
 
+// The Jira ticket and commit history for the MR whose tab is open. Loaded
+// on demand (one call per MR the user actually looks at) rather than with
+// the MR list, which would pay for every MR on every refresh.
+async function loadMrContext(mr) {
+  const key = keyOf(mr.projectId, mr.iid);
+  if (S.mrContext[key] && S.mrContext[key].sha === mr.sha) return; // already have it for this commit
+  S.mrContext[key] = { sha: mr.sha, loading: true };
+  renderMrPanel();
+  try {
+    const data = await api('/api/merge-requests/' + encodeURIComponent(mr.projectId) + '/' + mr.iid +
+      '/context?sha=' + encodeURIComponent(mr.sha || ''));
+    S.mrContext[key] = { sha: mr.sha, jira: data.jira, commits: data.commits };
+  } catch (e) {
+    S.mrContext[key] = { sha: mr.sha, error: e.message };
+  }
+  renderMrPanel();
+}
+
+// The same context the review report carries (see lib/reportFile.js), shown
+// in the panel so it is available before a review runs — not only after one
+// has written the file.
+function renderMrContext(ctx) {
+  if (!ctx) return '';
+  if (ctx.loading) return '<div class="meta" style="margin-top:8px">در حال گرفتن اطلاعات تسک و کامیت‌ها…</div>';
+  if (ctx.error) return '<div class="meta" style="margin-top:8px;color:var(--amber)">اطلاعات تسک/کامیت‌ها گرفته نشد: ' + esc(ctx.error) + '</div>';
+
+  const j = ctx.jira;
+  const c = ctx.commits;
+  const rows = [];
+
+  if (c) {
+    rows.push(
+      '<div class="meta">تعداد کامیت‌ها: <b>' + esc(c.total) + '</b></div>',
+      '<div class="meta">رفت‌وبرگشت: ' + (c.reworkCommits
+        ? '<b style="color:var(--red)">' + esc(c.reworkCommits) + '</b> کامیت از ' + c.otherAuthors.length +
+          ' نفر دیگر · ' + esc(c.otherAuthors.map((a) => a.name + ' (' + a.count + ')').join('، '))
+        : '<b style="color:var(--green)">۰</b> — همه‌ی کامیت‌ها از خود نویسنده') + '</div>'
+    );
+  }
+
+  let jiraBlock = '';
+  if (j && j.key) {
+    const est = j.estimateHours != null ? j.estimateHours + ' ساعت' : '—';
+    const spent = j.spentHours != null ? j.spentHours + ' ساعت' : 'ثبت نشده';
+    jiraBlock =
+      '<div class="task-card" style="margin-top:10px">' +
+        '<div class="task-head">' +
+          '<span class="task-pill">' + esc(j.key) + '</span>' +
+          '<a class="task-title" href="' + esc(j.url) + '" target="_blank" rel="noreferrer" title="' + esc(j.summary || '') + '">' +
+            esc(j.summary || '(بدون عنوان)') + '</a>' +
+        '</div>' +
+        '<div class="task-meta">' +
+          (j.status ? '<span class="jira-badge">🧩 ' + esc(j.status) + '</span>' : '') +
+          (j.type ? '<span class="tag">' + esc(j.type) + '</span>' : '') +
+          '<span class="tag">⏱ تخمین: ' + esc(est) + ' · ثبت‌شده: ' + esc(spent) + '</span>' +
+          (j.dueDate ? '<span class="tag">📅 سررسید: ' + esc(j.dueDate) + '</span>' : '') +
+          (j.assignee ? '<span class="tag">👤 ' + esc(j.assignee) + '</span>' : '') +
+          (j.priority ? '<span class="tag">' + esc(j.priority) + '</span>' : '') +
+        '</div>' +
+        (j.description && j.description.trim()
+          ? '<div class="task-desc">' + esc(j.description.trim()) + '</div>'
+          : '<div class="task-desc muted-desc">این تسک در جیرا شرحی ندارد.</div>') +
+      '</div>';
+  } else if (j === null) {
+    jiraBlock = '<div class="meta" style="margin-top:8px">تسک متناظری در جیرا پیدا نشد.</div>';
+  }
+
+  return (rows.length ? '<div class="meta-grid">' + rows.join('') + '</div>' : '') + jiraBlock;
+}
+
 function renderMrPanel() {
   const panel = document.getElementById('mrPanel');
   if (!S.mrs.length) {
@@ -1129,13 +1202,14 @@ function renderMrPanel() {
       (mr.webUrl ? '<a href="' + esc(mr.webUrl) + '" target="_blank" rel="noreferrer">باز کردن در گیت‌لب ↗</a>' : '') +
     '</div>' +
     '<div class="meta-grid">' +
-      '<div class="meta">شاخه: <span class="mono">' + esc(mr.sourceBranch) + ' → </span>' + branchPill(mr) + '</div>' +
-      '<div class="meta">نویسنده: ' + esc(mr.author) + (mr.draft ? ' · <b>Draft</b>' : '') + '</div>' +
+      '<div class="meta">شاخه: <b class="mono">' + esc(mr.sourceBranch) + '</b><span class="mono"> → </span>' + branchPill(mr) + '</div>' +
+      '<div class="meta">نویسنده: <b>' + esc(mr.author) + '</b>' + (mr.draft ? ' · <b>Draft</b>' : '') + '</div>' +
       '<div class="meta">کامیت فعلی: <span class="mono">' + esc((mr.sha || '').slice(0, 8)) + '</span>' +
         (isStale ? ' <b style="color:var(--amber)">(بعد از آخرین ریویو تغییر کرده)</b>' : '') + '</div>' +
       '<div class="meta">ترتیب merge: <b style="color:var(--violet)">#' + esc(mr.mergeOrder) + '</b>' + (mr.approved ? ' · ✅ approved' : '') + '</div>' +
     '</div>' +
-    (!pathReady ? '<div class="error-box" style="margin-bottom:10px">مسیر پروژه‌ی محلی تنظیم نشده — از دکمه‌ی ⚙ بالای صفحه تنظیمش کن.</div>' : '') +
+    renderMrContext(S.mrContext[key]) +
+    (!pathReady ? '<div class="error-box" style="margin-top:10px;margin-bottom:10px">مسیر پروژه‌ی محلی تنظیم نشده — از دکمه‌ی ⚙ بالای صفحه تنظیمش کن.</div>' : '') +
     '<hr class="section-divider" />' +
     '<div class="row">' +
       '<button id="runBtn" ' + (running || !pathReady ? 'disabled' : '') + '>' + (running ? '⏳ در حال اجرا…' : '▶ اجرای ریویو') + '</button>' +
@@ -1146,6 +1220,9 @@ function renderMrPanel() {
     '<div style="margin-top:12px">' + statusLine + '</div>' +
     (job && job.status === 'done' ? '<hr class="section-divider" />' : '') +
     renderFindings(job);
+
+  const ctx = S.mrContext[key];
+  if (!ctx || (ctx.sha !== mr.sha && !ctx.loading)) loadMrContext(mr);
 
   const runBtn = document.getElementById('runBtn');
   if (runBtn) runBtn.onclick = () => runReview(mr);

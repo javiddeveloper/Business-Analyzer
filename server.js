@@ -176,6 +176,53 @@ async function handleStatus(req, res) {
   return sendJson(res, 200, out);
 }
 
+// Everything about one MR that needs a per-MR API call, so the dashboard's
+// review panel can show the same context the review report carries: the Jira
+// ticket behind it, and how much rework the branch has seen. Fetched lazily
+// when a tab is opened rather than folded into /api/merge-requests, which
+// would mean two extra API calls per MR on every list refresh.
+//
+// Cached by head sha, not by iid: a new push is exactly when the commit
+// counts change, and it changes the sha, so the cache invalidates itself.
+const MR_CONTEXT_CACHE_TTL_MS = 10 * 60 * 1000;
+
+async function handleMrContext(req, res, projectId, mrIid, query) {
+  try {
+    const sha = query.get('sha') || '';
+    const { value, at, fromCache } = await cache.cached(
+      'mr-context', `${projectId}!${mrIid}!${sha}`, MR_CONTEXT_CACHE_TTL_MS,
+      async () => {
+        const out = { jira: null, commits: null };
+        const detail = await gitlab.getMergeRequestChanges(projectId, mrIid);
+        const taskKey = task.extractTask(detail.source_branch) || task.extractTask(detail.title);
+        // Both are best-effort and independent: Jira being down must not cost
+        // the commit counts, and vice versa.
+        const [issue, commits] = await Promise.all([
+          jira.fetchIssueSafe(taskKey).catch(() => null),
+          gitlab.getMergeRequestCommitStats(projectId, mrIid).catch(() => null),
+        ]);
+        out.jira = issue;
+        if (commits) {
+          const author = detail.author || {};
+          const otherAuthors = commits.byAuthor.filter(
+            (a) => !devAnalytics.isMrAuthor(author, { author_email: a.email, author_name: a.name })
+          );
+          out.commits = {
+            total: commits.total,
+            otherAuthors,
+            reworkCommits: otherAuthors.reduce((sum, a) => sum + a.count, 0),
+          };
+        }
+        return out;
+      },
+      { force: query.get('refresh') === '1' }
+    );
+    return sendJson(res, 200, { ...value, cachedAt: at, fromCache });
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
+}
+
 // Shared by /api/merge-requests and /api/developers so both agree on merge
 // order and task/branch derivation — gitlab.listOpenMergeRequests() already
 // orders oldest-created-first (the intended merge order), so array position
@@ -619,6 +666,10 @@ const server = http.createServer(async (req, res) => {
 
       if (req.method === 'GET' && pathname === '/api/status') return await handleStatus(req, res);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
+      const mrContextMatch = pathname.match(/^\/api\/merge-requests\/([^/]+)\/(\d+)\/context$/);
+      if (req.method === 'GET' && mrContextMatch) {
+        return await handleMrContext(req, res, decodeURIComponent(mrContextMatch[1]), mrContextMatch[2], url.searchParams);
+      }
       if (req.method === 'GET' && pathname === '/api/developers') return await handleDevelopers(req, res);
       if (req.method === 'GET' && pathname === '/api/developers/roster') return await handleDeveloperRoster(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/models') return await handleModels(req, res);
