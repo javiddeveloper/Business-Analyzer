@@ -21,11 +21,32 @@ function stubSecrets(values) {
   return require('../lib/jira');
 }
 
-const CONFIGURED = { JIRA_BASE_URL: 'https://example.atlassian.net', JIRA_EMAIL: 'a@b.com', JIRA_API_TOKEN: 'tok' };
+// Self-hosted Jira (this org's jira.tamin.ir), authenticated with a
+// Personal Access Token — no email/username field, unlike Jira Cloud's
+// Basic Auth.
+const CONFIGURED = { JIRA_BASE_URL: 'https://jira.tamin.ir', JIRA_API_TOKEN: 'tok' };
 
-test('isConfigured is false until all three Jira secrets are set', () => {
+test('isConfigured is false until both Jira secrets are set', () => {
   const jira = stubSecrets({});
   assert.equal(jira.isConfigured(), false);
+  assert.equal(stubSecrets({ JIRA_BASE_URL: 'https://jira.tamin.ir' }).isConfigured(), false, 'base url alone is not enough');
+  assert.equal(stubSecrets(CONFIGURED).isConfigured(), true);
+});
+
+test('fetchIssue authenticates with a Bearer token, not Basic auth — this is self-hosted Jira, not Cloud', async () => {
+  const jira = stubSecrets(CONFIGURED);
+  const originalFetch = global.fetch;
+  let seenAuth = null;
+  global.fetch = async (url, opts) => {
+    seenAuth = opts.headers.Authorization;
+    return { ok: true, json: async () => ({ key: 'EM-1', fields: {} }) };
+  };
+  try {
+    await jira.fetchIssue('EM-1');
+    assert.equal(seenAuth, 'Bearer tok');
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
 
 test('fetchIssue resolves to null (not a throw) when Jira is not configured', async () => {
