@@ -180,6 +180,15 @@
     font-size: 11px; background: rgba(155,140,255,.15); color: var(--violet); text-decoration: none;
   }
   a.jira-badge:hover { background: rgba(155,140,255,.28); }
+  .score-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; }
+  .score-table th, .score-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .score-table th { color: var(--dim); font-weight: 600; }
+  .score-table td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .score-table td.muted { color: var(--dim); }
+  .score-table tr.off td { opacity: .5; }
+  .score-bar { width: 90px; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+  .score-bar span { display: block; height: 100%; background: var(--cyan); }
+  .score-bar.off { background: repeating-linear-gradient(90deg, var(--border) 0 4px, transparent 4px 8px); }
 
   /* ---- layout ---- */
   .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
@@ -1451,6 +1460,7 @@ function renderDevMain() {
     '</div>' +
     '<div class="chart-wrap">' + renderMonthChart(a.months) + '</div>' +
     renderRatingSection(scoreData) +
+    renderAutoScore(a) +
     renderJiraTasks(a) +
     '<h4 style="margin:16px 0 6px">لیست تسک‌ها بر اساس ماه (از روی MRها)</h4>' +
     (a.months.length ? a.months.map(renderMonthGroup).join('') : '<div class="empty">در این بازه چیزی پیدا نشد.</div>');
@@ -1476,6 +1486,68 @@ function renderDevMain() {
 // exactly the thing worth noticing, and it appears nowhere in GitLab.
 // Grouped by Jira status, since "5 In Progress, 2 In Review" is the shape
 // of the question being asked.
+// Estimate vs. logged time on one task. Colour follows the same log2 drift
+// the score uses (devScore.js), so a card that looks bad and a component
+// that scores badly are saying the same thing rather than two different ones.
+function estimateBadge(t) {
+  if (!(t.estimateHours > 0)) return '';
+  if (!(t.spentHours > 0)) {
+    return '<span class="tag" title="زمان صرف‌شده در جیرا ثبت نشده، پس دقت تخمین برای این تسک قابل محاسبه نیست">⏱ تخمین ' + esc(t.estimateHours) + 'س</span>';
+  }
+  const drift = Math.abs(Math.log2(t.spentHours / t.estimateHours));
+  const cls = drift <= 0.32 ? 'no' : (drift <= 1 ? 'unk' : 'yes'); // ≤25% off / ≤2× / worse
+  const pct = Math.round(((t.spentHours - t.estimateHours) / t.estimateHours) * 100);
+  return '<span class="rt-badge ' + cls + '" title="تخمین ' + esc(t.estimateHours) + ' ساعت، واقعی ' + esc(t.spentHours) + ' ساعت">' +
+    '⏱ ' + esc(t.estimateHours) + '→' + esc(t.spentHours) + 'س (' + (pct > 0 ? '+' : '') + pct + '٪)</span>';
+}
+
+// Due date, and whether it was actually met. An unresolved task inside its
+// deadline is shown plainly — it is not yet late, and colouring it as if it
+// were would be wrong.
+function dueBadge(t) {
+  if (!t.dueDate) return '';
+  const due = new Date(t.dueDate + 'T23:59:59').getTime();
+  if (t.resolvedAt) {
+    const late = new Date(t.resolvedAt).getTime() > due;
+    return '<span class="rt-badge ' + (late ? 'yes' : 'no') + '" title="سررسید ' + esc(t.dueDate) + '، تحویل ' + esc(String(t.resolvedAt).slice(0, 10)) + '">' +
+      (late ? '📅 با تأخیر' : '📅 به‌موقع') + '</span>';
+  }
+  if (Date.now() > due) {
+    const days = Math.floor((Date.now() - due) / 86400000);
+    return '<span class="rt-badge yes" title="سررسید ' + esc(t.dueDate) + ' گذشته و تسک هنوز بسته نشده">📅 ' + days + ' روز عقب</span>';
+  }
+  return '<span class="tag">📅 سررسید ' + esc(t.dueDate) + '</span>';
+}
+
+// The composite score, with every component and its weight on screen. The
+// point is that nobody has to trust the number: the inputs, the sample size
+// behind each one, and the arithmetic are all visible, including which
+// components had no data and so had their weight redistributed.
+function renderAutoScore(a) {
+  const s = a.autoScore;
+  if (!s) return '';
+  if (s.score == null) return '<h4 style="margin:18px 0 6px">🎯 امتیاز خودکار</h4><div class="empty">' + esc(s.reason) + '</div>';
+  const rows = s.components.map((c) => {
+    const bar = c.available
+      ? '<div class="score-bar"><span style="width:' + c.score + '%"></span></div>'
+      : '<div class="score-bar off"></div>';
+    return '<tr' + (c.available ? '' : ' class="off"') + '>' +
+      '<td>' + esc(c.label) + '</td>' +
+      '<td class="num">' + (c.available ? c.score : '—') + '</td>' +
+      '<td class="num">' + (c.available ? c.effectiveWeight + '٪' : '<span title="وزن پایه ' + c.baseWeight + '٪ — بدون داده، بین بقیه پخش شد">۰٪</span>') + '</td>' +
+      '<td>' + bar + '</td>' +
+      '<td class="muted">' + esc(c.detail) +
+        (c.available && c.sampleSize
+          ? ' <span class="tag" title="حجم نمونه ' + c.sampleSize + ' — وزن این مؤلفه در ضریب اطمینان ' + c.confidence + '٪ ضرب شده">n=' + c.sampleSize + ' · اطمینان ' + c.confidence + '٪</span>'
+          : '') + '</td>' +
+    '</tr>';
+  }).join('');
+  return '<h4 style="margin:18px 0 6px">🎯 امتیاز خودکار — <span style="color:var(--cyan)">' + s.score + '</span> از ۱۰۰</h4>' +
+    '<div class="muted" style="margin-bottom:8px">' + esc(s.reason) + '</div>' +
+    '<table class="score-table"><thead><tr><th>مؤلفه</th><th>امتیاز</th><th>وزن مؤثر</th><th></th><th>بر چه اساسی</th></tr></thead><tbody>' +
+    rows + '</tbody></table>';
+}
+
 function renderJiraTasks(a) {
   if (!a.jiraConfigured) return ''; // Jira not set up — no empty section, no noise
   const tasks = a.jiraTasks || [];
@@ -1507,6 +1579,11 @@ function renderJiraTasks(a) {
           (t.hasMr
             ? '<span class="rt-badge no">MR دارد</span>'
             : '<span class="rt-badge unk" title="در این بازه هیچ Merge Requestی با این کد تسک از این فرد پیدا نشد">بدون MR</span>') +
+          estimateBadge(t) +
+          dueBadge(t) +
+          (t.sprint ? '<span class="tag">🏃 ' + esc(t.sprint) + '</span>' : '') +
+          (t.priority ? '<span class="tag">' + esc(t.priority) + '</span>' : '') +
+          (t.storyPoints != null ? '<span class="tag">SP ' + esc(t.storyPoints) + '</span>' : '') +
           (t.updated ? '<span class="tag">آخرین تغییر: ' + esc(String(t.updated).slice(0, 10)) + '</span>' : '') +
         '</div>'
       )).join('') + '</div>' +

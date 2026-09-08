@@ -120,13 +120,15 @@ test('searchIssuesByAssignee reports Jira\'s own total, so a capped list is neve
 // Regression: this function used to cache a bare array and now caches
 // { issues, total }. A cache entry written by the older shape must not reach
 // the caller as-is — it crashed the entire analytics page on `.issues.map`.
+// (Namespace is bumped on every shape change; this test tracks the current
+// one, since that is where a foreign-shaped entry could actually turn up.)
 test('searchIssuesByAssignee normalizes a legacy-shaped cache entry instead of handing back something that crashes', async () => {
   const jira = stubSecrets(CONFIGURED);
   const cache = require('../lib/cache');
   // Write the pre-upgrade shape (a bare array) straight into the cache the
   // function reads, under the key it will look up.
   const legacy = [{ key: 'EM-7', summary: 'قدیمی', status: 'Done' }];
-  await cache.cached('jira-assignee-v2', 'legacy_user|<|>', 60000, async () => legacy);
+  await cache.cached('jira-assignee-v3', 'legacy_user|<|>', 60000, async () => legacy);
 
   const originalFetch = global.fetch;
   global.fetch = () => { throw new Error('should have been served from cache'); };
@@ -135,6 +137,29 @@ test('searchIssuesByAssignee normalizes a legacy-shaped cache entry instead of h
     assert.ok(Array.isArray(out.issues), 'always { issues, total }, whatever the cache held');
     assert.equal(out.issues.length, 1);
     assert.equal(out.total, 1);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+// Regression: the dashboard's 🔄 used to refresh only the GitLab half, so a
+// ticket whose estimate had just been filled in still read as "no estimate"
+// for up to 10 minutes — which looks like a developer who doesn't estimate,
+// not like a stale cache.
+test('force re-queries Jira instead of serving the cached page', async () => {
+  const jira = stubSecrets(CONFIGURED);
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async () => {
+    calls++;
+    return { ok: true, json: async () => ({ total: 1, issues: [{ key: 'EM-77', fields: { summary: 's' } }] }) };
+  };
+  try {
+    await jira.searchIssuesByAssignee('force_user');
+    await jira.searchIssuesByAssignee('force_user');
+    assert.equal(calls, 1, 'the second call is served from cache');
+    await jira.searchIssuesByAssignee('force_user', { force: true });
+    assert.equal(calls, 2, 'force goes back to Jira');
   } finally {
     global.fetch = originalFetch;
   }

@@ -18,6 +18,7 @@ const devAnalytics = require('./lib/devAnalytics');
 const cache = require('./lib/cache');
 const projects = require('./lib/projects');
 const jira = require('./lib/jira');
+const devScore = require('./lib/devScore');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -354,13 +355,16 @@ async function handleDeveloperAnalytics(req, res, author, query) {
     // configured — see lib/jira.js's isConfigured().
     if (jira.isConfigured()) {
       const taskKeys = value.months.flatMap((m) => m.tasks.map((t) => t.task));
+      // `force` reaches Jira too: a refresh that only re-ran the GitLab half
+      // would still serve Jira data up to 10 minutes old, which is exactly
+      // what someone clicking 🔄 after updating a ticket is trying to escape.
       const [issues, assigned] = await Promise.all([
-        jira.fetchIssuesByKeys(taskKeys),
+        jira.fetchIssuesByKeys(taskKeys, { force }),
         // Everything assigned to this person in Jira — including tickets
         // that produced no MR at all, which is the whole point: "assigned
         // vs delivered" is invisible if you only look at tickets that
         // already have a merge request.
-        jira.searchIssuesByAssignee(author, { since, until }),
+        jira.searchIssuesByAssignee(author, { since, until, force }),
       ]);
       for (const m of value.months) {
         for (const t of m.tasks) {
@@ -380,6 +384,20 @@ async function handleDeveloperAnalytics(req, res, author, query) {
       value.jiraTasksTotal = assigned.total;
       value.jiraConfigured = true;
     }
+
+    // The composite score is computed per request, not cached with the
+    // analytics body: it folds in Jira (estimates, due dates) and this
+    // tool's own review history, both of which move on their own schedule.
+    // It is cheap — pure arithmetic over data already in hand.
+    const reviews = activity.reviewsFor(author).slice(-30);
+    const events = activity.eventsFor(author);
+    const lastActivityMs = Math.max(0, ...events.map((e) => e.at), ...reviews.map((r) => r.at)) || null;
+    value.autoScore = devScore.compute({
+      tasks: value.jiraTasks || [],
+      analytics: value,
+      reviews,
+      lastActivityMs,
+    });
     return sendJson(res, 200, { ...value, cachedAt: at, fromCache });
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
