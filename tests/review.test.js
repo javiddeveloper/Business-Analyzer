@@ -123,6 +123,40 @@ test('normalizeFindings drops line numbers the model invented', () => {
   assert.equal(out[2].severity, 'Medium', 'unknown severity falls back to Medium');
 });
 
+// A "this doesn't match the ticket" finding is judged against a Jira
+// description that is regularly stale or broader than the one MR — worth
+// telling a human about, never solid enough to block an approve. So it's
+// pinned to Low no matter what the model claims, in both review paths.
+test('task-mismatch findings are pinned to Low so a stale ticket can never block an approve', () => {
+  const { files } = reviewer.prepareFiles([{ new_path: 'app/Foo.kt', diff: SAMPLE_DIFF }]);
+  const out = reviewer.normalizeFindings(
+    [
+      { file: 'app/Foo.kt', line: 11, severity: 'High', category: 'task-mismatch', title: 'با تسک نمی‌خواند', note: 'n' },
+      { file: 'app/Foo.kt', line: 11, severity: 'High', category: 'logic', title: 'باگ واقعی', note: 'n' },
+    ],
+    files
+  );
+  assert.equal(out[0].severity, 'Low', 'model-claimed High on a ticket mismatch is clamped');
+  assert.equal(out[0].category, 'task-mismatch');
+  assert.equal(out[1].severity, 'High', 'a real code finding keeps the severity the model gave it');
+  assert.equal(reviewer.decide([out[0]]), 'APPROVE', 'a ticket mismatch alone still approves');
+});
+
+test('the Jira ticket reaches the review prompt, and its absence leaves no empty section', () => {
+  const { files } = reviewer.prepareFiles([{ new_path: 'app/Foo.kt', diff: SAMPLE_DIFF }]);
+  const withTicket = reviewer.buildUserPrompt({
+    mr: { title: 'x' }, batch: files, batchIndex: 0, batchCount: 1,
+    jiraIssue: { key: 'EM-2600', summary: 'محاسبه‌ی گردش حساب بدهی', status: 'In Review', description: 'باید سقف سنی چک شود.' },
+  });
+  assert.match(withTicket, /EM-2600/);
+  assert.match(withTicket, /محاسبه‌ی گردش حساب بدهی/);
+  assert.match(withTicket, /سقف سنی/, 'the description is what lets the review judge intent, not just the title');
+  assert.match(withTicket, /task-mismatch/, 'the model is told how to report a gap');
+
+  const withoutTicket = reviewer.buildUserPrompt({ mr: { title: 'x' }, batch: files, batchIndex: 0, batchCount: 1 });
+  assert.ok(!/تسک جیرا/.test(withoutTicket), 'no Jira, no ticket section');
+});
+
 test('batching packs every file instead of truncating the diff', () => {
   const files = Array.from({ length: 5 }, (_, i) => ({ path: `f${i}.kt`, annotated: 'x'.repeat(6000) }));
   const batches = reviewer.buildBatches(files);

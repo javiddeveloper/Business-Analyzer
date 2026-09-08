@@ -99,11 +99,25 @@ test('reportFile writes review/MR-<iid>.md with the expected sections', () => {
   assert.match(text, /val x = 1/);
   assert.match(text, /تست‌های خوبی اضافه شده/);
 
+  // No Jira issue passed → no empty "تسک" section pretending there is one.
+  assert.ok(!/## تسک/.test(text));
+
   // Re-running overwrites rather than appending a second copy.
   reportFile.writeReport({ projectPath, mrIid: 42, mr, result: { ...result, summary: 'خلاصه‌ی دوم' } });
   const text2 = fs.readFileSync(written.path, 'utf8');
   assert.match(text2, /خلاصه‌ی دوم/);
   assert.equal((text2.match(/# Code Review/g) || []).length, 1);
+
+  // With a Jira issue, the report carries what the task actually asked for,
+  // so the report is readable without opening Jira.
+  const jiraIssue = { key: 'EM-2600', summary: 'پیاده‌سازی کارگاه‌ها', status: 'In Review', assignee: 'سروین نامی', url: 'https://jira.example/browse/EM-2600' };
+  reportFile.writeReport({ projectPath, mrIid: 42, mr, result, jiraIssue });
+  const text3 = fs.readFileSync(written.path, 'utf8');
+  assert.match(text3, /## تسک/);
+  assert.match(text3, /EM-2600/);
+  assert.match(text3, /پیاده‌سازی کارگاه‌ها/);
+  assert.match(text3, /In Review/);
+  assert.match(text3, /سروین نامی/);
 });
 
 // ---- localRepo ---------------------------------------------------------------

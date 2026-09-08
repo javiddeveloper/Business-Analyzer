@@ -89,6 +89,69 @@ test('fetchIssuesByKeys dedupes repeated keys into one fetch, and maps status/as
   }
 });
 
+test('searchIssuesByAssignee reports Jira\'s own total, so a capped list is never shown as complete', async () => {
+  const jira = stubSecrets(CONFIGURED);
+  const originalFetch = global.fetch;
+  let seenUrl = null;
+  global.fetch = async (url) => {
+    seenUrl = String(url);
+    return {
+      ok: true,
+      json: async () => ({
+        total: 340, // far more than the page of issues actually returned
+        issues: [{ key: 'EM-9', fields: { summary: 's', status: { name: 'In Progress' }, updated: '2026-09-01T00:00:00.000+0330' } }],
+      }),
+    };
+  };
+  try {
+    const { issues, total } = await jira.searchIssuesByAssignee('s_nami', { since: '2026-08-01' });
+    assert.equal(issues.length, 1);
+    assert.equal(total, 340, 'the caller can say "showing 1 of 340" instead of implying 1 is all there is');
+    assert.equal(issues[0].status, 'In Progress');
+    // URLSearchParams encodes spaces as "+", which decodeURIComponent leaves alone.
+    const jql = decodeURIComponent(seenUrl).replace(/\+/g, ' ');
+    assert.match(jql, /assignee = "s_nami"/);
+    assert.match(jql, /updated >= "2026-08-01"/, 'the page\'s date filter reaches the JQL');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+// Regression: this function used to cache a bare array and now caches
+// { issues, total }. A cache entry written by the older shape must not reach
+// the caller as-is — it crashed the entire analytics page on `.issues.map`.
+test('searchIssuesByAssignee normalizes a legacy-shaped cache entry instead of handing back something that crashes', async () => {
+  const jira = stubSecrets(CONFIGURED);
+  const cache = require('../lib/cache');
+  // Write the pre-upgrade shape (a bare array) straight into the cache the
+  // function reads, under the key it will look up.
+  const legacy = [{ key: 'EM-7', summary: 'قدیمی', status: 'Done' }];
+  await cache.cached('jira-assignee-v2', 'legacy_user|<|>', 60000, async () => legacy);
+
+  const originalFetch = global.fetch;
+  global.fetch = () => { throw new Error('should have been served from cache'); };
+  try {
+    const out = await jira.searchIssuesByAssignee('legacy_user', { since: '<', until: '>' });
+    assert.ok(Array.isArray(out.issues), 'always { issues, total }, whatever the cache held');
+    assert.equal(out.issues.length, 1);
+    assert.equal(out.total, 1);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('searchIssuesByAssignee refuses a username that could break out of the JQL string', async () => {
+  const jira = stubSecrets(CONFIGURED);
+  const originalFetch = global.fetch;
+  global.fetch = () => { throw new Error('must not be called'); };
+  try {
+    const bad = await jira.searchIssuesByAssignee('a" OR assignee != "x');
+    assert.deepEqual(bad, { issues: [], total: 0 }, 'refused outright rather than escaped-and-hoped');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('fetchIssuesByKeys tolerates one missing/erroring key without losing the others', async () => {
   const jira = stubSecrets(CONFIGURED);
   const originalFetch = global.fetch;

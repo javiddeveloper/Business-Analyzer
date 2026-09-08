@@ -55,6 +55,31 @@ test('the prompt tells the agent to explore the repo, not just read the diff', (
   assert.match(prompt, /Add null handling/);
 });
 
+test('the Jira ticket is handed to the agent so it can check intent, not just cleanliness', () => {
+  const { files, skipped } = agentReview.prepareFilesFromChanges(changes());
+  const args = { mr: { title: 'Add null handling', source_branch: 'feat', target_branch: 'develop' }, files, skipped, diffText: DIFF };
+
+  const withTicket = agentReview.buildPrompt({
+    ...args,
+    jiraIssue: { key: 'EM-2600', summary: 'گردش حساب بدهی', status: 'In Review', description: 'باید سقف سنی چک شود.' },
+  });
+  assert.match(withTicket, /EM-2600/);
+  assert.match(withTicket, /سقف سنی/, 'the description is the part that makes intent checkable');
+  assert.match(withTicket, /task-mismatch/, 'and it knows how to report a gap it finds');
+
+  assert.ok(!/تسک جیرا/.test(agentReview.buildPrompt(args)), 'no ticket, no section');
+});
+
+test('an agent-reported task mismatch is pinned to Low, like the diff path', () => {
+  const { files } = agentReview.prepareFilesFromChanges(changes());
+  const out = agentReview.normalizeAgentFindings([
+    { file: 'app/Repo.kt', line: 2, severity: 'High', category: 'task-mismatch', title: 'با تسک نمی‌خواند', note: 'n' },
+    { file: 'app/Repo.kt', line: 2, severity: 'High', category: 'security', title: 'باگ واقعی', note: 'n' },
+  ], files);
+  assert.equal(out[0].severity, 'Low');
+  assert.equal(out[1].severity, 'High', 'a real code finding is untouched');
+});
+
 test('a finding on a line outside the diff is kept, but not marked as diff-anchored', () => {
   const { files } = agentReview.prepareFilesFromChanges(changes());
   const out = agentReview.normalizeAgentFindings([

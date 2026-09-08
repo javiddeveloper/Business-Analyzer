@@ -1451,7 +1451,8 @@ function renderDevMain() {
     '</div>' +
     '<div class="chart-wrap">' + renderMonthChart(a.months) + '</div>' +
     renderRatingSection(scoreData) +
-    '<h4 style="margin:16px 0 6px">لیست تسک‌ها بر اساس ماه</h4>' +
+    renderJiraTasks(a) +
+    '<h4 style="margin:16px 0 6px">لیست تسک‌ها بر اساس ماه (از روی MRها)</h4>' +
     (a.months.length ? a.months.map(renderMonthGroup).join('') : '<div class="empty">در این بازه چیزی پیدا نشد.</div>');
 
   document.getElementById('devFilterApply').onclick = () => {
@@ -1468,6 +1469,52 @@ function renderDevMain() {
   if (saveBtn) saveBtn.onclick = () => saveDevRating(DEV.selected);
   const monthSelect = document.getElementById('ratingMonthSelect');
   if (monthSelect) monthSelect.onchange = (e) => switchRatingMonth(DEV.selected, e.target.value);
+}
+
+// Tasks assigned to this person in Jira — the other half of the picture the
+// MR list can't show: a ticket in progress with no merge request yet is
+// exactly the thing worth noticing, and it appears nowhere in GitLab.
+// Grouped by Jira status, since "5 In Progress, 2 In Review" is the shape
+// of the question being asked.
+function renderJiraTasks(a) {
+  if (!a.jiraConfigured) return ''; // Jira not set up — no empty section, no noise
+  const tasks = a.jiraTasks || [];
+  if (!tasks.length) {
+    return '<h4 style="margin:18px 0 6px">🧩 تسک‌های جیرا</h4>' +
+      '<div class="empty">هیچ تسکی در جیرا برای این نام کاربری پیدا نشد — ممکن است نام کاربری‌اش در جیرا با گیت‌لب فرق داشته باشد.</div>';
+  }
+  const withoutMr = tasks.filter((t) => !t.hasMr).length;
+  // Jira caps how many issues come back per query, so say so rather than
+  // letting a capped list read as the person's complete workload.
+  const total = a.jiraTasksTotal || tasks.length;
+  const capNote = total > tasks.length
+    ? '<span class="tag" style="color:var(--amber)">نمایش ' + tasks.length + ' تسکِ اخیر از ' + total + ' تسک</span>'
+    : '';
+  const byStatus = new Map();
+  for (const t of tasks) {
+    const key = t.status || 'بدون وضعیت';
+    if (!byStatus.has(key)) byStatus.set(key, []);
+    byStatus.get(key).push(t);
+  }
+  const groups = Array.from(byStatus.entries()).map(([status, items]) => (
+    '<div class="month-group">' +
+      '<h4>' + esc(status) + ' — ' + items.length + ' تسک</h4>' +
+      '<div class="task-cards">' + items.map((t) => (
+        '<div class="task-card">' +
+          '<span class="task-pill">' + esc(t.key) + '</span>' +
+          '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer" title="' + esc(t.summary) + '">' + esc(t.summary || '(بدون عنوان)') + '</a>' +
+          (t.type ? '<span class="tag">' + esc(t.type) + '</span>' : '') +
+          (t.hasMr
+            ? '<span class="rt-badge no">MR دارد</span>'
+            : '<span class="rt-badge unk" title="در این بازه هیچ Merge Requestی با این کد تسک از این فرد پیدا نشد">بدون MR</span>') +
+          (t.updated ? '<span class="tag">آخرین تغییر: ' + esc(String(t.updated).slice(0, 10)) + '</span>' : '') +
+        '</div>'
+      )).join('') + '</div>' +
+    '</div>'
+  )).join('');
+  return '<h4 style="margin:18px 0 6px">🧩 تسک‌های جیرا — ' + tasks.length + ' تسک' +
+    (withoutMr ? '، <span style="color:var(--amber)">' + withoutMr + ' تا در همین لیست MR ندارند</span>' : '') + '</h4>' +
+    (capNote ? '<div style="margin-bottom:8px">' + capNote + '</div>' : '') + groups;
 }
 
 function renderMonthGroup(m) {

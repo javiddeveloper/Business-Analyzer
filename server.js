@@ -354,7 +354,14 @@ async function handleDeveloperAnalytics(req, res, author, query) {
     // configured — see lib/jira.js's isConfigured().
     if (jira.isConfigured()) {
       const taskKeys = value.months.flatMap((m) => m.tasks.map((t) => t.task));
-      const issues = await jira.fetchIssuesByKeys(taskKeys);
+      const [issues, assigned] = await Promise.all([
+        jira.fetchIssuesByKeys(taskKeys),
+        // Everything assigned to this person in Jira — including tickets
+        // that produced no MR at all, which is the whole point: "assigned
+        // vs delivered" is invisible if you only look at tickets that
+        // already have a merge request.
+        jira.searchIssuesByAssignee(author, { since, until }),
+      ]);
       for (const m of value.months) {
         for (const t of m.tasks) {
           const issue = t.task ? issues.get(t.task) : null;
@@ -363,6 +370,15 @@ async function handleDeveloperAnalytics(req, res, author, query) {
           t.jiraUrl = issue ? issue.url : null;
         }
       }
+      // `hasMr` is computed here rather than in the browser so the flag
+      // means the same thing everywhere it's read later.
+      const keysWithMr = new Set(taskKeys.filter(Boolean));
+      value.jiraTasks = assigned.issues.map((t) => ({ ...t, hasMr: keysWithMr.has(t.key) }));
+      // Jira's own count for the query, which can exceed what we fetched —
+      // the page says "showing N of M" rather than passing a capped list off
+      // as the complete one.
+      value.jiraTasksTotal = assigned.total;
+      value.jiraConfigured = true;
     }
     return sendJson(res, 200, { ...value, cachedAt: at, fromCache });
   } catch (e) {
