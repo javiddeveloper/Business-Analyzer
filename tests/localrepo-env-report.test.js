@@ -93,7 +93,8 @@ test('reportFile writes review/MR-<iid>.md with the expected sections', () => {
   assert.ok(written.path.endsWith(path.join('review', 'MR-42.md')));
   const text = fs.readFileSync(written.path, 'utf8');
   assert.match(text, /# Code Review — MR !42/);
-  assert.match(text, /feature-x → develop/);
+  assert.match(text, /شاخه‌ی مبدأ: \*\*`feature-x`\*\*/);
+  assert.match(text, /شاخه‌ی مقصد: \*\*`develop`\*\*/);
   assert.match(text, /REQUEST_CHANGES/);
   assert.match(text, /باگ فرضی/);
   assert.match(text, /val x = 1/);
@@ -110,14 +111,59 @@ test('reportFile writes review/MR-<iid>.md with the expected sections', () => {
 
   // With a Jira issue, the report carries what the task actually asked for,
   // so the report is readable without opening Jira.
-  const jiraIssue = { key: 'EM-2600', summary: 'پیاده‌سازی کارگاه‌ها', status: 'In Review', assignee: 'سروین نامی', url: 'https://jira.example/browse/EM-2600' };
-  reportFile.writeReport({ projectPath, mrIid: 42, mr, result, jiraIssue });
+  const jiraIssue = {
+    key: 'EM-2600', summary: 'پیاده‌سازی کارگاه‌ها', status: 'In Review', assignee: 'سروین نامی',
+    url: 'https://jira.example/browse/EM-2600', estimateHours: 10, spentHours: 12.3,
+    dueDate: '2026-09-05', description: 'باید سقف سنی چک شود.',
+  };
+  const commitStats = { total: 12, otherAuthors: [{ email: 'a@b.c', name: 'علی', count: 3 }] };
+  reportFile.writeReport({ projectPath, mrIid: 42, mr, result, jiraIssue, commitStats });
   const text3 = fs.readFileSync(written.path, 'utf8');
   assert.match(text3, /## تسک/);
   assert.match(text3, /EM-2600/);
   assert.match(text3, /پیاده‌سازی کارگاه‌ها/);
   assert.match(text3, /In Review/);
   assert.match(text3, /سروین نامی/);
+  assert.match(text3, /https:\/\/jira\.example\/browse\/EM-2600/, 'the task link is in the report');
+  assert.match(text3, /10 ساعت/, 'estimate');
+  assert.match(text3, /12\.3 ساعت/, 'logged time');
+  assert.match(text3, /2026-09-05/, 'due date');
+  assert.match(text3, /باید سقف سنی چک شود/, 'the task description');
+  assert.match(text3, /https:\/\/example\/mr\/1/, 'the MR link');
+  assert.match(text3, /تعداد کامیت‌ها \| \*\*12\*\*/, 'commit count, bold');
+  assert.match(text3, /\*\*3\*\* کامیت از 1 نفر دیگر/, 'round-trip count with who');
+  assert.match(text3, /علی \(3\)/);
+
+  // The developer name and both branch names must stand out — they are what
+  // a reader scans for first.
+  assert.match(text3, /نویسنده: \*\*کاربر\*\*/);
+  assert.match(text3, /شاخه‌ی مبدأ: \*\*`feature-x`\*\*/);
+  assert.match(text3, /شاخه‌ی مقصد: \*\*`develop`\*\*/);
+});
+
+test('a task with no description says so rather than printing an empty section', () => {
+  const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'coder-review-report-nodesc-'));
+  const reportFile = require('../lib/reportFile');
+  const result = { decision: 'APPROVE', summary: 's', positives: [], findings: [], stats: { files: 1, skipped: 0 } };
+  const mr = { source_branch: 'b', target_branch: 'develop', author: { name: 'x' }, diff_refs: { head_sha: 'a1' } };
+  const written = reportFile.writeReport({
+    projectPath, mrIid: 7, mr, result,
+    jiraIssue: { key: 'EM-1', summary: 'ت', status: 'Done', url: 'u', description: '   ' },
+  });
+  const text = fs.readFileSync(written.path, 'utf8');
+  assert.match(text, /این تسک در جیرا شرحی ندارد/);
+  assert.ok(!/\*\*شرح تسک:\*\*/.test(text));
+});
+
+test('the report still builds when GitLab would not give up the commit history', () => {
+  const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'coder-review-report-nocommits-'));
+  const reportFile = require('../lib/reportFile');
+  const result = { decision: 'APPROVE', summary: 's', positives: [], findings: [], stats: { files: 1, skipped: 0 } };
+  const mr = { source_branch: 'b', target_branch: 'develop', author: { name: 'x' }, diff_refs: { head_sha: 'a1' } };
+  const written = reportFile.writeReport({ projectPath, mrIid: 8, mr, result, commitStats: null });
+  const text = fs.readFileSync(written.path, 'utf8');
+  assert.match(text, /# Code Review — MR !8/);
+  assert.ok(!/تعداد کامیت‌ها/.test(text), 'the row is omitted, not printed as a guess');
 });
 
 // ---- localRepo ---------------------------------------------------------------

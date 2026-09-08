@@ -128,7 +128,7 @@ test('searchIssuesByAssignee normalizes a legacy-shaped cache entry instead of h
   // Write the pre-upgrade shape (a bare array) straight into the cache the
   // function reads, under the key it will look up.
   const legacy = [{ key: 'EM-7', summary: 'قدیمی', status: 'Done' }];
-  await cache.cached('jira-assignee-v3', 'legacy_user|<|>', 60000, async () => legacy);
+  await cache.cached(jira.SEARCH_CACHE, 'legacy_user|<|>', 60000, async () => legacy);
 
   const originalFetch = global.fetch;
   global.fetch = () => { throw new Error('should have been served from cache'); };
