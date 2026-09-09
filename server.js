@@ -513,6 +513,9 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
       reviews,
       lastActivityMs,
     });
+    // The sprint they were last working in, scored on its own — a quarter's
+    // average can look fine while the sprint that just ended did not.
+    value.latestSprint = monthly.latestSprint(value.jiraTasks || []);
     return { ...value, cachedAt: at, fromCache };
   }
 }

@@ -63,6 +63,31 @@ test('lateness is graded, so being slightly late scores far above being months l
   assert.equal(badly.score, 0);
 });
 
+// A ticket that reached Review or Done with no logged hours is a hole in
+// every other number: estimate accuracy can't see it, and the month's totals
+// under-report the real effort. Scored on its own so "estimates are off" and
+// "nobody logged time" stay separate problems.
+test('time logging is scored only on tasks that actually reached Review or Done', () => {
+  const out = devScore.timeLogging([
+    { statusCategory: 'done', status: 'Done', spentHours: 5 },
+    { statusCategory: 'done', status: 'Done', spentHours: null },
+    { statusCategory: 'indeterminate', status: 'In Review', spentHours: null },
+    { statusCategory: 'indeterminate', status: 'In Progress', spentHours: null },
+    { statusCategory: 'new', status: 'To Do', spentHours: null },
+  ]);
+  assert.equal(out.sampleSize, 3, 'To Do and In Progress have no time to log yet');
+  assert.equal(out.score, 33, '1 of 3 logged');
+  assert.match(out.detail, /2 تسک بدون ثبت زمان/);
+
+  assert.equal(devScore.isReviewOrDone({ statusCategory: 'new', status: 'To Do' }), false);
+  assert.equal(devScore.isReviewOrDone({ statusCategory: 'indeterminate', status: 'In Review' }), true);
+  assert.equal(devScore.isReviewOrDone({ statusCategory: 'done', status: 'Closed' }), true);
+});
+
+test('time logging is null, not zero, when nothing has reached Review or Done yet', () => {
+  assert.equal(devScore.timeLogging([{ statusCategory: 'new', status: 'To Do', spentHours: null }]), null);
+});
+
 test('a component with no data drops out and its weight is shared, rather than scoring zero', () => {
   const tasks = [{ estimateHours: 10, spentHours: 10, dueDate: '2026-09-20', resolvedAt: null, statusCategory: 'done' }];
   const withQuality = devScore.compute({

@@ -177,6 +177,27 @@
      can't push a column wider than its share. Collapses to one column when
      two would be too narrow to read. */
   .task-cards.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  /* Tab strip on the right (RTL), pane on the left. `minmax(0,1fr)` on the
+     pane so a wide card grid can't push the strip off screen. */
+  .task-tabs { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; direction: rtl; }
+  .vtabs { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 8px; align-self: start; }
+  .vtab {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%;
+    padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font-size: 12px; cursor: pointer;
+    text-align: right; transition: border-color .15s, background .15s;
+  }
+  .vtab:hover { border-color: var(--border-strong); }
+  .vtab.on { border-color: var(--cyan); background: rgba(52,227,227,.10); color: var(--cyan); }
+  .vtab-label { flex: 1 1 auto; min-width: 0; }
+  .vtab-count { font-variant-numeric: tabular-nums; opacity: .75; }
+  .vtab-flag { flex: 1 1 100%; font-size: 10px; color: var(--amber); }
+  .vtab-pane { min-width: 0; }
+  @media (max-width: 900px) { .task-tabs { grid-template-columns: 1fr; } .vtabs { position: static; flex-direction: row; flex-wrap: wrap; } .vtab { width: auto; } }
+  /* A task that reached Review/Done without a logged hour — bold, because it
+     is a hole in every other number on the page. */
+  .task-card.needs-worklog { border-color: rgba(255,179,71,.45); }
+  .task-card.needs-worklog .task-title { font-weight: 700; }
   @media (max-width: 900px) { .task-cards.two-col { grid-template-columns: 1fr; } }
   /* The quiet third line: filing details, present but not competing with the
      signal chips above them. */
@@ -1422,7 +1443,7 @@ async function deleteKb(id) {
 // task-list in the main area. Fields here are deliberately per-record (see
 // lib/devAnalytics.js) so a later added metric is just another column/badge,
 // not a restructure.
-const DEV = { roster: [], selected: null, analytics: null, score: null, since: '', until: '', ratingMonth: null };
+const DEV = { roster: [], selected: null, analytics: null, score: null, since: '', until: '', ratingMonth: null, taskTab: null };
 
 document.getElementById('devAnalyticsBtn').onclick = openDevPage;
 document.getElementById('devBackBtn').onclick = closeDevPage;
@@ -1558,6 +1579,7 @@ function renderDevMain() {
       '<div class="stat-box"><div class="n">' + a.reportedMRs + '</div><div class="l">دارای گزارش ریویو (پایه‌ی محاسبه‌ی رفت‌وبرگشتی)</div></div>' +
       '<div class="stat-box rt"><div class="n">' + a.roundTripMRs + '</div><div class="l">رفت‌وبرگشتی (کامیت از فرد دیگری غیر از نویسنده)</div></div>' +
       '<div class="stat-box unk"><div class="n">' + a.uncheckedMRs + '</div><div class="l">نامشخص (برنچ حذف‌شده یا خارج از سقف بررسی)</div></div>' +
+      sprintStatBoxes(a) +
     '</div>' +
     '<div class="chart-legend">' +
       '<span><span class="sw" style="background:var(--green)"></span>تمیز</span>' +
@@ -1568,9 +1590,7 @@ function renderDevMain() {
     '<div class="chart-wrap">' + renderMonthChart(a.months) + '</div>' +
     renderRatingSection(scoreData) +
     renderAutoScore(a) +
-    renderJiraTasks(a) +
-    '<h4 style="margin:16px 0 6px">لیست تسک‌ها بر اساس ماه (از روی MRها)</h4>' +
-    (a.months.length ? a.months.map(renderMonthGroup).join('') : '<div class="empty">در این بازه چیزی پیدا نشد.</div>');
+    renderJiraTasks(a);
 
   document.getElementById('devFilterApply').onclick = () => {
     DEV.since = document.getElementById('devSince').value;
@@ -1582,6 +1602,10 @@ function renderDevMain() {
     loadDevMain();
   };
   document.getElementById('devRefreshBtn').onclick = () => loadDevMain(true);
+  // Switching panes is pure re-render off data already in hand — no refetch.
+  for (const btn of document.querySelectorAll('[data-tasktab]')) {
+    btn.onclick = () => { DEV.taskTab = btn.dataset.tasktab; renderDevMain(); };
+  }
   // A plain navigation, not fetch(): the browser's own download handling
   // gets the filename from Content-Disposition, and nothing has to buffer
   // the workbook in JS.
@@ -1603,6 +1627,41 @@ function renderDevMain() {
 // exactly the thing worth noticing, and it appears nowhere in GitLab.
 // Grouped by Jira status, since "5 In Progress, 2 In Review" is the shape
 // of the question being asked.
+// The sprint they were last working in, scored on its own. A quarter's
+// average can look healthy while the sprint that just ended did not, and the
+// sprint is the unit this team actually plans in.
+function sprintStatBoxes(a) {
+  const sp = a.latestSprint;
+  if (!sp) return '';
+  const scoreCls = sp.score == null ? 'unk' : (sp.score >= 70 ? '' : (sp.score >= 45 ? 'unk' : 'rt'));
+  return '<div class="stat-box ' + scoreCls + '" title="' + esc(sp.name) + '">' +
+      '<div class="n">' + (sp.score == null ? '—' : sp.score) + '</div>' +
+      '<div class="l">امتیاز آخرین اسپرینت · ' + esc(sp.name) + '</div>' +
+    '</div>' +
+    '<div class="stat-box"><div class="n">' + sp.doneCount + '<span style="font-size:14px;opacity:.6">/' + sp.taskCount + '</span></div>' +
+      '<div class="l">تسک‌های Done در آخرین اسپرینت</div></div>' +
+    (sp.noTimeLogged
+      ? '<div class="stat-box rt"><div class="n">' + sp.noTimeLogged + '</div>' +
+        '<div class="l">تسک Review/Done بدون ثبت زمان (آخرین اسپرینت)</div></div>'
+      : '');
+}
+
+// A task that reached Review/Done with no logged hours — the same rule the
+// score uses (devScore.isReviewOrDone), so a card flagged here is exactly a
+// card costing points there.
+function missingTimeLog(t) {
+  const reached = t.statusCategory === 'done' || /review/i.test(String(t.status || ''));
+  return reached && !(t.spentHours > 0);
+}
+
+// Which project the ticket belongs to. Jira's own project field when we have
+// it; otherwise the project of a merge request that references it, which is
+// the same answer from the other side.
+function projectBadge(t) {
+  const name = t.project || (t.mrs && t.mrs.length ? t.mrs[0].projectName : null);
+  return name ? '<span class="chip-quiet">📁 ' + esc(name) + '</span>' : '';
+}
+
 // Status carries the most meaning on the card, so it is the one chip that
 // gets a real colour — and the colour comes from Jira's own statusCategory,
 // not from matching workflow names this team could rename tomorrow.
@@ -1687,9 +1746,13 @@ function dueBadge(t) {
   if (!t.dueDate) return '';
   const due = new Date(t.dueDate + 'T23:59:59').getTime();
   if (t.resolvedAt) {
-    const late = new Date(t.resolvedAt).getTime() > due;
-    return '<span class="rt-badge ' + (late ? 'yes' : 'no') + '" title="سررسید ' + esc(faDate(t.dueDate)) + '، تحویل ' + esc(faDate(t.resolvedAt)) + '">' +
-      (late ? '📅 با تأخیر' : '📅 به‌موقع') + '</span>';
+    const daysLate = Math.round((new Date(t.resolvedAt).getTime() - due) / 86400000);
+    const title = 'سررسید ' + esc(faDate(t.dueDate)) + '، تحویل ' + esc(faDate(t.resolvedAt));
+    // "با تأخیر" alone can't be acted on — two days over and two months over
+    // are different problems, and the score already grades them differently.
+    return daysLate > 0
+      ? '<span class="rt-badge yes" title="' + title + '">📅 ' + daysLate + ' روز تأخیر</span>'
+      : '<span class="rt-badge no" title="' + title + '">📅 به‌موقع' + (daysLate < 0 ? ' (' + Math.abs(daysLate) + ' روز زودتر)' : '') + '</span>';
   }
   if (Date.now() > due) {
     const days = Math.floor((Date.now() - due) / 86400000);
@@ -1754,16 +1817,15 @@ function renderJiraTasks(a) {
   // Colour is reserved for the three things a reader is scanning for
   // (status, estimate drift, lateness); everything else stays out of the way.
   const groups = Array.from(byStatus.entries()).map(([status, items]) => (
-    '<div class="month-group">' +
-      '<h4>' + esc(status) + ' — ' + items.length + ' تسک</h4>' +
-      '<div class="task-cards two-col">' + items.map((t) => (
-        '<div class="task-card">' +
+    '<div class="task-cards two-col">' + items.map((t) => (
+        '<div class="task-card' + (missingTimeLog(t) ? ' needs-worklog' : '') + '">' +
           '<div class="task-head">' +
             '<span class="task-pill">' + esc(t.key) + '</span>' +
             '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer" title="' + esc(t.summary) + '">' + esc(t.summary || '(بدون عنوان)') + '</a>' +
           '</div>' +
           '<div class="task-meta">' +
             jiraStatusBadge(t) +
+            projectBadge(t) +
             mrLinks(t) +
             estimateBadge(t) +
             dueBadge(t) +
@@ -1776,12 +1838,43 @@ function renderJiraTasks(a) {
             (t.updated ? '<span>آخرین تغییر: ' + esc(faDate(t.updated)) + '</span>' : '') +
           '</div>' +
         '</div>'
-      )).join('') + '</div>' +
-    '</div>'
+      )).join('') + '</div>'
+  ));
+
+  // Panes, not stacked sections: with ~100 tasks the old layout meant
+  // scrolling past every Done ticket to reach the month list. The tab strip
+  // sits on the right (RTL), each tab carrying its own count.
+  const statusNames = Array.from(byStatus.keys());
+  const panes = statusNames.map((name, i) => ({
+    id: 'st' + i,
+    label: name,
+    count: byStatus.get(name).length,
+    // A status whose tasks are mostly missing worklogs is worth spotting
+    // from the tab strip, without opening it.
+    flag: byStatus.get(name).filter(missingTimeLog).length,
+    html: groups[i],
+  }));
+  panes.push({
+    id: 'months', label: 'بر اساس ماه (از روی MRها)', count: a.months.length, flag: 0,
+    html: a.months.length ? a.months.map(renderMonthGroup).join('') : '<div class="empty">در این بازه چیزی پیدا نشد.</div>',
+  });
+
+  const active = panes.some((p) => p.id === DEV.taskTab) ? DEV.taskTab : panes[0].id;
+  const tabs = panes.map((p) => (
+    '<button class="vtab' + (p.id === active ? ' on' : '') + '" data-tasktab="' + p.id + '">' +
+      '<span class="vtab-label">' + esc(p.label) + '</span>' +
+      '<span class="vtab-count">' + p.count + '</span>' +
+      (p.flag ? '<span class="vtab-flag" title="' + p.flag + ' تسک بدون ثبت زمان">' + p.flag + ' بدون زمان</span>' : '') +
+    '</button>'
   )).join('');
+
   return '<h4 style="margin:18px 0 6px">🧩 تسک‌های جیرا — ' + tasks.length + ' تسک' +
     (withoutMr ? '، <span style="color:var(--amber)">' + withoutMr + ' تا در همین لیست MR ندارند</span>' : '') + '</h4>' +
-    (capNote ? '<div style="margin-bottom:8px">' + capNote + '</div>' : '') + groups;
+    (capNote ? '<div style="margin-bottom:8px">' + capNote + '</div>' : '') +
+    '<div class="task-tabs">' +
+      '<div class="vtabs">' + tabs + '</div>' +
+      '<div class="vtab-pane">' + (panes.find((p) => p.id === active) || {}).html + '</div>' +
+    '</div>';
 }
 
 function renderMonthGroup(m) {

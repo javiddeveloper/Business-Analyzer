@@ -175,6 +175,44 @@ test('every month row carries a Jalali label beside the sortable ISO key', () =>
   assert.equal(rows[0].monthFa, 'شهریور ۱۴۰۵');
 });
 
+// The sprint that just ended is the unit this team plans in, so it gets its
+// own evaluation rather than being averaged into the quarter.
+test('latestSprint picks the sprint by newest activity, not by sorting its name', () => {
+  const tasks = [
+    // Named as if it were the later sprint, but its work is older — sorting
+    // names would pick this one, which is the bug being guarded against.
+    { sprint: 'Sprint-99', statusCategory: 'done', status: 'Done', updated: '2026-05-01T00:00:00Z', spentHours: 4, estimateHours: 4 },
+    { sprint: 'Sprint-60', statusCategory: 'done', status: 'Done', updated: '2026-09-01T00:00:00Z', spentHours: 8, estimateHours: 8 },
+    { sprint: 'Sprint-60', statusCategory: 'indeterminate', status: 'In Review', updated: '2026-09-02T00:00:00Z', spentHours: null, estimateHours: 5 },
+  ];
+  const out = monthly.latestSprint(tasks, { now: Date.parse('2026-09-09T00:00:00Z') });
+  assert.equal(out.name, 'Sprint-60');
+  assert.equal(out.taskCount, 2);
+  assert.equal(out.doneCount, 1);
+  assert.equal(out.noTimeLogged, 1, 'the In Review task with no worklog is flagged');
+  assert.ok(out.score > 0);
+});
+
+// A sprint that started two days ago has nothing Done yet. Counting that as
+// 0% completion says "this sprint failed" about a sprint still running — the
+// same mistake the binary on-time metric made.
+test('a just-started sprint is not scored as a failure for having nothing done yet', () => {
+  const justStarted = monthly.latestSprint([
+    { sprint: 'Sprint-61', statusCategory: 'indeterminate', status: 'In Progress',
+      updated: '2026-09-08T00:00:00Z', spentHours: null, estimateHours: 4, dueDate: '2026-09-30', resolvedAt: null },
+  ], { now: Date.parse('2026-09-09T00:00:00Z') });
+
+  assert.equal(justStarted.taskCount, 1);
+  assert.equal(justStarted.doneCount, 0);
+  assert.equal(justStarted.score, null, 'nothing measurable yet reports no score, not zero');
+  const completion = justStarted.components.find((c) => c.key === 'completion');
+  assert.equal(completion.available, false, 'progress through a running sprint is not a verdict on it');
+});
+
+test('latestSprint is null when no task carries a sprint', () => {
+  assert.equal(monthly.latestSprint([{ sprint: null, updated: '2026-09-01T00:00:00Z' }]), null);
+});
+
 test('toSheetRows puts the labels first and lines every row up under them', () => {
   const rows = monthly.buildMonthlyRows({
     analytics: { months: [{ month: '2026-08', mrCount: 2, roundTripCount: 0, noReportCount: 0 }] },
