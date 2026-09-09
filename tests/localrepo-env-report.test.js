@@ -127,7 +127,10 @@ test('reportFile writes review/MR-<iid>.md with the expected sections', () => {
   assert.match(text3, /https:\/\/jira\.example\/browse\/EM-2600/, 'the task link is in the report');
   assert.match(text3, /10 ساعت/, 'estimate');
   assert.match(text3, /12\.3 ساعت/, 'logged time');
-  assert.match(text3, /2026-09-05/, 'due date');
+  // Dates are shown in Jalali — the calendar the team actually reads. The
+  // Gregorian original must not leak through alongside it.
+  assert.match(text3, /۱۴۰۵\/۰۶\/۱۴/, 'due date, in Jalali');
+  assert.ok(!/2026-09-05/.test(text3), 'and not the Gregorian form');
   assert.match(text3, /باید سقف سنی چک شود/, 'the task description');
   assert.match(text3, /https:\/\/example\/mr\/1/, 'the MR link');
   assert.match(text3, /تعداد کامیت‌ها \| \*\*12\*\*/, 'commit count, bold');

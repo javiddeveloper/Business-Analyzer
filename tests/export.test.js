@@ -152,6 +152,29 @@ test('a month with nothing to score reports no score rather than a zero', () => 
   assert.equal(rows[0].score, null);
 });
 
+// Regression: the chart referenced columns by hardcoded letter, so adding
+// the Jalali month column silently repointed it at the ISO month strings —
+// a chart Excel renders happily and which plots nothing.
+test('chart columns are looked up by key, so inserting a column cannot mis-point the chart', () => {
+  assert.equal(monthly.columnLetter('monthFa'), 'A');
+  const scoreCol = monthly.columnLetter('score');
+  const header = monthly.toSheetRows([])[0];
+  const idx = scoreCol.charCodeAt(0) - 65;
+  assert.equal(header[idx], 'امتیاز کل', 'the letter really does land on the score column');
+  assert.throws(() => monthly.columnLetter('nope'), /unknown export column/);
+});
+
+test('every month row carries a Jalali label beside the sortable ISO key', () => {
+  assert.equal(monthly.faMonthLabel('2026-09'), 'شهریور ۱۴۰۵');
+  assert.equal(monthly.faMonthLabel('2026-01'), 'دی ۱۴۰۴');
+  const rows = monthly.buildMonthlyRows({
+    analytics: { months: [{ month: '2026-09', mrCount: 1, roundTripCount: 0, noReportCount: 0 }] },
+    jiraTasks: [], reviews: [], now: Date.parse('2026-09-09T00:00:00Z'),
+  });
+  assert.equal(rows[0].month, '2026-09', 'the ISO key stays, so sorting still works');
+  assert.equal(rows[0].monthFa, 'شهریور ۱۴۰۵');
+});
+
 test('toSheetRows puts the labels first and lines every row up under them', () => {
   const rows = monthly.buildMonthlyRows({
     analytics: { months: [{ month: '2026-08', mrCount: 2, roundTripCount: 0, noReportCount: 0 }] },
@@ -162,5 +185,6 @@ test('toSheetRows puts the labels first and lines every row up under them', () =
   assert.equal(sheet[0][0], 'ماه');
   assert.equal(sheet[0].length, monthly.COLUMNS.length);
   assert.equal(sheet[1].length, monthly.COLUMNS.length, 'every data row matches the header width');
-  assert.equal(sheet[1][0], '2026-08');
+  assert.equal(sheet[1][0], 'مرداد ۱۴۰۵', 'the first column a reader sees is the Jalali month');
+  assert.equal(sheet[1][1], '2026-08', 'with the ISO key kept beside it');
 });

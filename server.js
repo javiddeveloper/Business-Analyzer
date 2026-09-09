@@ -249,10 +249,17 @@ async function handleDeveloperExport(req, res, author, query) {
       rows: sheetRows,
       chart: {
         title: `روند ماهانه — ${author}`,
-        categoryCol: 'A',
+        // Columns are looked up by key, never hardcoded: inserting a column
+        // would otherwise repoint the chart at the wrong data, which Excel
+        // plots without complaint.
+        categoryCol: monthly.columnLetter('monthFa'),
         // Score, MR count and round trips: the three that answer "how did
         // this month go" at a glance. The rest is in the table beside it.
-        series: [{ col: 'B' }, { col: 'C' }, { col: 'D' }],
+        series: [
+          { col: monthly.columnLetter('score') },
+          { col: monthly.columnLetter('mrCount') },
+          { col: monthly.columnLetter('roundTripCount') },
+        ],
       },
     }]);
 

@@ -171,6 +171,24 @@
     background: var(--panel-2); font-size: 12px; transition: border-color .15s;
   }
   .task-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  /* Exactly two per row, not `auto-fill`: on a wide monitor auto-fill packs in
+     three or four, which squeezes the title into an ellipsis and is not what
+     was asked for. minmax(0,1fr) rather than 1fr so a long unbroken title
+     can't push a column wider than its share. Collapses to one column when
+     two would be too narrow to read. */
+  .task-cards.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 900px) { .task-cards.two-col { grid-template-columns: 1fr; } }
+  /* The quiet third line: filing details, present but not competing with the
+     signal chips above them. */
+  .task-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 11px; color: var(--dim); }
+  .task-foot span { white-space: nowrap; }
+  .chip-quiet { border-radius: 6px; padding: 2px 9px; font-size: 11px; background: rgba(120,140,200,.10); color: var(--dim); }
+  /* Status is the chip a reader scans for first, so it is the one that gets a
+     real colour — keyed off Jira's own statusCategory. */
+  .status-chip { border-radius: 6px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+  .status-chip.st-done  { background: rgba(65,224,138,.15); color: var(--green); }
+  .status-chip.st-doing { background: rgba(93,214,255,.15); color: var(--cyan); }
+  .status-chip.st-todo  { background: rgba(120,140,200,.14); color: var(--dim); }
   .task-desc { font-size: 12px; line-height: 1.9; color: var(--text); white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
   .task-desc.muted-desc { color: var(--dim); font-style: italic; }
   .task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
@@ -1133,7 +1151,7 @@ function renderMrContext(ctx) {
           (j.status ? '<span class="jira-badge">🧩 ' + esc(j.status) + '</span>' : '') +
           (j.type ? '<span class="tag">' + esc(j.type) + '</span>' : '') +
           '<span class="tag">⏱ تخمین: ' + esc(est) + ' · ثبت‌شده: ' + esc(spent) + '</span>' +
-          (j.dueDate ? '<span class="tag">📅 سررسید: ' + esc(j.dueDate) + '</span>' : '') +
+          (j.dueDate ? '<span class="chip-quiet">📅 سررسید: ' + esc(faDate(j.dueDate)) + '</span>' : '') +
           (j.assignee ? '<span class="tag">👤 ' + esc(j.assignee) + '</span>' : '') +
           (j.priority ? '<span class="tag">' + esc(j.priority) + '</span>' : '') +
         '</div>' +
@@ -1585,6 +1603,17 @@ function renderDevMain() {
 // exactly the thing worth noticing, and it appears nowhere in GitLab.
 // Grouped by Jira status, since "5 In Progress, 2 In Review" is the shape
 // of the question being asked.
+// Status carries the most meaning on the card, so it is the one chip that
+// gets a real colour — and the colour comes from Jira's own statusCategory,
+// not from matching workflow names this team could rename tomorrow.
+function jiraStatusBadge(t) {
+  if (!t.status) return '';
+  const cls = t.statusCategory === 'done' ? 'st-done'
+    : t.statusCategory === 'indeterminate' ? 'st-doing'
+    : 'st-todo';
+  return '<span class="status-chip ' + cls + '">' + esc(t.status) + '</span>';
+}
+
 // The merge requests that reference this ticket, as links — knowing a
 // ticket "has an MR" is only half an answer when the next thing anyone wants
 // is to open it. A ticket can legitimately have several (a follow-up fix, a
@@ -1602,13 +1631,47 @@ function mrLinks(t) {
   }).join('');
 }
 
+// ---- Persian (Jalali) dates ------------------------------------------------
+// Every date the team reads is a Jalali one, so the Gregorian ISO strings
+// coming back from Jira and GitLab are converted at the point of display —
+// never in the data, which stays ISO so it can still be sorted and compared.
+// Intl does the calendar conversion natively; no lookup table to drift.
+const FA_DAY = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric', month: '2-digit', day: '2-digit' });
+const FA_MONTH_LONG = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'long' });
+const FA_YEAR = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric' });
+
+function faDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return String(iso);
+  return FA_DAY.format(d);
+}
+
+// "2026-09" -> "شهریور ۱۴۰۵". Built from parts rather than one formatter
+// because {year, month:'long'} renders as "۱۴۰۵ شهریور", which reads backwards.
+function faMonth(monthKey) {
+  if (!monthKey) return '';
+  const d = new Date(String(monthKey).length === 7 ? monthKey + '-15T00:00:00' : monthKey);
+  if (isNaN(d)) return String(monthKey);
+  return FA_MONTH_LONG.format(d) + ' ' + FA_YEAR.format(d);
+}
+
+// Short form for chart axes, where a full date would collide with its
+// neighbours: "شهریور ۰۵".
+function faMonthShort(monthKey) {
+  if (!monthKey) return '';
+  const d = new Date(String(monthKey).length === 7 ? monthKey + '-15T00:00:00' : monthKey);
+  if (isNaN(d)) return String(monthKey);
+  return FA_MONTH_LONG.format(d) + ' ' + FA_YEAR.format(d).slice(-2);
+}
+
 // Estimate vs. logged time on one task. Colour follows the same log2 drift
 // the score uses (devScore.js), so a card that looks bad and a component
 // that scores badly are saying the same thing rather than two different ones.
 function estimateBadge(t) {
   if (!(t.estimateHours > 0)) return '';
   if (!(t.spentHours > 0)) {
-    return '<span class="tag" title="زمان صرف‌شده در جیرا ثبت نشده، پس دقت تخمین برای این تسک قابل محاسبه نیست">⏱ تخمین ' + esc(t.estimateHours) + 'س</span>';
+    return '<span class="chip-quiet" title="زمان صرف‌شده در جیرا ثبت نشده، پس دقت تخمین برای این تسک قابل محاسبه نیست">⏱ تخمین ' + esc(t.estimateHours) + ' ساعت · بدون ثبت زمان</span>';
   }
   const drift = Math.abs(Math.log2(t.spentHours / t.estimateHours));
   const cls = drift <= 0.32 ? 'no' : (drift <= 1 ? 'unk' : 'yes'); // ≤25% off / ≤2× / worse
@@ -1625,14 +1688,14 @@ function dueBadge(t) {
   const due = new Date(t.dueDate + 'T23:59:59').getTime();
   if (t.resolvedAt) {
     const late = new Date(t.resolvedAt).getTime() > due;
-    return '<span class="rt-badge ' + (late ? 'yes' : 'no') + '" title="سررسید ' + esc(t.dueDate) + '، تحویل ' + esc(String(t.resolvedAt).slice(0, 10)) + '">' +
+    return '<span class="rt-badge ' + (late ? 'yes' : 'no') + '" title="سررسید ' + esc(faDate(t.dueDate)) + '، تحویل ' + esc(faDate(t.resolvedAt)) + '">' +
       (late ? '📅 با تأخیر' : '📅 به‌موقع') + '</span>';
   }
   if (Date.now() > due) {
     const days = Math.floor((Date.now() - due) / 86400000);
-    return '<span class="rt-badge yes" title="سررسید ' + esc(t.dueDate) + ' گذشته و تسک هنوز بسته نشده">📅 ' + days + ' روز عقب</span>';
+    return '<span class="rt-badge yes" title="سررسید ' + esc(faDate(t.dueDate)) + ' گذشته و تسک هنوز بسته نشده">📅 ' + days + ' روز عقب</span>';
   }
-  return '<span class="tag">📅 سررسید ' + esc(t.dueDate) + '</span>';
+  return '<span class="chip-quiet">📅 سررسید ' + esc(faDate(t.dueDate)) + '</span>';
 }
 
 // The composite score, with every component and its weight on screen. The
@@ -1684,24 +1747,33 @@ function renderJiraTasks(a) {
     if (!byStatus.has(key)) byStatus.set(key, []);
     byStatus.get(key).push(t);
   }
+  // Three deliberate lines per card instead of one long wrap:
+  //   1. what it is      — key + title
+  //   2. what it says    — the chips that actually carry a signal, coloured
+  //   3. what it's filed under — sprint/priority/updated, quiet and grey
+  // Colour is reserved for the three things a reader is scanning for
+  // (status, estimate drift, lateness); everything else stays out of the way.
   const groups = Array.from(byStatus.entries()).map(([status, items]) => (
     '<div class="month-group">' +
       '<h4>' + esc(status) + ' — ' + items.length + ' تسک</h4>' +
-      '<div class="task-cards">' + items.map((t) => (
+      '<div class="task-cards two-col">' + items.map((t) => (
         '<div class="task-card">' +
           '<div class="task-head">' +
             '<span class="task-pill">' + esc(t.key) + '</span>' +
             '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer" title="' + esc(t.summary) + '">' + esc(t.summary || '(بدون عنوان)') + '</a>' +
           '</div>' +
           '<div class="task-meta">' +
-          (t.type ? '<span class="tag">' + esc(t.type) + '</span>' : '') +
-          mrLinks(t) +
-          estimateBadge(t) +
-          dueBadge(t) +
-          (t.sprint ? '<span class="tag">🏃 ' + esc(t.sprint) + '</span>' : '') +
-          (t.priority ? '<span class="tag">' + esc(t.priority) + '</span>' : '') +
-          (t.storyPoints != null ? '<span class="tag">SP ' + esc(t.storyPoints) + '</span>' : '') +
-          (t.updated ? '<span class="tag">آخرین تغییر: ' + esc(String(t.updated).slice(0, 10)) + '</span>' : '') +
+            jiraStatusBadge(t) +
+            mrLinks(t) +
+            estimateBadge(t) +
+            dueBadge(t) +
+          '</div>' +
+          '<div class="task-foot">' +
+            (t.type ? '<span>' + esc(t.type) + '</span>' : '') +
+            (t.priority ? '<span>' + esc(t.priority) + '</span>' : '') +
+            (t.sprint ? '<span>🏃 ' + esc(t.sprint) + '</span>' : '') +
+            (t.storyPoints != null ? '<span>SP ' + esc(t.storyPoints) + '</span>' : '') +
+            (t.updated ? '<span>آخرین تغییر: ' + esc(faDate(t.updated)) + '</span>' : '') +
           '</div>' +
         '</div>'
       )).join('') + '</div>' +
@@ -1745,7 +1817,7 @@ function renderMonthGroup(m) {
       '</div>' +
     '</div>';
   }).join('');
-  return '<div class="month-group"><h4>' + esc(m.month) + ' — ' + m.mrCount + ' MR</h4><div class="task-cards">' + cards + '</div></div>';
+  return '<div class="month-group"><h4>' + esc(faMonth(m.month)) + ' — ' + m.mrCount + ' MR</h4><div class="task-cards">' + cards + '</div></div>';
 }
 
 // A small dependency-free stacked bar chart: per month, mrCount split into
@@ -1796,10 +1868,10 @@ function renderMonthChart(monthsNewestFirst) {
       if (h > 0) {
         y -= h;
         bars += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + barW + '" height="' + h.toFixed(1) + '" fill="' + seg.color + '" rx="3">' +
-          '<title>' + esc(m.month) + ' — ' + esc(seg.label) + ': ' + seg.count + '</title></rect>';
+          '<title>' + esc(faMonth(m.month)) + ' — ' + esc(seg.label) + ': ' + seg.count + '</title></rect>';
       }
     }
-    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(m.month) + '</text>';
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(faMonthShort(m.month)) + '</text>';
     bars += '<text x="' + (x + barW / 2) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + m.mrCount + '</text>';
   });
   return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' + grid + bars + '</svg>';
