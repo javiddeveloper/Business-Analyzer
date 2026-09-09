@@ -157,10 +157,15 @@ test('a month with nothing to score reports no score rather than a zero', () => 
 // a chart Excel renders happily and which plots nothing.
 test('chart columns are looked up by key, so inserting a column cannot mis-point the chart', () => {
   assert.equal(monthly.columnLetter('monthFa'), 'A');
-  const scoreCol = monthly.columnLetter('score');
   const header = monthly.toSheetRows([])[0];
-  const idx = scoreCol.charCodeAt(0) - 65;
-  assert.equal(header[idx], 'امتیاز کل', 'the letter really does land on the score column');
+  // Walk every column: the letter must land on that column's own label, and
+  // must keep working past Z as the sheet grows.
+  for (const col of monthly.COLUMNS) {
+    const letter = monthly.columnLetter(col.key);
+    let idx = 0;
+    for (const ch of letter) idx = idx * 26 + (ch.charCodeAt(0) - 64);
+    assert.equal(header[idx - 1], col.label, `${letter} should land on "${col.label}"`);
+  }
   assert.throws(() => monthly.columnLetter('nope'), /unknown export column/);
 });
 

@@ -21,6 +21,7 @@ const jira = require('./lib/jira');
 const devScore = require('./lib/devScore');
 const monthly = require('./lib/monthly');
 const xlsx = require('./lib/xlsx');
+const deliveryMetrics = require('./lib/deliveryMetrics');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -248,24 +249,44 @@ async function handleDeveloperExport(req, res, author, query) {
     if (!rows.length) return sendJson(res, 404, { error: 'برای این بازه هیچ داده‌ای برای خروجی گرفتن نبود.' });
 
     const sheetRows = monthly.toSheetRows(rows);
-    const buf = xlsx.build([{
-      name: 'عملکرد ماهانه',
-      rows: sheetRows,
-      chart: {
-        title: `روند ماهانه — ${author}`,
-        // Columns are looked up by key, never hardcoded: inserting a column
-        // would otherwise repoint the chart at the wrong data, which Excel
-        // plots without complaint.
-        categoryCol: monthly.columnLetter('monthFa'),
-        // Score, MR count and round trips: the three that answer "how did
-        // this month go" at a glance. The rest is in the table beside it.
-        series: [
-          { col: monthly.columnLetter('score') },
-          { col: monthly.columnLetter('mrCount') },
-          { col: monthly.columnLetter('roundTripCount') },
-        ],
+    const buf = xlsx.build([
+      {
+        name: 'عملکرد ماهانه',
+        rows: sheetRows,
+        columns: monthly.COLUMNS,
+        chart: {
+          title: `روند امتیاز ماهانه — ${author}`,
+          // Columns are looked up by key, never hardcoded: inserting a column
+          // would otherwise repoint the chart at the wrong data, which Excel
+          // plots without complaint.
+          categoryCol: monthly.columnLetter('monthFa'),
+          // The score alone. It used to plot MR counts beside it, but a 0-100
+          // score against counts of 0-16 shares one axis badly: the score bars
+          // tower and the counts flatten into nothing, so the picture says
+          // less than the table it sits on. The counts are a column away for
+          // anyone who wants them.
+          series: [{ col: monthly.columnLetter('score') }],
+        },
       },
-    }]);
+      {
+        // The numbers that aren't per-month: delivery metrics and the latest
+        // sprint. Hour values are formatted here, not left as raw hours —
+        // nobody reads "412 ساعت".
+        name: 'خلاصه',
+        rows: monthly.summaryRows({ author, analytics, hoursLabel: deliveryMetrics.humanHours }),
+        columns: monthly.SUMMARY_COLUMNS,
+        autoFilter: false,
+        freezeHeader: false,
+      },
+      {
+        // What each column means, in the workbook itself. Otherwise these
+        // headers are guesses for anyone who wasn't in the room.
+        name: 'راهنما',
+        rows: monthly.glossaryRows(),
+        columns: monthly.GLOSSARY_COLUMNS,
+        autoFilter: false,
+      },
+    ]);
 
     const filename = `coder-review-${String(author).replace(/[^A-Za-z0-9._-]/g, '_')}-monthly.xlsx`;
     res.writeHead(200, {
