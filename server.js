@@ -516,6 +516,10 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
     // The sprint they were last working in, scored on its own — a quarter's
     // average can look fine while the sprint that just ended did not.
     value.latestSprint = monthly.latestSprint(value.jiraTasks || []);
+    // The last few sprints, oldest first, for the chart beside the monthly
+    // one — a sprint-by-sprint trend answers "are we getting better?" in the
+    // unit this team actually plans in.
+    value.sprints = monthly.sprintSeries(value.jiraTasks || [], { limit: 5 });
     return { ...value, cachedAt: at, fromCache };
   }
 }

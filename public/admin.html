@@ -179,6 +179,17 @@
   .task-cards.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   /* Tab strip on the right (RTL), pane on the left. `minmax(0,1fr)` on the
      pane so a wide card grid can't push the strip off screen. */
+  /* Two charts side by side; each keeps its own title and legend so neither
+     is read against the other's key. Stacks on a narrow screen. */
+  .charts-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+  .chart-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); padding: 12px 14px; min-width: 0; }
+  .chart-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  /* Inside a card the wrapper drops its own frame — the card already provides
+     one, and two nested borders read as a mistake. The SVG is sized to its
+     content, so a chart with many bars scrolls inside its card rather than
+     stretching the page. */
+  .chart-card .chart-wrap { background: none; border: 0; padding: 0; margin-bottom: 0; overflow-x: auto; }
   .task-tabs { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; direction: rtl; }
   .vtabs { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 8px; align-self: start; }
   .vtab {
@@ -1581,13 +1592,27 @@ function renderDevMain() {
       '<div class="stat-box unk"><div class="n">' + a.uncheckedMRs + '</div><div class="l">نامشخص (برنچ حذف‌شده یا خارج از سقف بررسی)</div></div>' +
       sprintStatBoxes(a) +
     '</div>' +
-    '<div class="chart-legend">' +
-      '<span><span class="sw" style="background:var(--green)"></span>تمیز</span>' +
-      '<span><span class="sw" style="background:var(--red)"></span>رفت‌وبرگشتی</span>' +
-      '<span><span class="sw" style="background:var(--dim)"></span>نامشخص</span>' +
-      '<span><span class="sw" style="background:var(--border-strong)"></span>بدون گزارش ریویو</span>' +
+    '<div class="charts-row">' +
+      '<div class="chart-card">' +
+        '<div class="chart-title">Merge Requestها بر اساس ماه</div>' +
+        '<div class="chart-legend">' +
+          '<span><span class="sw" style="background:var(--green)"></span>تمیز</span>' +
+          '<span><span class="sw" style="background:var(--red)"></span>رفت‌وبرگشتی</span>' +
+          '<span><span class="sw" style="background:var(--dim)"></span>نامشخص</span>' +
+          '<span><span class="sw" style="background:var(--border-strong)"></span>بدون گزارش ریویو</span>' +
+        '</div>' +
+        '<div class="chart-wrap">' + renderMonthChart(a.months) + '</div>' +
+      '</div>' +
+      '<div class="chart-card">' +
+        '<div class="chart-title">تسک‌ها در ۵ اسپرینت اخیر</div>' +
+        '<div class="chart-legend">' +
+          '<span><span class="sw" style="background:var(--green)"></span>با ثبت زمان</span>' +
+          '<span><span class="sw" style="background:var(--amber)"></span>بدون ثبت زمان</span>' +
+          '<span><span class="sw" style="background:var(--dim)"></span>هنوز به Review نرسیده</span>' +
+        '</div>' +
+        '<div class="chart-wrap">' + renderSprintChart(a.sprints) + '</div>' +
+      '</div>' +
     '</div>' +
-    '<div class="chart-wrap">' + renderMonthChart(a.months) + '</div>' +
     renderRatingSection(scoreData) +
     renderAutoScore(a) +
     renderJiraTasks(a);
@@ -1922,6 +1947,59 @@ function renderMonthGroup(m) {
 // a rewrite. `months` is already newest-first (see devAnalytics.js); the
 // chart reverses it back to chronological left-to-right, which is how a
 // time series actually reads.
+// Sprints beside the months: same visual grammar as renderMonthChart, but
+// the bars are tasks rather than MRs, split by whether the work that reached
+// Review/Done actually has time logged against it — the split that decides
+// whether the rest of the sprint's numbers mean anything. The sprint's score
+// sits above its bar.
+function renderSprintChart(sprints) {
+  if (!sprints || !sprints.length) return '<div class="empty">هیچ تسکی اسپرینت ثبت‌شده ندارد.</div>';
+  const H = 200;
+  const padTop = 16, padBottom = 40, padStart = 8;
+  const plotH = H - padTop - padBottom;
+  const barW = 44, gap = 26;
+  const W = Math.max(380, padStart * 2 + sprints.length * (barW + gap));
+  const maxCount = Math.max(1, ...sprints.map((s) => s.taskCount));
+  const scale = plotH / maxCount;
+
+  let grid = '';
+  const gridSteps = 4;
+  for (let i = 0; i <= gridSteps; i++) {
+    const y = padTop + plotH - (plotH * i) / gridSteps;
+    const value = Math.round((maxCount * i) / gridSteps);
+    grid += '<line x1="' + padStart + '" y1="' + y.toFixed(1) + '" x2="' + (W - padStart) + '" y2="' + y.toFixed(1) + '" stroke="var(--border)" stroke-width="1" stroke-dasharray="' + (i === 0 ? '0' : '3,4') + '"></line>';
+    grid += '<text x="' + padStart + '" y="' + (y - 3).toFixed(1) + '" font-size="9" fill="var(--dim)">' + value + '</text>';
+  }
+
+  let bars = '';
+  sprints.forEach((sp, i) => {
+    const x = padStart + 10 + i * (barW + gap);
+    const rest = Math.max(0, sp.taskCount - sp.loggedCount - sp.noTimeLogged);
+    const segments = [
+      { count: sp.loggedCount, color: 'var(--green)', label: 'Review/Done با ثبت زمان' },
+      { count: sp.noTimeLogged, color: 'var(--amber)', label: 'Review/Done بدون ثبت زمان' },
+      { count: rest, color: 'var(--dim)', label: 'هنوز به Review نرسیده' },
+    ];
+    let y = padTop + plotH;
+    for (const seg of segments) {
+      const h = seg.count * scale;
+      if (h <= 0) continue;
+      y -= h;
+      bars += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + barW + '" height="' + h.toFixed(1) + '" fill="' + seg.color + '" rx="3">' +
+        '<title>' + esc(sp.name) + ' — ' + esc(seg.label) + ': ' + seg.count + '</title></rect>';
+    }
+    // The sprint name is long (Sprint-61-050616-50631); only the number is
+    // useful on an axis this narrow, with the full name in the tooltip.
+    const shortName = (String(sp.name).match(/(\d+)/) || [null, sp.name])[1];
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 22) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' +
+      esc(shortName) + '<title>' + esc(sp.name) + '</title></text>';
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9" fill="var(--dim)">' +
+      (sp.score == null ? 'بدون امتیاز' : 'امتیاز ' + sp.score) + '</text>';
+    bars += '<text x="' + (x + barW / 2) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + sp.taskCount + '</text>';
+  });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' + grid + bars + '</svg>';
+}
+
 function renderMonthChart(monthsNewestFirst) {
   if (!monthsNewestFirst.length) return '<div class="empty">داده‌ای برای رسم نمودار نیست.</div>';
   const months = monthsNewestFirst.slice().reverse();

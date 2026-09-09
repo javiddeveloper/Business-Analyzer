@@ -209,6 +209,29 @@ test('a just-started sprint is not scored as a failure for having nothing done y
   assert.equal(completion.available, false, 'progress through a running sprint is not a verdict on it');
 });
 
+test('sprintSeries returns the last N sprints oldest-first, split by whether time was logged', () => {
+  const t = (sprint, updated, over) => ({
+    sprint, updated, statusCategory: 'done', status: 'Done',
+    spentHours: null, estimateHours: 4, dueDate: null, resolvedAt: null, ...over,
+  });
+  const tasks = [
+    t('S-old', '2026-01-01T00:00:00Z'),
+    t('S-a', '2026-06-01T00:00:00Z', { spentHours: 4 }),
+    t('S-b', '2026-07-01T00:00:00Z', { spentHours: 4 }),
+    t('S-b', '2026-07-02T00:00:00Z'),                                   // no worklog
+    t('S-c', '2026-08-01T00:00:00Z', { statusCategory: 'new', status: 'To Do' }), // not there yet
+  ];
+  const out = monthly.sprintSeries(tasks, { limit: 3, now: Date.parse('2026-09-09T00:00:00Z') });
+
+  assert.deepEqual(out.map((s) => s.name), ['S-a', 'S-b', 'S-c'], 'oldest first, and the 4th-oldest dropped');
+  const b = out.find((s) => s.name === 'S-b');
+  assert.equal(b.taskCount, 2);
+  assert.equal(b.loggedCount, 1);
+  assert.equal(b.noTimeLogged, 1);
+  const c = out.find((s) => s.name === 'S-c');
+  assert.equal(c.loggedCount + c.noTimeLogged, 0, 'a To Do task counts in neither — it has no time to log yet');
+});
+
 test('latestSprint is null when no task carries a sprint', () => {
   assert.equal(monthly.latestSprint([{ sprint: null, updated: '2026-09-01T00:00:00Z' }]), null);
 });
