@@ -51,14 +51,30 @@ function mr(overrides) {
   };
 }
 
+// devAnalytics reads commits through getMergeRequestCommitStats, which returns
+// counts and dates alongside the authors (one call serving round-trip, cycle
+// time and rework alike). These stubs shape a plausible response from a plain
+// list of authors, so each test still says only what it is about.
+function commitStats(authors, extra = {}) {
+  const times = extra.times || [];
+  return {
+    total: extra.total != null ? extra.total : authors.length,
+    byAuthor: authors.map((a) => ({ ...a, count: 1 })),
+    firstAt: times.length ? new Date(Math.min(...times)).toISOString() : null,
+    lastAt: times.length ? new Date(Math.max(...times)).toISOString() : null,
+    times,
+  };
+}
+
+
 test('only the MR author\'s own commits (even under a different email) is not a round trip', async () => {
   stubReportsExist();
   stub('../lib/gitlab', {
     async listAuthorMergeRequests() { return [mr({ iid: 1 })]; },
     // Same person, two real-world identities: username-matching work email,
     // and a personal-name-matching email with a different address entirely.
-    async listMergeRequestCommitAuthors() {
-      return [{ email: 'a_dev@work.com', name: 'a_dev' }, { email: 'personal@gmail.com', name: 'A Dev' }];
+    async getMergeRequestCommitStats() {
+      return commitStats([{ email: 'a_dev@work.com', name: 'a_dev' }, { email: 'personal@gmail.com', name: 'A Dev' }]);
     },
   });
   const { buildDeveloperAnalytics } = freshAnalytics();
@@ -71,8 +87,8 @@ test('a commit from someone who is neither the username nor the display name is 
   stubReportsExist();
   stub('../lib/gitlab', {
     async listAuthorMergeRequests() { return [mr({ iid: 2 })]; },
-    async listMergeRequestCommitAuthors() {
-      return [{ email: 'a_dev@work.com', name: 'a_dev' }, { email: 'other@work.com', name: 'Other Person' }];
+    async getMergeRequestCommitStats() {
+      return commitStats([{ email: 'a_dev@work.com', name: 'a_dev' }, { email: 'other@work.com', name: 'Other Person' }]);
     },
   });
   const { buildDeveloperAnalytics } = freshAnalytics();
@@ -87,7 +103,7 @@ test('zero commits returned counts as unknown, never "not a round trip"', async 
   stubReportsExist();
   stub('../lib/gitlab', {
     async listAuthorMergeRequests() { return [mr({ iid: 3 })]; },
-    async listMergeRequestCommitAuthors() { return []; }, // API oddity — must not be trusted as "clean"
+    async getMergeRequestCommitStats() { return commitStats([]); }, // API oddity — must not be trusted as "clean"
   });
   const { buildDeveloperAnalytics } = freshAnalytics();
   const result = await buildDeveloperAnalytics('a_dev');
@@ -102,7 +118,7 @@ test('a GitLab error fetching MR commits also counts as unknown, not a crash', a
   stubReportsExist();
   stub('../lib/gitlab', {
     async listAuthorMergeRequests() { return [mr({ iid: 4 })]; },
-    async listMergeRequestCommitAuthors() { throw new Error('GitLab API 500'); },
+    async getMergeRequestCommitStats() { throw new Error('GitLab API 500'); },
   });
   const { buildDeveloperAnalytics } = freshAnalytics();
   const result = await buildDeveloperAnalytics('a_dev');
@@ -119,7 +135,7 @@ test('an MR with no review report gets no round-trip verdict, and costs no extra
   let calls = 0;
   stub('../lib/gitlab', {
     async listAuthorMergeRequests() { return [mr({ iid: 8 })]; },
-    async listMergeRequestCommitAuthors() { calls++; return [{ email: 'other@work.com', name: 'Other Person' }]; },
+    async getMergeRequestCommitStats() { calls++; return commitStats([{ email: 'other@work.com', name: 'Other Person' }]); },
   });
   try {
     const { buildDeveloperAnalytics } = freshAnalytics();
@@ -143,7 +159,7 @@ test('MRs beyond the per-request cap are counted but left unchecked, never false
   let calls = 0;
   stub('../lib/gitlab', {
     async listAuthorMergeRequests() { return many; },
-    async listMergeRequestCommitAuthors() { calls++; return [{ email: 'a_dev@work.com', name: 'a_dev' }]; },
+    async getMergeRequestCommitStats() { calls++; return commitStats([{ email: 'a_dev@work.com', name: 'a_dev' }]); },
   });
   const { buildDeveloperAnalytics } = freshAnalytics();
   const result = await buildDeveloperAnalytics('a_dev');
@@ -162,7 +178,7 @@ test('records group into calendar months, newest month first, each keeping its t
         mr({ iid: 7, source_branch: 'Feature-EM-3-c', title: 'Feature-EM-3-c', created_at: '2026-02-01T00:00:00Z' }),
       ];
     },
-    async listMergeRequestCommitAuthors() { return [{ email: 'a_dev@work.com', name: 'a_dev' }]; },
+    async getMergeRequestCommitStats() { return commitStats([{ email: 'a_dev@work.com', name: 'a_dev' }]); },
   });
   const { buildDeveloperAnalytics } = freshAnalytics();
   const result = await buildDeveloperAnalytics('a_dev');

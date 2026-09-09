@@ -1646,6 +1646,7 @@ function renderDevMain() {
     '</div>' +
     renderRatingSection(scoreData) +
     renderAutoScore(a) +
+    renderDeliveryMetrics(a) +
     renderJiraTasks(a);
 
   document.getElementById('devFilterApply').onclick = () => {
@@ -1686,6 +1687,51 @@ function renderDevMain() {
 // exactly the thing worth noticing, and it appears nowhere in GitLab.
 // Grouped by Jira status, since "5 In Progress, 2 In Review" is the shape
 // of the question being asked.
+// Hours are what these are computed in; nobody reads "412 ساعت".
+// Mirrors deliveryMetrics.humanHours on the server.
+function humanHours(h) {
+  if (h == null) return '—';
+  if (h < 1) return Math.round(h * 60) + ' دقیقه';
+  if (h < 48) return (Math.round(h * 10) / 10) + ' ساعت';
+  const d = h / 24;
+  return d < 14 ? (Math.round(d * 10) / 10) + ' روز' : Math.round(d) + ' روز';
+}
+
+// Metrics taken straight from GitLab. These are the numbers that don't
+// depend on anyone filling in a field — worth their own block, and worth
+// saying so, because everything Jira-derived on this page rests on data that
+// is only partly there.
+function renderDeliveryMetrics(a) {
+  const d = a.delivery;
+  if (!d || !d.mrCount) return '';
+  const rows = [
+    { label: 'میانه‌ی زمان باز بودن MR تا merge', value: humanHours(d.medianOpenToMergeHours),
+      extra: d.p90OpenToMergeHours != null ? '۹۰٪ زیر ' + humanHours(d.p90OpenToMergeHours) : '', n: d.openToMergeSample },
+    { label: 'میانه‌ی Cycle time (اولین کامیت تا merge)', value: humanHours(d.medianCycleHours),
+      extra: d.p90CycleHours != null ? '۹۰٪ زیر ' + humanHours(d.p90CycleHours) : '', n: d.cycleSample },
+    { label: 'میانه‌ی کامیت‌های بعد از باز شدن MR', value: d.medianCommitsAfterOpen == null ? '—' : String(d.medianCommitsAfterOpen),
+      extra: 'این تیم MR را خیلی زود باز می‌کند، پس این عدد «کارِ بعد از باز کردن» است نه دوباره‌کاری', n: d.afterOpenSample },
+    { label: 'MRهایی که اصلاً کامنت خورده‌اند', value: d.discussedPct == null ? '—' : d.discussedPct + '٪',
+      extra: d.discussedPct == null ? ''
+        : d.discussedPct === 0 ? 'هیچ گفت‌وگوی ریویویی در گیت‌لب ثبت نشده — پس «زمان تا اولین ریویو» اینجا قابل محاسبه نیست'
+        : d.discussedCount + ' از ' + d.discussedSample + ' MR',
+      n: d.discussedSample },
+    { label: 'MRهای هنوز باز', value: d.stillOpenCount + '',
+      extra: d.medianOpenAgeHours != null ? 'میانه‌ی سن: ' + humanHours(d.medianOpenAgeHours) + ' · قدیمی‌ترین: ' + humanHours(d.oldestOpenHours) : '', n: d.stillOpenCount },
+    { label: 'میانه‌ی تعداد کامنت روی هر MR', value: d.medianNotes == null ? '—' : String(d.medianNotes), extra: '', n: d.notesSample },
+  ];
+  return '<h4 style="margin:18px 0 6px">🚚 معیارهای تحویل (مستقیم از گیت‌لب)</h4>' +
+    '<div class="muted" style="margin-bottom:8px;font-size:11px">این اعداد به پر کردن هیچ فیلدی توسط کسی وابسته نیستند، پس برای همه‌ی MRها کامل‌اند — برخلاف معیارهای جیرا که روی دیتای ناقص می‌ایستند. میانه گزارش می‌شود نه میانگین: یک MR که روی تعطیلات باز مانده، میانگین را از هر چیزی که تیم «معمول» بداند دور می‌کند.</div>' +
+    '<table class="score-table"><tbody>' +
+    rows.map((r) => '<tr>' +
+      '<td>' + esc(r.label) + '</td>' +
+      '<td class="num" style="font-weight:700">' + esc(r.value) + '</td>' +
+      '<td class="muted">' + esc(r.extra) + '</td>' +
+      '<td class="muted">' + (r.n ? '<span class="tag">n=' + r.n + '</span>' : '') + '</td>' +
+    '</tr>').join('') +
+    '</tbody></table>';
+}
+
 // The sprint they were last working in, scored on its own. A quarter's
 // average can look healthy while the sprint that just ended did not, and the
 // sprint is the unit this team actually plans in.

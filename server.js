@@ -27,6 +27,13 @@ const xlsx = require('./lib/xlsx');
 // so it gets a shorter shelf life.
 const ROSTER_CACHE_TTL_MS = 15 * 60 * 1000;
 const ANALYTICS_CACHE_TTL_MS = 20 * 60 * 1000;
+
+// BUMP THIS whenever the cached analytics payload changes shape — a new
+// per-MR field, a renamed metric. Serving a pre-upgrade entry doesn't look
+// like a stale cache, it looks like the data isn't there ("—", "undefined از
+// undefined"), which is far more misleading than an outright error. Learned
+// twice now: lib/jira.js carries the same note for the same reason.
+const ANALYTICS_CACHE = 'dev-analytics-v2';
 const { secret, listModels, listEngines, engineStatus, testEngine, ENGINES } = require('./lib/ai_bridge');
 
 const PORT = process.env.PORT || 8078;
@@ -440,7 +447,7 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
   {
     const key = `${author}|${since || ''}|${until || ''}`;
     const { value, at, fromCache } = await cache.cached(
-      'dev-analytics', key, ANALYTICS_CACHE_TTL_MS,
+      ANALYTICS_CACHE, key, ANALYTICS_CACHE_TTL_MS,
       () => devAnalytics.buildDeveloperAnalytics(author, { since, until }),
       { force }
     );
