@@ -234,12 +234,9 @@ async function handleDeveloperExport(req, res, author, query) {
     const since = query.get('since') || undefined;
     const until = query.get('until') || undefined;
     const analytics = await loadDeveloperAnalytics(author, { since, until, force: false });
-    const reviews = activity.reviewsFor(author);
-    const rows = monthly.buildMonthlyRows({
-      analytics,
-      jiraTasks: analytics.jiraTasks || [],
-      reviews,
-    });
+    // Already computed as part of the analytics payload — recomputing here
+    // would be a second code path that could quietly disagree with the page.
+    const rows = analytics.monthlyRows || [];
 
     if (!rows.length) return sendJson(res, 404, { error: 'برای این بازه هیچ داده‌ای برای خروجی گرفتن نبود.' });
 
@@ -520,6 +517,13 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
     // one — a sprint-by-sprint trend answers "are we getting better?" in the
     // unit this team actually plans in.
     value.sprints = monthly.sprintSeries(value.jiraTasks || [], { limit: 5 });
+    // The same per-month rows the Excel export is built from, so the progress
+    // line on screen and the spreadsheet can't tell different stories.
+    value.monthlyRows = monthly.buildMonthlyRows({
+      analytics: value,
+      jiraTasks: value.jiraTasks || [],
+      reviews,
+    });
     return { ...value, cachedAt: at, fromCache };
   }
 }

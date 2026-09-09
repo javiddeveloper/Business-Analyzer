@@ -181,8 +181,10 @@
      pane so a wide card grid can't push the strip off screen. */
   /* Two charts side by side; each keeps its own title and legend so neither
      is read against the other's key. Stacks on a narrow screen. */
-  .charts-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .charts-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1400px) { .charts-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+  .chart-note { font-size: 10px; line-height: 1.8; color: var(--dim); margin-bottom: 8px; }
   .chart-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); padding: 12px 14px; min-width: 0; }
   .chart-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
   /* Inside a card the wrapper drops its own frame — the card already provides
@@ -190,6 +192,20 @@
      content, so a chart with many bars scrolls inside its card rather than
      stretching the page. */
   .chart-card .chart-wrap { background: none; border: 0; padding: 0; margin-bottom: 0; overflow-x: auto; }
+  /* Horizontal tab strip across the top of a pane. Scrolls sideways rather
+     than wrapping to a second row, so the pane's height doesn't jump as the
+     number of months changes. */
+  .htabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .htab {
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font-size: 12px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .htab:hover { border-color: var(--border-strong); }
+  .htab.on { border-color: var(--cyan); background: rgba(52,227,227,.10); color: var(--cyan); }
+  .htab-count { font-variant-numeric: tabular-nums; opacity: .7; font-size: 11px; }
+  .htab-flag { font-size: 10px; color: var(--red); }
   .task-tabs { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; direction: rtl; }
   .vtabs { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 8px; align-self: start; }
   .vtab {
@@ -1454,7 +1470,7 @@ async function deleteKb(id) {
 // task-list in the main area. Fields here are deliberately per-record (see
 // lib/devAnalytics.js) so a later added metric is just another column/badge,
 // not a restructure.
-const DEV = { roster: [], selected: null, analytics: null, score: null, since: '', until: '', ratingMonth: null, taskTab: null };
+const DEV = { roster: [], selected: null, analytics: null, score: null, since: '', until: '', ratingMonth: null, taskTab: null, monthTab: null };
 
 document.getElementById('devAnalyticsBtn').onclick = openDevPage;
 document.getElementById('devBackBtn').onclick = closeDevPage;
@@ -1556,7 +1572,14 @@ function renderDevMain() {
   const scoreData = DEV.score || {};
   const displayName = (DEV.roster.find((d) => d.username === DEV.selected) || {}).name || DEV.selected;
 
-  const auto = scoreData.auto || {};
+  // The composite score (devScore) — the same number the breakdown table
+  // below explains. This badge used to show activity.js's older heuristic,
+  // which produced exactly 30 for every active developer: its accuracy half
+  // saturates at 0 once a review has ~6 weighted findings (routine for a
+  // whole-project agent review) and its recency half sits at 100 for anyone
+  // who worked this week, so 0×0.7 + 100×0.3 = 30 every time. Two different
+  // "auto scores" on one page, one of them stuck, is worse than none.
+  const auto = (a && a.autoScore) || {};
   const autoBadge = auto.score == null
     ? '<span class="score-badge">امتیاز خودکار: بدون داده</span>'
     : '<span class="score-badge ' + scoreClass(auto.score) + '" title="' + esc(auto.reason || '') + '">امتیاز خودکار: <span class="num">' + auto.score + '</span></span>';
@@ -1612,6 +1635,14 @@ function renderDevMain() {
         '</div>' +
         '<div class="chart-wrap">' + renderSprintChart(a.sprints) + '</div>' +
       '</div>' +
+      '<div class="chart-card">' +
+        '<div class="chart-title">روند پیشرفت ماه‌به‌ماه</div>' +
+        // The metric is spelled out on the chart itself: a progress line
+        // nobody can name the axis of invites everyone to read it as
+        // whatever they already believed.
+        '<div class="chart-note">معیار: <b>امتیاز کل ماهانه (۰ تا ۱۰۰)</b> — میانگین وزنی دقت تخمین، تحویل به‌موقع، کیفیت کد، ثبت زمان، بدون رفت‌وبرگشت و تکمیل تسک‌ها؛ وزن هر مؤلفه ضربدر ضریب اطمینانِ حجم نمونه‌اش. ماهی که داده‌ی قابل‌سنجش ندارد اصلاً نقطه نمی‌گیرد.</div>' +
+        '<div class="chart-wrap">' + renderProgressChart(a.monthlyRows) + '</div>' +
+      '</div>' +
     '</div>' +
     renderRatingSection(scoreData) +
     renderAutoScore(a) +
@@ -1630,6 +1661,9 @@ function renderDevMain() {
   // Switching panes is pure re-render off data already in hand — no refetch.
   for (const btn of document.querySelectorAll('[data-tasktab]')) {
     btn.onclick = () => { DEV.taskTab = btn.dataset.tasktab; renderDevMain(); };
+  }
+  for (const btn of document.querySelectorAll('[data-monthtab]')) {
+    btn.onclick = () => { DEV.monthTab = btn.dataset.monthtab; renderDevMain(); };
   }
   // A plain navigation, not fetch(): the browser's own download handling
   // gets the filename from Content-Disposition, and nothing has to buffer
@@ -1881,7 +1915,7 @@ function renderJiraTasks(a) {
   }));
   panes.push({
     id: 'months', label: 'بر اساس ماه (از روی MRها)', count: a.months.length, flag: 0,
-    html: a.months.length ? a.months.map(renderMonthGroup).join('') : '<div class="empty">در این بازه چیزی پیدا نشد.</div>',
+    html: renderMonthTabs(a.months),
   });
 
   const active = panes.some((p) => p.id === DEV.taskTab) ? DEV.taskTab : panes[0].id;
@@ -1902,40 +1936,59 @@ function renderJiraTasks(a) {
     '</div>';
 }
 
-function renderMonthGroup(m) {
-  const cards = m.tasks.map((t) => {
-    // "بدون گزارش" (never actually reviewed by coder-review) is deliberately
-    // distinct from "نامشخص" (reviewed, but the branch/commit history
-    // couldn't be verified) — see lib/devAnalytics.js's hasReviewReport.
-    const rtBadge = !t.hasReport ? '<span class="rt-badge na" title="این MR هنوز از این ابزار ریویو نگرفته — امتیاز رفت‌وبرگشتی برایش محاسبه نمی‌شود">بدون گزارش ریویو</span>'
-      : t.roundTrip === true ? '<span class="rt-badge yes">رفت‌وبرگشتی</span>'
-      : t.roundTrip === false ? '<span class="rt-badge no">تمیز</span>'
-      : '<span class="rt-badge unk">نامشخص</span>';
-    // Jira enrichment (server.js, only when Jira is configured): a task key
-    // with no matching issue (placeholder branch names like "EM-0000" show
-    // up for real) simply gets no badge, not an error.
-    const jiraBadge = t.jiraStatus
-      ? (t.jiraUrl
-          ? '<a class="jira-badge" href="' + esc(t.jiraUrl) + '" target="_blank" rel="noreferrer">🧩 ' + esc(t.jiraStatus) + '</a>'
-          : '<span class="jira-badge">🧩 ' + esc(t.jiraStatus) + '</span>')
-      : '';
-    const jiraAssignee = t.jiraAssignee ? '<span class="tag">👤 ' + esc(t.jiraAssignee) + ' (جیرا)</span>' : '';
-    return '<div class="task-card">' +
-      '<div class="task-head">' +
-        (t.task ? '<span class="task-pill">' + esc(t.task) + '</span>' : '') +
-        '<a class="task-title" href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(t.title) + '">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
-      '</div>' +
-      '<div class="task-meta">' +
+// One MR, as a card. Same three-line shape as the Jira task cards so the two
+// lists read as one product rather than two.
+function renderMrTaskCard(t) {
+  // "بدون گزارش" (never actually reviewed by coder-review) is deliberately
+  // distinct from "نامشخص" (reviewed, but the branch/commit history
+  // couldn't be verified) — see lib/devAnalytics.js's hasReviewReport.
+  const rtBadge = !t.hasReport ? '<span class="rt-badge na" title="این MR هنوز از این ابزار ریویو نگرفته — امتیاز رفت‌وبرگشتی برایش محاسبه نمی‌شود">بدون گزارش ریویو</span>'
+    : t.roundTrip === true ? '<span class="rt-badge yes">رفت‌وبرگشتی</span>'
+    : t.roundTrip === false ? '<span class="rt-badge no">تمیز</span>'
+    : '<span class="rt-badge unk">نامشخص</span>';
+  // Jira enrichment (server.js, only when Jira is configured): a task key
+  // with no matching issue (placeholder branch names like "EM-0000" show
+  // up for real) simply gets no badge, not an error.
+  const jiraBadge = t.jiraStatus
+    ? (t.jiraUrl
+        ? '<a class="jira-badge" href="' + esc(t.jiraUrl) + '" target="_blank" rel="noreferrer">🧩 ' + esc(t.jiraStatus) + '</a>'
+        : '<span class="jira-badge">🧩 ' + esc(t.jiraStatus) + '</span>')
+    : '';
+  return '<div class="task-card">' +
+    '<div class="task-head">' +
+      (t.task ? '<span class="task-pill">' + esc(t.task) + '</span>' : '') +
+      '<a class="task-title" href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(t.title) + '">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
+    '</div>' +
+    '<div class="task-meta">' +
       branchPill(t) +
       rtBadge +
-      jiraBadge + jiraAssignee +
-      '<span class="tag">' + esc(t.state) + '</span>' +
-      (t.projectName ? '<span class="tag task-project">📁 ' + esc(t.projectName) + '</span>' : '') +
-      (t.otherAuthors && t.otherAuthors.length ? '<span class="tag" style="color:var(--red)">کامیت از: ' + esc(t.otherAuthors.join('، ')) + '</span>' : '') +
-      '</div>' +
-    '</div>';
-  }).join('');
-  return '<div class="month-group"><h4>' + esc(faMonth(m.month)) + ' — ' + m.mrCount + ' MR</h4><div class="task-cards">' + cards + '</div></div>';
+      jiraBadge +
+      (t.otherAuthors && t.otherAuthors.length ? '<span class="rt-badge yes">کامیت از: ' + esc(t.otherAuthors.join('، ')) + '</span>' : '') +
+    '</div>' +
+    '<div class="task-foot">' +
+      '<span>' + esc(t.state) + '</span>' +
+      (t.projectName ? '<span>📁 ' + esc(t.projectName) + '</span>' : '') +
+      (t.jiraAssignee ? '<span>👤 ' + esc(t.jiraAssignee) + ' (جیرا)</span>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+// Months as a horizontal tab strip across the top of the pane, one month at
+// a time. Stacked, a year of history is a very long scroll to reach the
+// month anyone actually wants.
+function renderMonthTabs(months) {
+  if (!months.length) return '<div class="empty">در این بازه چیزی پیدا نشد.</div>';
+  const active = months.some((m) => m.month === DEV.monthTab) ? DEV.monthTab : months[0].month;
+  const tabs = months.map((m) => (
+    '<button class="htab' + (m.month === active ? ' on' : '') + '" data-monthtab="' + esc(m.month) + '">' +
+      esc(faMonth(m.month)) +
+      '<span class="htab-count">' + m.mrCount + ' MR</span>' +
+      (m.roundTripCount ? '<span class="htab-flag" title="' + m.roundTripCount + ' MR رفت‌وبرگشتی">' + m.roundTripCount + ' ↩</span>' : '') +
+    '</button>'
+  )).join('');
+  const current = months.find((m) => m.month === active);
+  return '<div class="htabs">' + tabs + '</div>' +
+    '<div class="task-cards two-col">' + current.tasks.map(renderMrTaskCard).join('') + '</div>';
 }
 
 // A small dependency-free stacked bar chart: per month, mrCount split into
@@ -1947,6 +2000,65 @@ function renderMonthGroup(m) {
 // a rewrite. `months` is already newest-first (see devAnalytics.js); the
 // chart reverses it back to chronological left-to-right, which is how a
 // time series actually reads.
+// The progress line: one point per month, plotted on the composite score.
+//
+// A line rather than bars because the question here is direction — is this
+// person trending up or down — which bars answer poorly. Months with nothing
+// measurable are drawn as hollow points and the line skips them rather than
+// dropping to zero, since "no data" is not "scored zero".
+//
+// It reads from the same monthlyRows the Excel export is built from, so the
+// picture and the spreadsheet cannot disagree.
+function renderProgressChart(rows) {
+  const points = (rows || []).filter((r) => r.score != null);
+  if (points.length < 2) {
+    return '<div class="empty">برای رسم روند دست‌کم دو ماهِ دارای امتیاز لازم است' +
+      (points.length ? ' (فعلاً ۱ ماه).' : '.') + '</div>';
+  }
+  const H = 200;
+  const padTop = 16, padBottom = 40, padStart = 30, padEnd = 12;
+  const plotH = H - padTop - padBottom;
+  const stepW = 70;
+  const W = Math.max(380, padStart + padEnd + (points.length - 1) * stepW + 20);
+  const y = (score) => padTop + plotH - (plotH * score) / 100;
+  const x = (i) => padStart + i * stepW;
+
+  let grid = '';
+  for (let v = 0; v <= 100; v += 25) {
+    const gy = y(v);
+    grid += '<line x1="' + padStart + '" y1="' + gy.toFixed(1) + '" x2="' + (W - padEnd) + '" y2="' + gy.toFixed(1) +
+      '" stroke="var(--border)" stroke-width="1" stroke-dasharray="' + (v === 0 ? '0' : '3,4') + '"></line>';
+    grid += '<text x="' + (padStart - 6) + '" y="' + (gy + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="var(--dim)">' + v + '</text>';
+  }
+
+  const line = points.map((r, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(r.score).toFixed(1)).join(' ');
+  // A soft fill under the line makes the direction readable at a glance
+  // without needing to trace the stroke itself.
+  const area = line + ' L' + x(points.length - 1).toFixed(1) + ' ' + y(0).toFixed(1) + ' L' + x(0).toFixed(1) + ' ' + y(0).toFixed(1) + ' Z';
+
+  let dots = '';
+  points.forEach((r, i) => {
+    const px = x(i), py = y(r.score);
+    dots += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="4" fill="var(--cyan)" stroke="var(--panel-2)" stroke-width="2">' +
+      '<title>' + esc(faMonth(r.month)) + ' — امتیاز ' + r.score + ' · ' + r.mrCount + ' MR · ' + r.taskCount + ' تسک</title></circle>';
+    dots += '<text x="' + px.toFixed(1) + '" y="' + (py - 10).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + r.score + '</text>';
+    dots += '<text x="' + px.toFixed(1) + '" y="' + (H - 22) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(faMonthShort(r.month)) + '</text>';
+  });
+
+  const first = points[0].score, last = points[points.length - 1].score;
+  const delta = last - first;
+  const trend = delta > 0 ? '↑ ' + delta + ' نمره بهتر از اولین ماه' : delta < 0 ? '↓ ' + Math.abs(delta) + ' نمره پایین‌تر از اولین ماه' : 'بدون تغییر نسبت به اولین ماه';
+  const trendColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--dim)';
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' +
+      grid +
+      '<path d="' + area + '" fill="rgba(52,227,227,.10)" stroke="none"></path>' +
+      '<path d="' + line + '" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round"></path>' +
+      dots +
+      '<text x="' + padStart + '" y="' + (H - 6) + '" font-size="10" fill="' + trendColor + '">' + esc(trend) + '</text>' +
+    '</svg>';
+}
+
 // Sprints beside the months: same visual grammar as renderMonthChart, but
 // the bars are tasks rather than MRs, split by whether the work that reached
 // Review/Done actually has time logged against it — the split that decides
