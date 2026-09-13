@@ -116,3 +116,37 @@ test('formatRating round-trips what a maintainer would type', () => {
   assert.equal(difficulty.formatRating({ complexity: null, length: 5 }), 'L*****');
   assert.equal(difficulty.formatRating(null), '');
 });
+
+// ---- the loop: reviewer emits -> report writes -> parser reads back --------
+// The three have to agree, or the tool writes a rating its own scorer cannot
+// see. Round-tripping through the real report builder is the only way to know.
+
+test('a rating the reviewer produced survives the report and parses back', () => {
+  const reportFile = require('../lib/reportFile');
+  const mr = { source_branch: 'b', target_branch: 'develop', author: { name: 'x' }, diff_refs: { head_sha: 'a1' } };
+  const base = { decision: 'APPROVE', summary: 's', positives: [], findings: [], stats: { files: 2, skipped: 0, mode: 'agent' } };
+
+  for (const rating of [{ complexity: 3, length: 2 }, { complexity: 5, length: 5 }, { complexity: null, length: 4 }]) {
+    const md = reportFile.buildMarkdown({ mrIid: 1, mr, result: { ...base, rating } });
+    assert.deepEqual(difficulty.parseRating(md), rating, `round trip failed for ${JSON.stringify(rating)}`);
+  }
+});
+
+test('a review with no rating writes no rating line', () => {
+  const reportFile = require('../lib/reportFile');
+  const mr = { source_branch: 'b', target_branch: 'develop', author: { name: 'x' }, diff_refs: { head_sha: 'a1' } };
+  const md = reportFile.buildMarkdown({
+    mrIid: 1, mr,
+    result: { decision: 'APPROVE', summary: 's', positives: [], findings: [], rating: null, stats: { files: 1, skipped: 0, mode: 'batch' } },
+  });
+  assert.equal(difficulty.parseRating(md), null, 'an invented line would later be read as a maintainer judgement');
+});
+
+test('normalizeRating refuses anything outside 1-5 rather than clamping into it', () => {
+  const reviewer = require('../lib/reviewer');
+  assert.deepEqual(reviewer.normalizeRating({ complexity: 3, length: 2 }), { complexity: 3, length: 2 });
+  assert.equal(reviewer.normalizeRating({ complexity: 9, length: 0 }), null, 'out of range is not evidence');
+  assert.deepEqual(reviewer.normalizeRating({ complexity: '4' }), { complexity: 4, length: null });
+  assert.equal(reviewer.normalizeRating(null), null);
+  assert.equal(reviewer.normalizeRating({}), null);
+});
