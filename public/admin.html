@@ -338,6 +338,10 @@
     font-size: 11px; background: rgba(155,140,255,.15); color: var(--violet); text-decoration: none;
   }
   a.jira-badge:hover { background: rgba(155,140,255,.28); }
+  .score-governance-banner {
+    border: 1px solid rgba(255,179,71,.35); background: rgba(255,179,71,.08); color: #ffd8a8;
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 12px; line-height: 1.6;
+  }
   .score-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; }
   .score-table th, .score-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .score-table th { color: var(--dim); font-weight: 600; }
@@ -1994,7 +1998,8 @@ function renderTeam() {
     '</div>' +
     '<div class="band"><h4>نفر به نفر</h4>' +
       '<span class="band-note">روی هر ردیف کلیک کن تا صفحه‌ی کامل همان فرد باز شود. ستون‌ها قابل مرتب‌سازی‌اند؛ پیش‌فرض روی «اولویت رسیدگی» است.</span></div>' +
-    '<div style="overflow-x:auto"><table class="team-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+    '<div style="overflow-x:auto"><table class="team-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+    '<div class="muted" style="font-size:11px;margin-top:6px">⚠️ ستون امتیاز ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی — فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده.</div>';
 
   main.querySelectorAll('[data-open]').forEach((el) => { el.onclick = () => selectDeveloper(el.dataset.open); });
   main.querySelectorAll('[data-teamsort]').forEach((el) => {
@@ -2957,9 +2962,23 @@ function renderAutoScore(a) {
     '</tr>';
   }).join('');
   return '<h4 style="margin:18px 0 6px">🎯 امتیاز خودکار — <span style="color:var(--cyan)">' + s.score + '</span> از ۱۰۰</h4>' +
+    renderScoreGovernanceBanner() +
     '<div class="muted" style="margin-bottom:8px">' + esc(s.reason) + '</div>' +
     '<table class="score-table"><thead><tr><th>مؤلفه</th><th>امتیاز</th><th>وزن مؤثر</th><th></th><th>بر چه اساسی</th></tr></thead><tbody>' +
     rows + '</tbody></table>';
+}
+
+// Every design choice in lib/devScore.js (dropping components with no data
+// instead of scoring them zero, weighting by sample confidence, excluding
+// recency entirely) exists to keep this number honest — but none of that
+// survives into a meeting room unless it's said out loud on the same screen
+// the number appears on. A number with no caveat attached reads as a
+// verdict; this is the caveat.
+function renderScoreGovernanceBanner() {
+  return '<div class="score-governance-banner">' +
+    '⚠️ این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی. فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده — ' +
+    'هیچ ادعایی درباره‌ی مهارت واقعی، کیفیت کد در جاهایی که ریویو نشده، یا مسائل تیمی/غیرکدی ندارد.' +
+    '</div>';
 }
 
 function renderJiraTasks(a) {
