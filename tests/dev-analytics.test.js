@@ -9,8 +9,15 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
+// Members are read once per analytics build; tests set them through this so
+// each gitlab stub does not have to repeat the plumbing.
+const STUB_MEMBERS = { value: [] };
+
 function stub(modulePath, exports) {
   const resolved = require.resolve(modulePath);
+  if (modulePath.endsWith('/gitlab') && !exports.listProjectMembers) {
+    exports = { ...exports, async listProjectMembers() { return STUB_MEMBERS.value; } };
+  }
   require.cache[resolved] = { id: resolved, filename: resolved, loaded: true, exports };
 }
 
@@ -31,9 +38,33 @@ const PROJECT_PATH = 'Z:\\fake-project';
 // be the norm (that's the precondition under test elsewhere) — a fake
 // project path plus a reportFile.reportPath/fs.existsSync pair that always
 // says yes, unless a specific test swaps existsSync out.
-function stubReportsExist() {
+// "There is a review report for this MR" now means the stronger thing the
+// team asked for: the file is on disk *and* a maintainer added it to git.
+// Tests that want a normal reviewed MR get both halves from here; the ones
+// about the rule itself override a half deliberately.
+const MAINTAINER = { username: 'boss', name: 'The Boss', access_level: 40 };
+const DEVELOPER_MEMBER = { username: 'a_dev', name: 'A Dev', access_level: 30 };
+
+function stubSignoff({ addedBy = { name: 'boss', email: 'boss@work.com' }, members = [MAINTAINER, DEVELOPER_MEMBER], iids = null } = {}) {
+  const real = require('../lib/reviewSignoff');
+  // `iids: null` (the default) means every MR is signed off, so tests that
+  // are about something else do not have to enumerate their merge requests.
+  // Pass an explicit list — including [] — to test the rule itself.
+  const signoffs = iids === null
+    ? { get: () => addedBy }                       // Map-shaped enough for signoffFor
+    : new Map(iids.map((iid) => [iid, addedBy]));
+  // Only loadSignoffs is faked — it is the one part that shells out to git.
+  // The matching and verdict logic stays real, because that is the part with
+  // the rule in it.
+  stub('../lib/reviewSignoff', { ...real, loadSignoffs: async () => signoffs });
+  return members;
+}
+
+function stubReportsExist(signoffOpts) {
+  const members = stubSignoff(signoffOpts);
   stub('../lib/projects', { listProjects: () => [{ id: 9, name: 'Test Project', path: PROJECT_PATH }], getProjectPath: () => PROJECT_PATH });
   stub('../lib/reportFile', { reportPath: (p, iid) => `${p}/review/MR-${iid}.md` });
+  STUB_MEMBERS.value = members;
   // The path above is fake — nothing is really on disk at PROJECT_PATH — so
   // fs.existsSync itself has to be told "yes" for every test in this file
   // that means to simulate an already-reviewed MR. Safe to leave patched:
@@ -197,4 +228,82 @@ test('isMrAuthor matches by username-as-email-local-part or exact display name',
   assert.equal(isMrAuthor(author, { author_email: 'r_derikvand@tamin.org', author_name: 'Reza Derikvand' }), true, 'username-matching email is enough on its own');
   assert.equal(isMrAuthor(author, { author_email: 'someone@else.com', author_name: 'رضا دریکوند' }), true, 'exact display-name match is enough on its own');
   assert.equal(isMrAuthor(author, { author_email: 'j_sattar@tamin.org', author_name: 'جاوید ستار' }), false);
+});
+
+// ---- the sign-off rule ------------------------------------------------------
+// A round trip is a negative mark, so the team's rule is that it only counts
+// once a maintainer has added review/MR-<iid>.md — and stops the moment that
+// file goes away. Without this, the tool writing its own report was enough to
+// create a penalty, which made the penalty a by-product of running the tool
+// rather than a judgement anyone made.
+
+test('a maintainer-signed report makes the round trip count', async () => {
+  stubReportsExist();
+  stub('../lib/gitlab', {
+    async listAuthorMergeRequests() { return [mr({ iid: 1 })]; },
+    async getMergeRequestCommitStats() {
+      return commitStats([{ email: 'a_dev@work.com', name: 'a_dev' }, { email: 'other@work.com', name: 'Other' }]);
+    },
+  });
+  const result = await freshAnalytics().buildDeveloperAnalytics('a_dev');
+  const rec = result.months[0].tasks[0];
+  assert.equal(rec.roundTrip, true);
+  assert.equal(rec.signoff.reason, 'signed-off');
+  assert.equal(result.roundTripMRs, 1);
+});
+
+test('deleting the report file stops the round trip counting', async () => {
+  stubReportsExist();
+  require('fs').existsSync = () => false; // the file is gone
+  stub('../lib/gitlab', {
+    async listAuthorMergeRequests() { return [mr({ iid: 1 })]; },
+    async getMergeRequestCommitStats() {
+      throw new Error('must not be asked — an unsigned MR is not worth a commits lookup');
+    },
+  });
+  const result = await freshAnalytics().buildDeveloperAnalytics('a_dev');
+  const rec = result.months[0].tasks[0];
+  assert.equal(rec.roundTrip, null, 'no verdict at all, not a clean one');
+  assert.equal(rec.signoff.reason, 'no-file');
+  assert.equal(result.roundTripMRs, 0);
+  require('fs').existsSync = () => true;
+});
+
+test('a report the tool wrote but nobody committed does not count', async () => {
+  stubReportsExist({ iids: [] }); // on disk, absent from git history
+  stub('../lib/gitlab', {
+    async listAuthorMergeRequests() { return [mr({ iid: 1 })]; },
+    async getMergeRequestCommitStats() { throw new Error('must not be asked'); },
+  });
+  const result = await freshAnalytics().buildDeveloperAnalytics('a_dev');
+  assert.equal(result.months[0].tasks[0].signoff.reason, 'not-committed');
+  assert.equal(result.roundTripMRs, 0);
+});
+
+test('a report added by someone who is not a maintainer does not count', async () => {
+  stubReportsExist({ addedBy: { name: 'a_dev', email: 'a_dev@work.com' } }); // a Developer
+  stub('../lib/gitlab', {
+    async listAuthorMergeRequests() { return [mr({ iid: 1 })]; },
+    async getMergeRequestCommitStats() { throw new Error('must not be asked'); },
+  });
+  const result = await freshAnalytics().buildDeveloperAnalytics('a_dev');
+  const rec = result.months[0].tasks[0];
+  assert.equal(rec.signoff.reason, 'not-maintainer');
+  assert.equal(rec.signoff.by, 'a_dev', 'and it says who, so this can be argued with');
+  assert.equal(result.roundTripMRs, 0);
+});
+
+// Regression: sign-offs were read with a plain `git log`, which walks only the
+// current branch. A maintainer commits the review file on the branch of the MR
+// being reviewed, and this checkout is usually sitting somewhere else
+// entirely, so legitimate sign-offs vanished depending on what happened to be
+// checked out. Verified against the real repo: review/MR-191.md is committed
+// on another branch and was being reported as never committed.
+test('sign-offs are read across all branches, not just the checked-out one', () => {
+  const real = require('../lib/reviewSignoff');
+  // The exported source of truth is the argument list handed to git; assert on
+  // it rather than on a live repo, which no test should need.
+  const src = require('fs').readFileSync(require.resolve('../lib/reviewSignoff'), 'utf8');
+  assert.match(src, /'log', '--all', '--diff-filter=A'/, 'the log must span every branch');
+  assert.equal(typeof real.loadSignoffs, 'function');
 });

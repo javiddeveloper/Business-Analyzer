@@ -2949,9 +2949,18 @@ function renderMrTaskCard(t) {
   // "بدون گزارش" (never actually reviewed by coder-review) is deliberately
   // distinct from "نامشخص" (reviewed, but the branch/commit history
   // couldn't be verified) — see lib/devAnalytics.js's hasReviewReport.
-  const rtBadge = !t.hasReport ? '<span class="rt-badge na" title="این MR هنوز از این ابزار ریویو نگرفته — امتیاز رفت‌وبرگشتی برایش محاسبه نمی‌شود">بدون گزارش ریویو</span>'
-    : t.roundTrip === true ? '<span class="rt-badge yes">رفت‌وبرگشتی</span>'
-    : t.roundTrip === false ? '<span class="rt-badge no">تمیز</span>'
+  // Why an MR carries no round-trip verdict. A round trip is a negative
+  // mark, so it only counts once a maintainer has added review/MR-<iid>.md —
+  // and an MR that quietly stopped counting has to be able to say why.
+  const SIGNOFF_WHY = {
+    'no-file': 'فایل review/MR-' + t.iid + '.md وجود ندارد (یا حذف شده) — رفت‌وبرگشت شمرده نمی‌شود',
+    'not-committed': 'فایل ریویو هست ولی در گیت کامیت نشده — خودِ ابزار نوشته‌اش و هیچ maintainerی تأییدش نکرده',
+    'not-maintainer': 'فایل ریویو را کسی اضافه کرده که maintainer نیست' + (t.signoff && t.signoff.by ? ' (' + t.signoff.by + ')' : ''),
+  };
+  const why = (t.signoff && SIGNOFF_WHY[t.signoff.reason]) || 'این MR هنوز تأیید maintainer ندارد — امتیاز رفت‌وبرگشتی برایش محاسبه نمی‌شود';
+  const rtBadge = !t.hasReport ? '<span class="rt-badge na" title="' + esc(why) + '">بدون تأیید maintainer</span>'
+    : t.roundTrip === true ? '<span class="rt-badge yes" title="' + esc('تأیید‌شده توسط ' + ((t.signoff && t.signoff.by) || 'maintainer')) + '">رفت‌وبرگشتی</span>'
+    : t.roundTrip === false ? '<span class="rt-badge no" title="' + esc('تأیید‌شده توسط ' + ((t.signoff && t.signoff.by) || 'maintainer')) + '">تمیز</span>'
     : '<span class="rt-badge unk">نامشخص</span>';
   // Jira enrichment (server.js, only when Jira is configured): a task key
   // with no matching issue (placeholder branch names like "EM-0000" show
