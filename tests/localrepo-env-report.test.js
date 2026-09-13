@@ -169,6 +169,94 @@ test('the report still builds when GitLab would not give up the commit history',
   assert.ok(!/تعداد کامیت‌ها/.test(text), 'the row is omitted, not printed as a guess');
 });
 
+// The report has two readers: someone deciding whether this merges, and
+// someone fixing what it found. The first one must get the verdict, the
+// blocking items and the review's own reach without scrolling.
+test('the report opens with the decision, the blocking items and what was not reviewed', () => {
+  const reportFile = require('../lib/reportFile');
+  const md = reportFile.buildMarkdown({
+    mrIid: 5,
+    mr: { source_branch: 'f', target_branch: 'develop', author: { name: 'ن' }, diff_refs: { head_sha: 'aa11bb22cc33' } },
+    result: {
+      decision: 'REQUEST_CHANGES',
+      summary: 'خلاصه‌ی تغییر',
+      positives: [],
+      findings: [
+        { file: 'a/B.kt', line: 12, severity: 'High', category: 'logic', title: 'باگ واقعی', note: 'شرح مدل', source: 'model' },
+        { file: 'a/C.kt', line: 3, severity: 'High', category: 'security', title: 'اعتبارنامه‌ی هاردکد', note: 'شرح خودکار', source: 'auto' },
+        { file: null, line: null, severity: 'Low', category: 'process', title: '2 فایل بررسی نشد', note: 'دلیلش', source: 'auto', coverage: true },
+      ],
+      stats: {
+        files: 2, skipped: 2, batches: 3, mode: 'batch',
+        reviewedFiles: [
+          { path: 'a/B.kt', added: 20, removed: 2, truncated: true },
+          { path: 'a/C.kt', added: 5, removed: 0, isNew: true },
+        ],
+        skippedFiles: [{ path: 'x.png', reason: 'فایل باینری/دارایی' }, { path: 'p.lock', reason: 'lockfile' }],
+        droppedFiles: [],
+      },
+    },
+  });
+
+  // 1. verdict and blockers, before any detail
+  assert.match(md, /## چکیده/);
+  assert.match(md, /2 مورد مسدودکننده/);
+  assert.match(md, /\*\*مورد 1\*\* · 🔴 High · `a\/B\.kt:12` — باگ واقعی/);
+  assert.ok(md.indexOf('## چکیده') < md.indexOf('## خلاصه‌ی تغییر'), 'the decision comes before the prose');
+
+  // 2. coverage: which files were looked at, which never arrived, and what no
+  //    run of this tool can tell you either way
+  assert.match(md, /## دامنه‌ی بررسی/);
+  assert.match(md, /\| `a\/B\.kt` _\(دیف بریده‌شده\)_ \| \+20\/-2 \| 🔴 1 \|/, 'per-file breakdown with the findings landed on it');
+  assert.match(md, /\| `x\.png` \| فایل باینری\/دارایی \|/, 'a skipped file is named with its reason');
+  assert.match(md, /بیلد و تست‌ها اجرا نشده‌اند/);
+  assert.match(md, /دیفی \(3 دسته\)/, 'the engine that produced this is stated — it decides how much the findings are worth');
+
+  // 3. machine checks are not mixed into the model's judgement
+  assert.match(md, /## یافته‌های ریویو \(قضاوت مدل\)/);
+  assert.match(md, /## بررسی‌های خودکار/);
+  assert.ok(md.indexOf('شرح مدل') < md.indexOf('## بررسی‌های خودکار'), 'model findings stay in the model section');
+  assert.ok(md.indexOf('شرح خودکار') > md.indexOf('## بررسی‌های خودکار'), 'and the machine check in its own');
+
+  // 4. a coverage note is not numbered as if it were a defect in the code
+  assert.ok(!/\| 3 \| .* 2 فایل بررسی نشد/.test(md));
+  assert.match(md, /\*\*محدودیت‌های همین اجرا:\*\*[\s\S]*2 فایل بررسی نشد/);
+});
+
+test('an approved report says so plainly instead of leaving the reader to count', () => {
+  const reportFile = require('../lib/reportFile');
+  const md = reportFile.buildMarkdown({
+    mrIid: 6,
+    mr: { source_branch: 'f', target_branch: 'develop', author: { name: 'ن' }, diff_refs: { head_sha: 'a1' } },
+    result: {
+      decision: 'APPROVE', summary: 's', positives: [], findings: [],
+      stats: { files: 1, skipped: 0, mode: 'agent', reviewedFiles: [{ path: 'a.kt', added: 1, removed: 0 }], skippedFiles: [], droppedFiles: [] },
+    },
+  });
+  assert.match(md, /موردی که جلوی merge را بگیرد پیدا نشد/);
+  assert.match(md, /ایجنتی/, 'an agent review says it read the whole project — that is why its silence means more');
+  assert.match(md, /هیچ یافته‌ای ثبت نشد/);
+});
+
+// REQUEST_CHANGES with nothing blocking in the code happens when the review
+// itself failed (out of quota, every batch errored). Saying "changes
+// requested" without saying that sends the author hunting for a bug nobody
+// reported.
+test('a report blocked only by its own incompleteness says exactly that', () => {
+  const reportFile = require('../lib/reportFile');
+  const md = reportFile.buildMarkdown({
+    mrIid: 7,
+    mr: { source_branch: 'f', target_branch: 'develop', author: { name: 'ن' }, diff_refs: { head_sha: 'a1' } },
+    result: {
+      decision: 'REQUEST_CHANGES', summary: 's', positives: [],
+      findings: [{ file: null, line: null, severity: 'Medium', category: 'process', source: 'auto', coverage: true, title: 'بخشی از ریویو انجام نشد', note: 'خطای مدل' }],
+      stats: { files: 1, skipped: 0, mode: 'batch', reviewedFiles: [], skippedFiles: [], droppedFiles: [] },
+    },
+  });
+  assert.match(md, /این تصمیم به‌خاطر ناقص‌ماندن خود ریویو است/);
+  assert.match(md, /بخشی از ریویو انجام نشد/);
+});
+
 // ---- localRepo ---------------------------------------------------------------
 
 function git(cwd, args) {

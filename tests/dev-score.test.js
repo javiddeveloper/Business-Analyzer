@@ -129,8 +129,11 @@ test('thin evidence carries proportionally less weight', () => {
     analytics: { reportedMRs: 4, roundTripMRs: 4 }, // rework 0/100
     lastActivityMs: NOW - DAY, now: NOW,
   };
-  const oneBadReview = devScore.compute({ ...base, reviews: [{ severityCounts: { High: 4 } }] });
-  const manyBadReviews = devScore.compute({ ...base, reviews: Array.from({ length: 40 }, () => ({ severityCounts: { High: 4 } })) });
+  // Distinct merge requests — forty reviews of the *same* MR are one piece of
+  // evidence, not forty (see the dedupe test below).
+  const bad = (mrIid) => ({ projectId: 1, mrIid, at: mrIid, severityCounts: { High: 4 }, filesReviewed: 4 });
+  const oneBadReview = devScore.compute({ ...base, reviews: [bad(1)] });
+  const manyBadReviews = devScore.compute({ ...base, reviews: Array.from({ length: 40 }, (_, i) => bad(i + 1)) });
 
   const thin = oneBadReview.components.find((c) => c.key === 'codeQuality');
   const thick = manyBadReviews.components.find((c) => c.key === 'codeQuality');
@@ -158,4 +161,51 @@ test('with nothing to go on the score is null rather than a made-up number', () 
   const out = devScore.compute({ tasks: [], analytics: {}, reviews: [], lastActivityMs: null, now: NOW });
   assert.equal(out.score, null);
   assert.match(out.reason, /هیچ داده‌ای/);
+});
+
+// Re-running a review on one merge request is a click count, not evidence.
+// The real log has a single MR reviewed five times in one evening; averaging
+// those five let the number of runs move somebody's score.
+test('several reviews of one MR count once, and the newest one is the one that counts', () => {
+  const runs = [
+    { projectId: 1, mrIid: 206, at: 100, filesReviewed: 4, severityCounts: { High: 3, Medium: 5 } },
+    { projectId: 1, mrIid: 206, at: 200, filesReviewed: 4, severityCounts: { Medium: 1 } }, // author fixed them
+  ];
+  assert.equal(devScore.dedupeReviews(runs).length, 1, 'one merge request, one piece of evidence');
+  const out = devScore.codeQuality(runs);
+  assert.equal(out.sampleSize, 1);
+  assert.equal(out.score, devScore.codeQuality([runs[1]]).score, 'the newest run describes the code as it stands now');
+  assert.ok(out.score > devScore.codeQuality([runs[0]]).score, 'fixing the findings is what raises the score');
+});
+
+// The old curve subtracted 16.6 points per weighted finding and bottomed out
+// at ~6 — while a routine review in this org returns 10 to 14. Every
+// developer scored exactly 0, so a fifth of the composite score was a
+// constant that separated nobody.
+test('code quality still discriminates at the finding counts this team actually produces', () => {
+  const review = (findings, files) => ({ projectId: 1, mrIid: findings + '-' + files, at: 1, filesReviewed: files, severityCounts: findings });
+  const busy = devScore.codeQuality([review({ Medium: 5, Low: 6 }, 38)]).score;
+  const worse = devScore.codeQuality([review({ High: 1, Medium: 1, Low: 4 }, 4)]).score;
+  const clean = devScore.codeQuality([review({ Medium: 2 }, 49)]).score;
+  for (const s of [busy, worse, clean]) assert.ok(s > 0 && s < 100, `expected a real score, got ${s}`);
+  assert.ok(clean > busy && busy > worse, `expected clean > busy > worse, got ${clean} / ${busy} / ${worse}`);
+});
+
+// Findings scale with how much code changed, so the raw count compares
+// nobody fairly.
+test('the same findings count for more on a small merge request than a large one', () => {
+  const small = devScore.codeQuality([{ projectId: 1, mrIid: 1, at: 1, filesReviewed: 2, severityCounts: { High: 2 } }]).score;
+  const large = devScore.codeQuality([{ projectId: 1, mrIid: 2, at: 1, filesReviewed: 50, severityCounts: { High: 2 } }]).score;
+  assert.ok(large > small, `two High findings across 50 files should read better than across 2 (${large} vs ${small})`);
+});
+
+// Being at your desk today is not performance; a week of approved leave is
+// not a drop in engineering quality.
+test('recency is no longer an input to the score', () => {
+  assert.equal(devScore.WEIGHTS.activity, undefined);
+  const tasks = [{ estimateHours: 10, spentHours: 10, dueDate: '2026-09-20', resolvedAt: null, statusCategory: 'done' }];
+  const fresh = devScore.compute({ tasks, analytics: {}, reviews: [], now: NOW });
+  const stale = devScore.compute({ tasks, analytics: {}, reviews: [], now: NOW + 90 * DAY });
+  assert.equal(fresh.components.some((c) => c.key === 'activity'), false);
+  assert.equal(stale.components.some((c) => c.key === 'activity'), false);
 });

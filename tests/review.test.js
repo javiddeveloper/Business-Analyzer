@@ -106,6 +106,59 @@ test('missing-tests check fires only for non-trivial source changes with no test
   assert.equal(checks.checkMissingTests([tiny]).length, 0, 'a two-line change needs no test to justify it');
 });
 
+test('a leftover merge-conflict marker is caught deterministically, not left to the model', () => {
+  const found = checks.scanConflictMarkers([{
+    path: 'app/Foo.kt',
+    diff: ['@@ -1,0 +1,5 @@', '+<<<<<<< HEAD', '+val a = 1', '+=======', '+val a = 2', '+>>>>>>> develop'].join('\n'),
+  }]);
+  assert.equal(found.length, 1, 'one finding per file — the author opens the file either way');
+  assert.equal(found[0].severity, 'High');
+  assert.equal(found[0].source, 'auto');
+  assert.equal(found[0].line, 1);
+
+  // Angle brackets that are not a conflict marker must not fire: a checker
+  // that cries wolf gets ignored, including on the run where it is right.
+  const clean = checks.scanConflictMarkers([{
+    path: 'app/Bar.kt',
+    diff: '@@ -1,0 +1,2 @@\n+println("<<<<<<<")\n+val x = a >>> b',
+  }]);
+  assert.equal(clean.length, 0);
+});
+
+test('the same finding raised by two batches is reported once, at its worst severity', () => {
+  const out = reviewer.dedupeFindings([
+    { file: 'a.kt', line: 4, title: 'Null pointer', severity: 'Medium', note: 'کوتاه', source: 'model' },
+    { file: 'a.kt', line: 4, title: '  null POINTER ', severity: 'High', note: 'شرح کامل‌تر', suggestion: 'x = 1', source: 'model' },
+    { file: 'a.kt', line: 9, title: 'Null pointer', severity: 'Low', note: 'جای دیگر', source: 'model' },
+  ]);
+  assert.equal(out.length, 2, 'same file+line+title is one problem, a different line is not');
+  assert.equal(out[0].severity, 'High', 'the worst severity wins — a duplicate must not soften a finding');
+  assert.equal(out[0].note, 'شرح کامل‌تر', 'the copy with the most context survives');
+  assert.equal(out[0].suggestion, 'x = 1');
+  assert.equal(out[0].duplicateCount, 2);
+});
+
+test('process findings sort below code findings of the same severity', () => {
+  const sorted = reviewer.sortFindings([
+    { severity: 'Medium', category: 'process', file: null, title: 'MR بزرگ است' },
+    { severity: 'Medium', category: 'logic', file: 'z.kt', title: 'باگ' },
+    { severity: 'High', category: 'process', file: null, title: 'ریویو ناقص ماند' },
+  ]);
+  assert.deepEqual(sorted.map((f) => f.title), ['ریویو ناقص ماند', 'باگ', 'MR بزرگ است']);
+});
+
+test('coverageStats names every file the review did and did not reach', () => {
+  const { files, skipped } = reviewer.prepareFiles([
+    { new_path: 'app/Foo.kt', diff: SAMPLE_DIFF },
+    { new_path: 'package-lock.json', diff: '@@ -1 +1 @@\n+x' },
+  ]);
+  const stats = reviewer.coverageStats({ files, skipped, dropped: [{ path: 'app/Huge.kt' }] });
+  assert.deepEqual(stats.reviewedFiles.map((f) => f.path), ['app/Foo.kt']);
+  assert.equal(stats.reviewedFiles[0].added, 3, 'the per-file line counts the report prints');
+  assert.deepEqual(stats.skippedFiles, [{ path: 'package-lock.json', reason: 'lockfile' }]);
+  assert.deepEqual(stats.droppedFiles, ['app/Huge.kt']);
+});
+
 test('normalizeFindings drops line numbers the model invented', () => {
   const { files } = reviewer.prepareFiles([{ new_path: 'app/Foo.kt', diff: SAMPLE_DIFF }]);
   const out = reviewer.normalizeFindings(
@@ -158,10 +211,22 @@ test('the Jira ticket reaches the review prompt, and its absence leaves no empty
 });
 
 test('batching packs every file instead of truncating the diff', () => {
-  const files = Array.from({ length: 5 }, (_, i) => ({ path: `f${i}.kt`, annotated: 'x'.repeat(6000) }));
+  // Sized off the live budget rather than a literal: the per-batch cap is
+  // derived from the active engine's context window now (lib/contextBudget.js),
+  // so a hardcoded 6000 chars stopped exercising the split at all once the
+  // default engine's batch grew to 120K. The property under test is "an input
+  // too big for one batch is split, never cut" — which is about the budget,
+  // whatever the budget currently is.
+  const budget = require('../lib/contextBudget').budgetFor();
+  const each = Math.ceil(budget.batchChars / 2) + 1000; // three of these cannot share two batches
+  const files = Array.from({ length: 5 }, (_, i) => ({ path: `f${i}.kt`, annotated: 'x'.repeat(each) }));
   const batches = reviewer.buildBatches(files);
   assert.ok(batches.length > 1, 'oversized input is split, not cut');
   assert.equal(batches.flat().length, 5, 'no file is dropped');
+  for (const batch of batches) {
+    const size = batch.reduce((n, f) => n + f.annotated.length, 0);
+    assert.ok(batch.length === 1 || size <= budget.batchChars, 'no batch exceeds the engine budget');
+  }
 });
 
 test('decision follows the findings, not the model\'s mood', () => {
@@ -199,8 +264,8 @@ test('summary renders findings that never made it inline, and hides the ones tha
     decision: 'REQUEST_CHANGES',
     summary: 'خلاصه',
     findings: [
-      { severity: 'High', category: 'security', title: 'inline one', note: 'n', file: 'a.kt', line: 3, postedInline: true },
-      { severity: 'Medium', category: 'process', title: 'no line', note: 'n', file: null, line: null },
+      { severity: 'High', category: 'security', title: 'inline one', note: 'حفره‌ی امنیتی', file: 'a.kt', line: 3, postedInline: true, source: 'model' },
+      { severity: 'Medium', category: 'process', title: 'no line', note: 'متن مورد بی‌خط', file: null, line: null, source: 'model' },
     ],
     stats: { files: 2, skipped: 1, promptTokens: 10, completionTokens: 5 },
     inlineCount: 1,
@@ -208,7 +273,38 @@ test('summary renders findings that never made it inline, and hides the ones tha
     model: 'gpt-4o-mini',
   });
   assert.ok(body.includes('no line'));
-  assert.ok(!body.includes('inline one'), 'a finding already posted on its line is not repeated');
+  assert.ok(body.includes('متن مورد بی‌خط'), 'a finding with nowhere to go inline is written out in full');
+  assert.ok(!body.includes('حفره‌ی امنیتی'), 'a finding already posted on its line is not written out again');
+  // …but it is still *named* in the blocking list: the author must not have to
+  // open every thread to learn which items hold up the merge.
+  assert.ok(body.includes('inline one'), 'a blocking finding is listed by title even when it has its own thread');
+  assert.match(body, /تا این 2 مورد باز است merge نکن/);
   assert.ok(body.includes('| 🔴 High | 1 |'));
   assert.ok(body.includes('<!-- coder-review:summary-abcdef123456 -->'), 'carries a marker so the same sha is not summarised twice');
+});
+
+test('the summary keeps machine checks apart from model judgement, and states its own reach', () => {
+  const body = publish.buildSummary({
+    decision: 'REQUEST_CHANGES',
+    summary: 'خلاصه',
+    findings: [
+      { severity: 'High', category: 'logic', title: 'قضاوت مدل', note: 'شرح مدل', file: 'a.kt', line: null, source: 'model' },
+      { severity: 'High', category: 'security', title: 'اعتبارنامه', note: 'شرح خودکار', file: 'b.kt', line: null, source: 'auto' },
+      { severity: 'Low', category: 'process', title: '3 فایل بررسی نشد', note: 'x', file: null, line: null, source: 'auto', coverage: true },
+    ],
+    stats: { files: 2, skipped: 3, mode: 'batch' },
+    inlineCount: 0,
+    duplicateCount: 2,
+    headSha: 'abcdef1234567890',
+    model: 'm',
+  });
+  assert.match(body, /### یافته‌ها[\s\S]*شرح مدل/);
+  assert.match(body, /### بررسی‌های خودکار[\s\S]*شرح خودکار/);
+  assert.ok(body.indexOf('### یافته‌ها') < body.indexOf('### بررسی‌های خودکار'), 'model judgement first, machine checks after');
+  // A coverage item is a statement about the review, not a defect: it belongs
+  // in the scope section, and must not be counted among the blocking items.
+  assert.match(body, /### دامنه‌ی بررسی[\s\S]*3 فایل بررسی نشد/);
+  assert.match(body, /تا این 2 مورد باز است merge نکن/);
+  assert.match(body, /بیلد و تست‌ها اجرا نشده‌اند/);
+  assert.match(body, /2 مورد در دورهای قبلی/, 'a re-review says what it deliberately did not repeat');
 });

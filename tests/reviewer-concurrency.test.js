@@ -42,12 +42,17 @@ test('mapWithConcurrency propagates a rejection without hanging', async () => {
 });
 
 test('review() covers far more than the old 8-batch cap in one run', async () => {
-  // Each file has to be big enough to fill most of a ~14000-char batch on its
-  // own, otherwise buildBatches packs 30 of them into two batches and the cap
-  // is never approached — the point here is to exceed the OLD 8-batch cap.
-  const changes = Array.from({ length: 12 }, (_, i) => ({
+  // Each file has to fill a batch on its own, otherwise buildBatches packs
+  // them all into two batches and the cap is never approached — the point here
+  // is to exceed the OLD 8-batch cap. The per-file size comes from the live
+  // budget: it used to be a literal 13000, which stopped filling a batch the
+  // moment the cap became a function of the engine's context window
+  // (lib/contextBudget.js) and quietly turned this into a 2-call test.
+  const budget = require('../lib/contextBudget').budgetFor();
+  const perFile = budget.fileDiffChars + 1000;
+  const changes = Array.from({ length: 20 }, (_, i) => ({
     old_path: `f${i}.kt`, new_path: `f${i}.kt`,
-    diff: `@@ -1,0 +1,3 @@\n+line one for file ${i}\n+${'x'.repeat(13000)}\n+line three`,
+    diff: `@@ -1,0 +1,3 @@\n+line one for file ${i}\n+${'x'.repeat(perFile)}\n+line three`,
   }));
 
   let calls = 0;

@@ -22,6 +22,7 @@ const devScore = require('./lib/devScore');
 const monthly = require('./lib/monthly');
 const xlsx = require('./lib/xlsx');
 const deliveryMetrics = require('./lib/deliveryMetrics');
+const teamOverview = require('./lib/teamOverview');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -393,7 +394,14 @@ async function handleDevelopers(req, res) {
   }
   const developers = Array.from(byAuthor.values()).map((dev) => {
     const rating = ratings.latest(dev.author);
-    return { ...dev, auto: activity.computeAutoScore(dev.author), rating, ratingOverall: ratings.overall(rating) };
+    // No `auto` here on purpose: activity.computeAutoScore's older heuristic
+    // used to ride along under that name, and it returns ~30 for every active
+    // developer (its accuracy half saturates at 0 on any real review, its
+    // recency half sits at 100 for anyone who worked this week). Two numbers
+    // called "the auto score" that disagree is worse than one — the composite
+    // score (lib/devScore.js) is the only one now, and it lives on the
+    // analytics payload.
+    return { ...dev, rating, ratingOverall: ratings.overall(rating) };
   });
   developers.sort((a, b) => (a.currentWork[0]?.mergeOrder || 99) - (b.currentWork[0]?.mergeOrder || 99));
   return sendJson(res, 200, { developers, ratingParams: ratings.PARAMS });
@@ -407,7 +415,6 @@ async function handleDeveloperScore(req, res, author, query) {
   const month = (query && query.get('month')) || ratings.currentMonthKey();
   const rating = ratings.get(author, month);
   return sendJson(res, 200, {
-    auto: activity.computeAutoScore(author),
     month,
     availableMonths: ratings.listMonths(author),
     rating,
@@ -432,19 +439,26 @@ async function handleDeveloperRating(req, res, author, query) {
 // something open right now like handleDevelopers above. Cached: it's a
 // multi-page GitLab crawl (MR history + project members) for something that
 // changes at most a few times a month.
+async function loadRoster({ force = false } = {}) {
+  return cache.cached('dev-roster', 'all', ROSTER_CACHE_TTL_MS, async () => {
+    const configured = projects.listProjects();
+    const ids = configured.length ? configured.map((p) => p.id) : [undefined];
+    const lists = await Promise.all(ids.map((id) => gitlab.listAllAuthors(id)));
+    const seen = new Map();
+    for (const author of lists.flat()) {
+      if (!seen.has(author.username)) seen.set(author.username, author);
+    }
+    return Array.from(seen.values());
+  }, { force });
+}
+
+async function rosterAuthors() {
+  return (await loadRoster()).value;
+}
+
 async function handleDeveloperRoster(req, res, query) {
   try {
-    const force = query.get('refresh') === '1';
-    const { value, at, fromCache } = await cache.cached('dev-roster', 'all', ROSTER_CACHE_TTL_MS, async () => {
-      const configured = projects.listProjects();
-      const ids = configured.length ? configured.map((p) => p.id) : [undefined];
-      const lists = await Promise.all(ids.map((id) => gitlab.listAllAuthors(id)));
-      const seen = new Map();
-      for (const author of lists.flat()) {
-        if (!seen.has(author.username)) seen.set(author.username, author);
-      }
-      return Array.from(seen.values());
-    }, { force });
+    const { value, at, fromCache } = await loadRoster({ force: query.get('refresh') === '1' });
     return sendJson(res, 200, { authors: value, cachedAt: at, fromCache });
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
@@ -529,14 +543,18 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
     // analytics body: it folds in Jira (estimates, due dates) and this
     // tool's own review history, both of which move on their own schedule.
     // It is cheap — pure arithmetic over data already in hand.
-    const reviews = activity.reviewsFor(author).slice(-30);
+    // Deduped to the newest run per merge request *before* the window is
+    // taken, so "the last 30" means thirty merge requests rather than thirty
+    // clicks of ▶ on the same five (see devScore.dedupeReviews).
+    const reviews = devScore.dedupeReviews(activity.reviewsFor(author)).sort((a, b) => a.at - b.at).slice(-30);
     const events = activity.eventsFor(author);
-    const lastActivityMs = Math.max(0, ...events.map((e) => e.at), ...reviews.map((r) => r.at)) || null;
+    // Reported beside the score as a status, not folded into it: how recently
+    // somebody worked says nothing about how well they worked.
+    value.lastActivityMs = Math.max(0, ...events.map((e) => e.at), ...reviews.map((r) => r.at)) || null;
     value.autoScore = devScore.compute({
       tasks: value.jiraTasks || [],
       analytics: value,
       reviews,
-      lastActivityMs,
     });
     // The sprint they were last working in, scored on its own — a quarter's
     // average can look fine while the sprint that just ended did not.
@@ -553,6 +571,36 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
       reviews,
     });
     return { ...value, cachedAt: at, fromCache };
+  }
+}
+
+// One developer's row for the team table. Deliberately one row per request
+// rather than a single endpoint that builds the whole team: each row costs a
+// full analytics build (a GitLab commits lookup per merge request), so a
+// four-person team behind one request is a four-way wait staring at a
+// spinner. Per-row lets the page paint each person the moment they land, and
+// a GitLab hiccup on one developer costs that row instead of the table.
+//
+// Everything underneath is the same cached loadDeveloperAnalytics the detail
+// page uses, so opening someone from this table is usually instant and the
+// two views can never disagree about the same number.
+async function handleTeamRow(req, res, author, query) {
+  const since = query.get('since') || undefined;
+  const until = query.get('until') || undefined;
+  try {
+    const analytics = await loadDeveloperAnalytics(author, { since, until, force: query.get('refresh') === '1' });
+    const roster = await rosterAuthors();
+    const entry = roster.find((a) => a.username === author);
+    return sendJson(res, 200, teamOverview.buildRow({
+      username: author,
+      name: (entry && entry.name) || author,
+      analytics,
+    }));
+  } catch (e) {
+    // 200 with an error field, not 502: the table wants to show this person's
+    // name with "couldn't load" beside it, and a rejected fetch would just
+    // drop them out of the team.
+    return sendJson(res, 200, { username: author, name: author, error: e.message });
   }
 }
 
@@ -778,6 +826,8 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && pathname === '/api/models') return await handleModels(req, res);
       if (pathname === '/api/engines') return await handleEngines(req, res);
       if (req.method === 'POST' && pathname === '/api/engines/test') return await handleEngineTest(req, res);
+      const teamRowMatch = pathname.match(/^\/api\/team\/([^/]+)\/row$/);
+      if (req.method === 'GET' && teamRowMatch) return await handleTeamRow(req, res, decodeURIComponent(teamRowMatch[1]), url.searchParams);
       const analyticsMatch = pathname.match(/^\/api\/developers\/([^/]+)\/analytics$/);
       if (analyticsMatch) return await handleDeveloperAnalytics(req, res, decodeURIComponent(analyticsMatch[1]), url.searchParams);
       const ratingMatch = pathname.match(/^\/api\/developers\/([^/]+)\/rating$/);
