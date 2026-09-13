@@ -48,18 +48,22 @@ test('review() covers far more than the old 8-batch cap in one run', async () =>
   // budget: it used to be a literal 13000, which stopped filling a batch the
   // moment the cap became a function of the engine's context window
   // (lib/contextBudget.js) and quietly turned this into a 2-call test.
-  const budget = require('../lib/contextBudget').budgetFor();
-  const perFile = budget.fileDiffChars + 1000;
-  const changes = Array.from({ length: 20 }, (_, i) => ({
-    old_path: `f${i}.kt`, new_path: `f${i}.kt`,
-    diff: `@@ -1,0 +1,3 @@\n+line one for file ${i}\n+${'x'.repeat(perFile)}\n+line three`,
-  }));
-
+  //
+  // ai_bridge is stubbed *before* budgetFor() runs, with a fixed AI_PROVIDER,
+  // so this test's notion of "big enough to fill a batch" always matches what
+  // reviewer.review() actually uses underneath. contextBudget.secret() does a
+  // lazy require('./ai_bridge') on every call rather than caching it at
+  // module load, so it picks up this stub too — leaving it real (reading
+  // secrets.env on whichever machine runs the suite) previously meant the
+  // size computed here and the size review() batched against could come from
+  // two different engines' context windows, which is exactly what turned this
+  // into a flaky test: it passed or failed depending on which AI_PROVIDER was
+  // configured locally, never on a code regression.
   let calls = 0;
   let maxConcurrent = 0;
   let concurrent = 0;
   stub('../lib/ai_bridge', {
-    secret: () => '',
+    secret: (key) => (key === 'AI_PROVIDER' ? 'openai-compatible' : ''),
     async callModel() {
       calls++;
       concurrent++;
@@ -69,6 +73,14 @@ test('review() covers far more than the old 8-batch cap in one run', async () =>
       return { text: JSON.stringify({ summary: 'ok', findings: [], positives: [] }), usage: { promptTokens: 1, completionTokens: 1 } };
     },
   });
+
+  delete require.cache[require.resolve('../lib/contextBudget')];
+  const budget = require('../lib/contextBudget').budgetFor();
+  const perFile = budget.fileDiffChars + 1000;
+  const changes = Array.from({ length: 20 }, (_, i) => ({
+    old_path: `f${i}.kt`, new_path: `f${i}.kt`,
+    diff: `@@ -1,0 +1,3 @@\n+line one for file ${i}\n+${'x'.repeat(perFile)}\n+line three`,
+  }));
 
   const reviewer = freshReviewer();
   const result = await reviewer.review({ mr: { title: 't' }, changes });

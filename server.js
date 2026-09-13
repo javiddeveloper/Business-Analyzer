@@ -864,6 +864,23 @@ server.listen(PORT, () => {
   console.log(`coder-review در حال اجرا: http://localhost:${PORT}`);
   console.log(`  وب‌هوک گیت‌لب: POST http://localhost:${PORT}/webhook/gitlab`);
   console.log(`  داشبورد: http://localhost:${PORT}/admin`);
+  // checkAdminAuth() falls back to "trust any request whose TCP socket is
+  // 127.0.0.1" when ADMIN_TOKEN is empty — correct for `npm start` on a
+  // laptop, but it silently stops meaning anything the moment this process
+  // sits behind a same-host reverse proxy (nginx, a tunnel) that terminates
+  // TLS and forwards to this port: every proxied request also arrives from
+  // 127.0.0.1, from GitLab's webhook payload through to /api/settings and
+  // /api/env (which can read/rewrite GITLAB_TOKEN and AI API keys). The
+  // server still has to listen on every interface by default — GitLab.com
+  // webhooks need a direct public IP/domain with no proxy in front, which
+  // this project documents as a supported setup — so this can only be a
+  // warning, not a bind change, and only for the one topology that breaks it.
+  if (!secret('ADMIN_TOKEN')) {
+    console.warn(
+      '  ⚠ ADMIN_TOKEN تنظیم نشده: داشبورد و /api فقط با اتکا به آدرس IP درخواست (127.0.0.1) محافظت می‌شوند. ' +
+      'اگر این سرویس پشت یک ریورس‌پروکسی روی همین ماشین (nginx، یک تانل) قرار می‌گیرد، هر درخواستی که پروکسی فوروارد می‌کند هم از 127.0.0.1 دیده می‌شود — یعنی این محافظت عملاً از کار می‌افتد. قبل از گذاشتن پروکسی جلوی این سرویس، یک ADMIN_TOKEN از پنل تنظیمات بگذار.'
+    );
+  }
   const settings = state.getSettings();
   if (settings.autoReview) {
     console.log(`  ریویوی خودکار: روشن (هر ${settings.pollSeconds} ثانیه)`);
