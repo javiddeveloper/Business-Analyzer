@@ -35,3 +35,34 @@ Decision rules:
 - APPROVE if nothing above is violated in a way that would cause a real bug, security issue, or clear regression. Minor style nits go in a comment, not a rejection.
 - REQUEST_CHANGES only for logic errors, security issues, missing critical error handling, or a clear violation of a documented knowledge-base standard.
 - Never reject without a specific, actionable reason tied to a file.
+
+## Difficulty rating (last line of the report)
+
+End `review/MR-<iid>.md` with one line carrying two independent ratings. They
+are separate axes on purpose: a one-line change to a payment rule is `C**** L*`,
+and a mechanical rename across ninety files is `C* L*****`.
+
+`C<stars>` — complexity, how much care it needs, regardless of volume:
+
+- `C*` trivial
+- `C**` ordinary bug or small task
+- `C***` real business risk, needs attention
+- `C****` delicate logic, easy to get wrong
+- `C*****` genuinely hard, needs deep expertise
+
+`L<stars>` — how much code actually has to be read, regardless of difficulty:
+
+- `L*` a few files, quick to check
+- `L**` small, contained set
+- `L***` moderate spread across the codebase
+- `L****` many files, large diff
+- `L*****` this MR is very big
+
+Rate what the change *is*, not how it turned out. If you cannot judge an axis,
+leave that axis off rather than guessing — a missing rating is read as "not
+measured", while a wrong one is read as fact.
+
+Merge requests should not be big. When you rate an MR `L****` or `L*****`, say
+so in the summary as well: past that size both human and automated review
+measurably stop finding things, so a large MR is a review that did not really
+happen. Recommending it be split is a legitimate finding on its own.

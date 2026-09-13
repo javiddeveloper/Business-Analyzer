@@ -2943,6 +2943,29 @@ function renderJiraTasks(a) {
     '<div>' + (panes.find((p) => p.id === active) || {}).html + '</div>';
 }
 
+// The maintainer's C/L rating, when they left one. Size gets a colour
+// because it is the axis the team wants acted on — big merge requests are
+// the thing this rule exists to discourage. Complexity is shown plainly: it
+// is context, not a verdict on the person.
+const C_LABELS = ['', 'خیلی راحت', 'معمولی — باگ/کار کوچک', 'ریسک بیزینسی واقعی', 'منطق ظریف، به‌راحتی اشتباه می‌شود', 'واقعاً سخت، تخصص عمیق'];
+const L_LABELS = ['', 'چند فایل', 'مجموعه‌ی کوچک', 'پخش متوسط', 'فایل زیاد، دیف بزرگ', 'این MR خیلی بزرگ است'];
+
+function ratingBadges(t) {
+  const r = t.rating;
+  if (!r) return '';
+  let out = '';
+  if (r.complexity) {
+    out += '<span class="chip-quiet" title="' + esc('پیچیدگی: ' + (C_LABELS[r.complexity] || '')) + '">C' +
+      '*'.repeat(r.complexity) + '</span>';
+  }
+  if (r.length) {
+    const cls = r.length >= 4 ? 'yes' : r.length === 3 ? 'unk' : 'no';
+    out += '<span class="rt-badge ' + cls + '" title="' + esc('حجم: ' + (L_LABELS[r.length] || '')) + '">L' +
+      '*'.repeat(r.length) + '</span>';
+  }
+  return out;
+}
+
 // One MR, as a card. Same three-line shape as the Jira task cards so the two
 // lists read as one product rather than two.
 function renderMrTaskCard(t) {
@@ -2978,6 +3001,7 @@ function renderMrTaskCard(t) {
     '<div class="task-meta">' +
       branchPill(t) +
       rtBadge +
+      ratingBadges(t) +
       jiraBadge +
       (t.otherAuthors && t.otherAuthors.length ? '<span class="rt-badge yes">کامیت از: ' + esc(t.otherAuthors.join('، ')) + '</span>' : '') +
     '</div>' +
