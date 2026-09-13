@@ -10,6 +10,7 @@ const reviewer = require('./lib/reviewer');
 const knowledge = require('./lib/knowledge');
 const jobs = require('./lib/jobs');
 const usage = require('./lib/usage');
+const feedback = require('./lib/feedback');
 const state = require('./lib/state');
 const envFile = require('./lib/envFile');
 const activity = require('./lib/activity');
@@ -153,6 +154,32 @@ async function handleWebhook(req, res) {
 async function handleUsage(req, res, searchParams) {
   const days = Math.max(1, Math.min(365, parseInt(searchParams.get('days'), 10) || 30));
   return sendJson(res, 200, usage.summary({ days }));
+}
+
+// GET returns the votes already cast on one MR's findings (keyed by
+// fingerprint), so re-opening a tab that was voted on earlier shows the
+// buttons already pressed instead of resetting them.
+async function handleFeedbackForMr(req, res, searchParams) {
+  const projectId = searchParams.get('projectId');
+  const mrIid = searchParams.get('mrIid');
+  if (!projectId || !mrIid) return sendJson(res, 400, { error: 'projectId and mrIid are required' });
+  return sendJson(res, 200, feedback.getVotes({ projectId, mrIid }));
+}
+
+// POST casts (or clears, when vote is neither 'up' nor 'down') a vote on one
+// finding — see lib/feedback.js for why this is the only accuracy signal
+// the tool can honestly claim.
+async function handlePostFeedback(req, res) {
+  const body = await readJsonBody(req);
+  if (!body || !body.projectId || !body.mrIid || !body.fingerprint) {
+    return sendJson(res, 400, { error: 'projectId, mrIid and fingerprint are required' });
+  }
+  const saved = feedback.setVote(body);
+  return sendJson(res, 200, { ok: true, vote: saved ? saved.vote : null });
+}
+
+async function handleFeedbackAccuracy(req, res, searchParams) {
+  return sendJson(res, 200, feedback.accuracy({ category: searchParams.get('category') || null }));
 }
 
 async function handleStatus(req, res) {
@@ -827,6 +854,9 @@ const server = http.createServer(async (req, res) => {
 
       if (req.method === 'GET' && pathname === '/api/status') return await handleStatus(req, res);
       if (req.method === 'GET' && pathname === '/api/usage') return await handleUsage(req, res, url.searchParams);
+      if (req.method === 'GET' && pathname === '/api/feedback') return await handleFeedbackForMr(req, res, url.searchParams);
+      if (req.method === 'POST' && pathname === '/api/feedback') return await handlePostFeedback(req, res);
+      if (req.method === 'GET' && pathname === '/api/feedback/accuracy') return await handleFeedbackAccuracy(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       const mrContextMatch = pathname.match(/^\/api\/merge-requests\/([^/]+)\/(\d+)\/context$/);
       if (req.method === 'GET' && mrContextMatch) {

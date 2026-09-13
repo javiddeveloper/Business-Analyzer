@@ -512,6 +512,14 @@
   .finding-note { white-space: pre-wrap; word-break: break-word; font-size: 13px; }
   .finding pre { background: #060a14; border: 1px solid var(--border); border-radius: 8px; padding: 8px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; direction: ltr; text-align: left; }
   .tag { font-size: 11px; color: var(--dim); }
+  .finding-feedback { display: inline-flex; gap: 2px; margin-inline-start: auto; }
+  .fb-btn {
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    padding: 1px 6px; font-size: 12px; cursor: pointer; opacity: .55; line-height: 1.6;
+  }
+  .fb-btn:hover { opacity: 1; }
+  .fb-btn.active { opacity: 1; border-color: var(--accent, #34e3e3); background: rgba(52,227,227,.12); }
+  .fb-btn.fb-down.active { border-color: var(--red, #ff6b81); background: rgba(255,107,129,.12); }
   .branch-pill {
     display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 1px 8px;
     font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr;
@@ -606,6 +614,7 @@
     <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
     <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
     <span class="badge" id="usageBadge" title="مصرف توکن مدل — برای جزئیات هر موتور، اینجا را نگه‌دار"></span>
+    <span class="badge" id="accuracyBadge" hidden title="از یافته‌هایی که کسی رویشان 👍/👎 زده — نه از کل یافته‌ها"></span>
   </div>
 </header>
 
@@ -766,6 +775,7 @@ const S = {
   // GitLab only gets a comment when explicitly asked for one. Off by default.
   postToGitlab: false,
   mrContext: {},   // key -> { jira, commits } for the open MR, loaded lazily
+  feedbackVotes: {}, // key -> { fingerprint -> 'up'|'down' }, loaded lazily per MR
   env: [],
   engines: [],     // /api/engines catalog: label, icon, state, which is active
   envDirty: {},    // key -> new value the user actually typed
@@ -894,6 +904,30 @@ async function loadUsage() {
   } catch (e) {
     // Usage is informational — a failure here must never block the rest of
     // the header (GitLab/model status) from rendering.
+  }
+}
+
+// ---- header / accuracy badge -------------------------------------------
+// The only honest answer to "is the AI actually right" this tool has: the
+// share of 👍 among findings someone bothered to vote on. Hidden until
+// there's at least one vote — an "accuracy" figure with zero data behind it
+// would be worse than no figure at all.
+async function loadAccuracy() {
+  try {
+    const acc = await api('/api/feedback/accuracy');
+    const badge = document.getElementById('accuracyBadge');
+    if (!badge) return;
+    if (!acc.total) { badge.hidden = true; return; }
+    badge.hidden = false;
+    badge.textContent = '🎯 دقت ' + acc.rate + '٪ (' + acc.total + ' رأی)';
+    const perCat = acc.byCategory
+      .sort((a, b) => b.total - a.total)
+      .map((c) => '  ' + c.category + ': ' + c.rate + '٪ (' + c.total + ' رأی)');
+    badge.title = 'از ' + acc.total + ' یافته‌ای که کسی 👍/👎 زده، ' + acc.up + ' تا مفید بودند (' + acc.rate + '٪).' +
+      '\nاین فقط یافته‌های رأی‌خورده را می‌شمارد، نه کل یافته‌های ریویو — یافته‌ای که کسی رویش نظر نداده نه تأیید است نه رد.' +
+      (perCat.length ? '\n\nبه تفکیک دسته:\n' + perCat.join('\n') : '');
+  } catch (e) {
+    // Informational only — never block the rest of the header.
   }
 }
 
@@ -1474,7 +1508,7 @@ function renderMrPanel() {
     '</div>' +
     '<div style="margin-top:12px">' + statusLine + '</div>' +
     (job && job.status === 'done' ? '<hr class="section-divider" />' : '') +
-    renderFindings(job);
+    renderFindings(job, mr);
 
   const ctx = S.mrContext[key];
   if (!ctx || (ctx.sha !== mr.sha && !ctx.loading)) loadMrContext(mr);
@@ -1487,26 +1521,80 @@ function renderMrPanel() {
   if (postChk) postChk.onchange = (e) => { S.postToGitlab = e.target.checked; };
   const postBtn = document.getElementById('postBtn');
   if (postBtn) postBtn.onclick = () => postNote(mr);
+  bindFindingFeedback(job, mr);
 }
 
-function renderFindings(job) {
+// 👍/👎 per finding — the tool's only honest accuracy signal (lib/feedback.js).
+// Votes already cast are fetched once per MR (S.feedbackVotes, keyed like the
+// job map) so re-opening a tab shows buttons already pressed instead of
+// resetting them; a vote not yet loaded just renders with neither button lit.
+function renderFindings(job, mr) {
   if (!job || job.status !== 'done') return '';
   const findings = job.findings || [];
   if (!findings.length) return '<div class="note">هیچ یافته‌ای ثبت نشد.</div>';
+  const votes = (mr && S.feedbackVotes[keyOf(mr.projectId, mr.iid)]) || {};
+  if (mr && !S.feedbackVotes[keyOf(mr.projectId, mr.iid)]) loadFeedbackVotes(mr);
   return findings.map((f) => {
     const loc = f.line ? f.file + ':' + f.line : (f.file || 'کل MR');
+    const vote = f.fingerprint ? votes[f.fingerprint] : null;
     return '<div class="finding">' +
       '<div class="finding-head">' +
         '<span class="sev ' + esc(f.severity) + '">' + esc(f.severity) + '</span>' +
         '<strong style="min-width:0;word-break:break-word">' + esc(f.title) + '</strong>' +
         '<span class="tag">' + esc(f.category) + (f.source === 'auto' ? ' · بررسی خودکار' : '') +
           (f.postedInline ? ' · روی خط ثبت شد' : '') + '</span>' +
+        (f.fingerprint ? '<span class="finding-feedback" data-fp="' + esc(f.fingerprint) + '" data-category="' + esc(f.category) + '" data-severity="' + esc(f.severity) + '" data-source="' + esc(f.source || '') + '" title="این یافته واقعاً درست بود؟">' +
+          '<button class="fb-btn fb-up' + (vote === 'up' ? ' active' : '') + '" data-vote="up">👍</button>' +
+          '<button class="fb-btn fb-down' + (vote === 'down' ? ' active' : '') + '" data-vote="down">👎</button>' +
+        '</span>' : '') +
       '</div>' +
       '<div class="finding-loc">' + esc(loc) + (f.lineUnverified ? ' (خط ادعایی مدل: ' + esc(f.claimedLine) + ' — در دیف نبود)' : '') + '</div>' +
       '<div class="finding-note">' + esc(f.note) + '</div>' +
       (f.suggestion ? '<pre>' + esc(f.suggestion) + '</pre>' : '') +
     '</div>';
   }).join('');
+}
+
+async function loadFeedbackVotes(mr) {
+  const key = keyOf(mr.projectId, mr.iid);
+  S.feedbackVotes[key] = {}; // placeholder so renderFindings doesn't re-trigger the fetch on every re-render while it's in flight
+  try {
+    S.feedbackVotes[key] = await api('/api/feedback?projectId=' + encodeURIComponent(mr.projectId) + '&mrIid=' + mr.iid);
+    renderMrPanel();
+  } catch (e) { /* feedback is informational — a failed fetch just leaves buttons unlit */ }
+}
+
+function bindFindingFeedback(job, mr) {
+  if (!job || job.status !== 'done' || !mr) return;
+  for (const el of document.querySelectorAll('.finding-feedback')) {
+    el.querySelectorAll('.fb-btn').forEach((btn) => {
+      btn.onclick = async () => {
+        const fingerprint = el.dataset.fp;
+        const wasActive = btn.classList.contains('active');
+        const nextVote = wasActive ? null : btn.dataset.vote; // clicking an already-active vote clears it
+        el.querySelectorAll('.fb-btn').forEach((b) => b.classList.remove('active'));
+        if (nextVote) btn.classList.add('active');
+        const key = keyOf(mr.projectId, mr.iid);
+        if (!S.feedbackVotes[key]) S.feedbackVotes[key] = {};
+        if (nextVote) S.feedbackVotes[key][fingerprint] = nextVote; else delete S.feedbackVotes[key][fingerprint];
+        try {
+          await api('/api/feedback', {
+            method: 'POST',
+            body: JSON.stringify({
+              projectId: mr.projectId, mrIid: mr.iid, fingerprint, vote: nextVote,
+              category: el.dataset.category, severity: el.dataset.severity, source: el.dataset.source,
+            }),
+          });
+          loadAccuracy();
+        } catch (e) {
+          // Revert on failure — an unsaved vote showing as saved is worse
+          // than one that visibly didn't take.
+          btn.classList.toggle('active', wasActive);
+          if (wasActive) S.feedbackVotes[key][fingerprint] = btn.dataset.vote;
+        }
+      };
+    });
+  }
 }
 
 async function runReview(mr) {
@@ -3309,6 +3397,7 @@ loadStatus();
 loadMergeRequests().then(loadJobs);
 loadKb();
 loadUsage();
+loadAccuracy();
 
 // Live status for every tab at once — so several MRs reviewing in parallel all
 // stay up to date, not just the one being looked at.
@@ -3318,6 +3407,7 @@ setInterval(loadMergeRequests, 60000);
 // Usage only changes when a review finishes — no need to poll as often as
 // job status, but often enough that the badge doesn't look stuck all day.
 setInterval(loadUsage, 60000);
+setInterval(loadAccuracy, 60000);
 </script>
 </body>
 </html>
