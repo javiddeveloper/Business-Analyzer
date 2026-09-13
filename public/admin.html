@@ -712,6 +712,7 @@
       <button class="panel-tab active" id="stEnv">secrets.env</button>
       <button class="panel-tab" id="stKb">📚 پایگاه دانش</button>
       <button class="panel-tab" id="stProjects">📁 پروژه‌ها</button>
+      <button class="panel-tab" id="stAudit">🧾 لاگ تغییرات</button>
     </div>
     <div class="settings-panel" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
     <div class="settings-panel" id="kbPanel" hidden>
@@ -736,6 +737,13 @@
       <input type="text" id="projNewName" placeholder="نام نمایشی (اختیاری)" />
       <input type="text" id="projNewPath" placeholder="مسیر چک‌اوت محلی روی همین سرور (مثلاً D:\\Projects\\repo)" />
       <button id="projSaveBtn">ذخیره پروژه</button>
+    </div>
+    <div class="settings-panel" id="auditPanel" hidden>
+      <p class="meta">
+        چه کسی تنظیمات/secrets.env/پروژه‌ها را عوض کرده و هر approve خودکار — این پروژه حساب کاربری ندارد
+        (یک ADMIN_TOKEN مشترک، یا هیچ‌کدام روی localhost)، پس «چه کسی» یعنی آدرس IP درخواست، نه هویت یک فرد.
+      </p>
+      <div id="auditList"><div class="empty">در حال بارگذاری…</div></div>
     </div>
     <div class="settings-foot" id="settingsFoot">
       <button id="settingsSaveBtn">ذخیره</button>
@@ -1081,18 +1089,51 @@ function switchSettingsTab(which) {
   document.getElementById('stEnv').classList.toggle('active', which === 'env');
   document.getElementById('stKb').classList.toggle('active', which === 'kb');
   document.getElementById('stProjects').classList.toggle('active', which === 'projects');
+  document.getElementById('stAudit').classList.toggle('active', which === 'audit');
   document.getElementById('settingsBody').hidden = which !== 'env';
   document.getElementById('kbPanel').hidden = which !== 'kb';
   document.getElementById('projectsPanel').hidden = which !== 'projects';
-  // The foot's Save button only applies to secrets.env — the knowledge base
-  // and projects tabs save per-item via their own inline buttons.
+  document.getElementById('auditPanel').hidden = which !== 'audit';
+  // The foot's Save button only applies to secrets.env — every other tab
+  // saves per-item via its own inline controls (or, for audit, has nothing
+  // to save at all).
   document.getElementById('settingsFoot').hidden = which !== 'env';
   if (which === 'kb') loadKb();
   if (which === 'projects') loadProjectsPanel();
+  if (which === 'audit') loadAudit();
 }
 document.getElementById('stEnv').onclick = () => switchSettingsTab('env');
 document.getElementById('stKb').onclick = () => switchSettingsTab('kb');
 document.getElementById('stProjects').onclick = () => switchSettingsTab('projects');
+document.getElementById('stAudit').onclick = () => switchSettingsTab('audit');
+
+// ---- audit log tab (settings modal) ----------------------------------------
+const AUDIT_ACTION_LABEL = { settings: '⚙ تنظیمات', env: '🔑 secrets.env', approve: '✅ approve خودکار', project: '📁 پروژه' };
+function auditDetailText(entry) {
+  if (entry.action === 'settings') {
+    return Object.entries(entry.detail || {}).map(([k, v]) => k + ': ' + JSON.stringify(v.from) + ' → ' + JSON.stringify(v.to)).join('، ');
+  }
+  if (entry.action === 'env') return 'فیلدهای بازنویسی‌شده: ' + ((entry.detail && entry.detail.keys) || []).join('، ');
+  if (entry.action === 'approve') return 'پروژه ' + (entry.detail && entry.detail.projectId) + ' — !' + (entry.detail && entry.detail.mrIid);
+  if (entry.action === 'project') return (entry.detail && entry.detail.op) + ' — ' + ((entry.detail && (entry.detail.name || entry.detail.id)) || '');
+  return JSON.stringify(entry.detail || {});
+}
+async function loadAudit() {
+  const box = document.getElementById('auditList');
+  try {
+    const entries = await api('/api/audit?limit=200');
+    if (!entries.length) { box.innerHTML = '<div class="empty">هنوز هیچ تغییری ثبت نشده.</div>'; return; }
+    box.innerHTML = '<table class="score-table"><thead><tr><th>زمان</th><th>عملیات</th><th>چه کسی</th><th>جزئیات</th></tr></thead><tbody>' +
+      entries.map((e) => '<tr>' +
+        '<td class="muted">' + esc(new Date(e.at).toLocaleString('fa-IR')) + '</td>' +
+        '<td>' + esc(AUDIT_ACTION_LABEL[e.action] || e.action) + '</td>' +
+        '<td class="mono muted" style="font-size:11px">' + esc(e.actor) + '</td>' +
+        '<td class="muted">' + esc(auditDetailText(e)) + '</td>' +
+      '</tr>').join('') + '</tbody></table>';
+  } catch (e) {
+    box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+  }
+}
 
 // ---- projects tab (settings modal) + toolbar switcher ----------------------
 async function loadProjectsPanel() {

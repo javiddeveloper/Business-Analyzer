@@ -11,6 +11,7 @@ const knowledge = require('./lib/knowledge');
 const jobs = require('./lib/jobs');
 const usage = require('./lib/usage');
 const feedback = require('./lib/feedback');
+const audit = require('./lib/audit');
 const state = require('./lib/state');
 const envFile = require('./lib/envFile');
 const activity = require('./lib/activity');
@@ -82,6 +83,17 @@ function isLocal(req) {
   const ip = req.socket.remoteAddress || '';
   return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
 }
+
+// "Who" for the audit log — this project has no user accounts (one shared
+// ADMIN_TOKEN, or none at all on localhost), so the request's own address is
+// the only identity there is. Labeled explicitly rather than left as a raw
+// IP, since "127.0.0.1" reads as meaningless without the reminder that it's
+// the *only* signal available here.
+function actorFor(req) {
+  const ip = req.socket.remoteAddress || 'unknown';
+  return isLocal(req) ? `local (${ip})` : ip;
+}
+
 function checkAdminAuth(req) {
   const adminToken = secret('ADMIN_TOKEN');
   if (!adminToken) return isLocal(req);
@@ -180,6 +192,13 @@ async function handlePostFeedback(req, res) {
 
 async function handleFeedbackAccuracy(req, res, searchParams) {
   return sendJson(res, 200, feedback.accuracy({ category: searchParams.get('category') || null }));
+}
+
+// Who changed settings/env/projects, and every auto-approve — see
+// lib/audit.js for what "who" can and can't mean here (no user accounts).
+async function handleAudit(req, res, searchParams) {
+  const limit = Math.max(1, Math.min(1000, parseInt(searchParams.get('limit'), 10) || 200));
+  return sendJson(res, 200, audit.list({ limit, action: searchParams.get('action') || null }));
 }
 
 async function handleStatus(req, res) {
@@ -390,6 +409,7 @@ async function handleProjects(req, res) {
   if (!body || !body.id) return sendJson(res, 400, { error: 'id (شناسه‌ی عددی پروژه در گیت‌لب) لازم است' });
   try {
     const entry = projects.upsertProject({ id: body.id, name: body.name, path: body.path });
+    audit.record({ action: 'project', actor: actorFor(req), detail: { op: 'upsert', id: entry.id, name: entry.name } });
     return sendJson(res, 200, { project: entry, projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
   } catch (e) {
     return sendJson(res, 400, { error: e.message });
@@ -405,6 +425,7 @@ async function handleActiveProject(req, res) {
 
 async function handleDeleteProject(req, res, id) {
   projects.removeProject(id);
+  audit.record({ action: 'project', actor: actorFor(req), detail: { op: 'remove', id } });
   return sendJson(res, 200, { projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
 }
 
@@ -737,7 +758,15 @@ async function handleSettings(req, res) {
   if (req.method === 'GET') return sendJson(res, 200, state.getSettings());
   const body = await readJsonBody(req);
   if (!body) return sendJson(res, 400, { error: 'invalid JSON body' });
+  const before = state.getSettings();
   const next = state.saveSettings(body);
+  // Only the fields the request actually touched — saveSettings merges onto
+  // the existing settings, so most of `next` didn't change this call.
+  const changed = {};
+  for (const key of Object.keys(body)) {
+    if (before[key] !== next[key]) changed[key] = { from: before[key], to: next[key] };
+  }
+  if (Object.keys(changed).length) audit.record({ action: 'settings', actor: actorFor(req), detail: changed });
   scheduleAutoTick();
   return sendJson(res, 200, next);
 }
@@ -754,6 +783,9 @@ async function handleEnvSettings(req, res) {
     return sendJson(res, 400, { error: 'values object is required' });
   }
   const { written } = envFile.writeValues(body.values);
+  // Key names only, never values — GITLAB_TOKEN/AI_API_KEY/etc. live here,
+  // and this audit log itself is not a secret store.
+  if (written.length) audit.record({ action: 'env', actor: actorFor(req), detail: { keys: written } });
   return sendJson(res, 200, { written, values: envFile.describe() });
 }
 
@@ -857,6 +889,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && pathname === '/api/feedback') return await handleFeedbackForMr(req, res, url.searchParams);
       if (req.method === 'POST' && pathname === '/api/feedback') return await handlePostFeedback(req, res);
       if (req.method === 'GET' && pathname === '/api/feedback/accuracy') return await handleFeedbackAccuracy(req, res, url.searchParams);
+      if (req.method === 'GET' && pathname === '/api/audit') return await handleAudit(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       const mrContextMatch = pathname.match(/^\/api\/merge-requests\/([^/]+)\/(\d+)\/context$/);
       if (req.method === 'GET' && mrContextMatch) {
