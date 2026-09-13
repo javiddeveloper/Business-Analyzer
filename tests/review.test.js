@@ -106,6 +106,24 @@ test('missing-tests check fires only for non-trivial source changes with no test
   assert.equal(checks.checkMissingTests([tiny]).length, 0, 'a two-line change needs no test to justify it');
 });
 
+test('an oversized MR is reported but never blocks the merge on size alone', () => {
+  const files = Array.from({ length: 45 }, (_, i) => ({
+    path: `app/F${i}.kt`, diff: '@@ -1,0 +1,2 @@\n+val a = 1\n+val b = 2',
+  }));
+  const found = checks.checkSize(files, []);
+  const size = found.find((f) => /خیلی بزرگ/.test(f.title));
+
+  assert.ok(size, 'a 45-file MR is still called out as too big to review well');
+  assert.equal(size.severity, 'Low', 'but as a Low: it is a fact about the shape of the change, not a defect in the code');
+  // The guarantee that actually matters, stated against decide() rather than
+  // against the severity string: a big MR whose code is clean still approves.
+  assert.equal(reviewer.decide(found), 'APPROVE', 'size alone must never turn into REQUEST_CHANGES');
+  assert.equal(
+    reviewer.decide([...found, { severity: 'Medium' }]), 'REQUEST_CHANGES',
+    'a real Medium finding still blocks — this only declaws the size check'
+  );
+});
+
 test('a leftover merge-conflict marker is caught deterministically, not left to the model', () => {
   const found = checks.scanConflictMarkers([{
     path: 'app/Foo.kt',

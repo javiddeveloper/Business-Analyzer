@@ -769,6 +769,7 @@
       <label class="check"><input type="checkbox" id="setAutoPost" title="پیش‌فرض خاموش — بدون این، ریویوی خودکار/وب‌هوک فقط review/MR-<iid>.md را می‌نویسد و چیزی روی خود MR نمی‌گذارد" /> کامنت روی گیت‌لب در حالت خودکار/وب‌هوک هم ثبت شود</label>
       <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
       <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> 🤖 ریویوی کل پروژه با ایجنت (claude-cli)</label>
+      <label class="check"><input type="checkbox" id="setPushReport" title="بعد از هر ریویو، فایل review/MR-<iid>.md را با API گیت‌لب مستقیم روی شاخه‌ی خودِ همان MR کامیت می‌کند (نه روی چک‌اوت محلی). بدون این، فایل فقط در کپی محلی نوشته می‌شود و به MR نمی‌رسد مگر دستی کامیتش کنی." /> 📤 پوش گزارش روی شاخه‌ی MR</label>
     </div>
   </div>
   <div id="mrError"></div>
@@ -1009,6 +1010,7 @@ function renderStatus() {
   document.getElementById('setAutoPost').checked = st.autoPost !== false;
   document.getElementById('setAutoApprove').checked = !!st.autoApprove;
   document.getElementById('setAgentMode').checked = st.agentMode !== false;
+  document.getElementById('setPushReport').checked = !!st.pushReport;
 
   const banner = document.getElementById('pathBanner');
   banner.hidden = !!pp.set;
@@ -1088,6 +1090,7 @@ bindSetting('setSkipDrafts', 'skipDrafts');
 bindSetting('setAutoPost', 'autoPost');
 bindSetting('setAutoApprove', 'autoApprove');
 bindSetting('setAgentMode', 'agentMode');
+bindSetting('setPushReport', 'pushReport');
 
 document.getElementById('autoReview').onchange = async (e) => {
   document.getElementById('autoReviewLabel').classList.toggle('on', e.target.checked);
@@ -1679,6 +1682,8 @@ function renderMrPanel() {
       job.approveError ? 'approve نشد: ' + esc(job.approveError) : '',
       job.reportPath ? '📄 گزارش نوشته شد در review/' : '',
       job.reportError ? 'خطای نوشتن گزارش: ' + esc(job.reportError) : '',
+      job.reportPushed ? '📤 روی شاخه‌ی ' + esc(job.reportPushed) + ' کامیت شد' : '',
+      job.reportPushError ? 'گزارش پوش نشد: ' + esc(job.reportPushError) : '',
       st.promptTokens || st.completionTokens ? 'توکن: ' + esc(st.promptTokens) + '+' + esc(st.completionTokens) : '',
       esc(job.trigger),
     ].filter(Boolean);
