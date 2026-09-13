@@ -137,12 +137,78 @@
     background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
     padding: 10px 12px; cursor: pointer; font-size: 13px; color: var(--text);
   }
-  .dev-roster-item:hover { border-color: var(--border-strong); }
+  .dev-roster-item:hover { border-color: var(--border-strong); transform: translateX(-2px); }
+  .dev-roster-item { transition: border-color .15s ease, background .15s ease, transform .15s ease; }
   .dev-roster-item.active { border-color: var(--cyan); background: rgba(52,227,227,.1); }
   .dev-main { flex: 1; min-width: 0; }
   @media (max-width: 720px) {
     .dev-page-body { flex-direction: column; }
     .dev-roster { flex: 0 0 auto; width: 100%; max-height: 30vh; border-inline-start: none; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-direction: row; flex-wrap: wrap; }
+  }
+
+  /* ---- the person page's hero: who, and the one number, together ----------
+     The score used to be a small pill in a row of five other pills, two
+     screens above the table that explains it. It is the thing every other
+     band on this page is evidence for, so it gets the size that says so —
+     and its caveat travels with it instead of living only next to the
+     breakdown nobody scrolled to. */
+  .dev-hero {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(52,227,227,.05), rgba(155,140,255,.05));
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; margin-bottom: 14px;
+  }
+  .hero-id { flex: 1 1 260px; min-width: 0; }
+  .hero-name { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .hero-meta { font-size: 11px; color: var(--dim); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .hero-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  /* Pinned to the top-left corner of the card rather than vertically centred
+     beside the name: these are controls, not part of the identity, and
+     centring them made the block read as a third column of content. */
+  .hero-actions {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    align-self: flex-start; margin-inline-start: auto;
+  }
+
+  /* The ring. A number in a coloured ring reads as a measurement; the same
+     number in a coloured box reads as a verdict — which is the wrong tone
+     for a figure this page spends the rest of its length qualifying. */
+  .score-ring { flex: 0 0 auto; width: 96px; height: 96px; }
+  .score-ring .ring-track { fill: none; stroke: rgba(120,140,200,.14); stroke-width: 7; }
+  .score-ring .ring-fill {
+    fill: none; stroke-width: 7; stroke-linecap: round;
+    transform: rotate(-90deg); transform-origin: 50% 50%;
+    transition: stroke-dasharray .6s cubic-bezier(.22,1,.36,1);
+  }
+  .score-ring .ring-num { font-size: 26px; font-weight: 800; fill: var(--text); font-family: var(--font-primary); }
+  .score-ring .ring-cap { font-size: 8.5px; fill: var(--dim); font-family: var(--font-primary); letter-spacing: .04em; }
+  .score-ring.score-good .ring-fill { stroke: var(--green); }
+  .score-ring.score-mid  .ring-fill { stroke: var(--amber); }
+  .score-ring.score-bad  .ring-fill { stroke: var(--red); }
+  .score-ring.score-none .ring-fill { stroke: var(--dim); }
+  .score-ring.score-none .ring-num { fill: var(--dim); font-size: 20px; }
+
+  /* Short form of the governance caveat, anchored to the number itself. The
+     full text still lives above the breakdown table; this is the version
+     that is impossible to scroll past, because the score is impossible to
+     scroll past. */
+  .hero-caveat {
+    flex: 1 1 100%; font-size: 11px; color: var(--muted); line-height: 1.6;
+    border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 2px;
+  }
+  .hero-caveat b { color: #ffd8a8; font-weight: 700; }
+  .hero-caveat a { cursor: pointer; text-decoration: none; border-bottom: 1px dotted currentColor; }
+
+  /* A jump that lands mid-page leaves the reader hunting for what moved. */
+  @keyframes section-flash {
+    from { background: rgba(52,227,227,.18); box-shadow: 0 0 0 6px rgba(52,227,227,.12); }
+    to { background: transparent; box-shadow: 0 0 0 6px transparent; }
+  }
+  .flash { animation: section-flash 1.2s ease-out; border-radius: 8px; }
+  @media (prefers-reduced-motion: reduce) {
+    .flash { animation: none; }
+    .score-ring .ring-fill { transition: none; }
+    .dev-roster-item:hover { transform: none; }
   }
   .date-filter { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 18px; }
   .date-filter .field { min-width: 130px; }
@@ -462,6 +528,20 @@
   }
   input[type=text]:focus, input[type=password]:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(52,227,227,.12); }
   textarea { min-height: 110px; resize: vertical; line-height: 1.7; }
+
+  /* Keyboard focus. Only text inputs had any focus styling at all, so every
+     other control — every button, tab, nav item, table row, engine card —
+     was invisible to anyone navigating by keyboard: the focus existed, it
+     just couldn't be seen. :focus-visible rather than :focus so a mouse
+     click never leaves a ring behind. */
+  :focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button, .nav-item, .panel-tab, .htab, .tab, .badge.pick, .dev-roster-item, .engine-card, .fb-btn {
+    transition: background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;
+  }
   label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
@@ -506,7 +586,18 @@
   .verdict.changes { background: rgba(255,107,129,.15); color: var(--red); }
   .empty { color: var(--dim); padding: 16px 0; text-align: center; }
   .error-box { background: rgba(255,107,129,.1); border: 1px solid rgba(255,107,129,.35); color: #ffb3bf; border-radius: 10px; padding: 10px; font-size: 13px; }
-  .finding { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-top: 14px; background: rgba(0,0,0,.2); }
+  .finding {
+    border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
+    margin-top: 14px; background: rgba(0,0,0,.2);
+    /* A severity stripe down the start edge. The severity was already on the
+       card as a small pill, but scanning twenty findings for the two High
+       ones meant reading twenty pills; a colour bar is readable at a glance
+       and at a distance, which is how a review list is actually used. */
+    border-inline-start-width: 3px;
+  }
+  .finding.sev-High { border-inline-start-color: var(--red); }
+  .finding.sev-Medium { border-inline-start-color: var(--amber); }
+  .finding.sev-Low { border-inline-start-color: var(--cyan); }
   .finding-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
   .sev { border-radius: 5px; padding: 2px 8px; font-size: 11px; flex: 0 0 auto; }
   .sev.High { background: rgba(255,107,129,.16); color: #ffb3bf; }
@@ -542,11 +633,23 @@
   .panel-tab:hover { color: var(--text); background: transparent; }
 
   /* ---- developer score badges & manual rating form (used on the analytics page) ---- */
-  .score-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 4px 10px; font-size: 12px; }
+  .score-badge {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 999px;
+    padding: 4px 12px; font-size: 12px; border: 1px solid transparent;
+    background: var(--panel-2); color: var(--muted);
+  }
   .score-badge .num { font-weight: 800; font-size: 15px; }
-  .score-good { background: rgba(65,224,138,.15); color: var(--green); }
-  .score-mid { background: rgba(255,179,71,.15); color: var(--amber); }
-  .score-bad { background: rgba(255,107,129,.15); color: var(--red); }
+  .score-good { background: rgba(65,224,138,.14); color: var(--green); border-color: rgba(65,224,138,.3); }
+  .score-mid { background: rgba(255,179,71,.14); color: var(--amber); border-color: rgba(255,179,71,.3); }
+  .score-bad { background: rgba(255,107,129,.14); color: var(--red); border-color: rgba(255,107,129,.3); }
+  /* The team table's score column, as a pill rather than a bare figure: in a
+     row of a dozen raw counts, the one number that is a *judgement* should
+     not look identical to the number of open merge requests beside it. */
+  .score-pill {
+    display: inline-block; min-width: 34px; text-align: center;
+    border-radius: 999px; padding: 2px 8px; font-weight: 800;
+    font-variant-numeric: tabular-nums; border: 1px solid transparent;
+  }
   .rating-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; margin-top: 10px; font-size: 12px; }
   .rating-grid select { width: 70px; margin-bottom: 0; padding: 4px 6px; }
   details.dev-rating summary { cursor: pointer; color: var(--muted); font-size: 12px; margin-top: 8px; }
@@ -805,6 +908,19 @@ const S = {
   envDirty: {},    // key -> new value the user actually typed
   settingsOpenedOnce: false,
 };
+
+// Binds a click AND the keyboard equivalent to an element that behaves like
+// a button but isn't one (a table row, a roster card). Kept as one helper so
+// the two can't drift: every place that wired only onclick was a control a
+// keyboard user could see, focus, and then not operate.
+function activate(el, fn) {
+  el.onclick = fn;
+  el.onkeydown = (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault(); // Space would otherwise scroll the page out from under the click
+    fn();
+  };
+}
 
 const keyOf = (projectId, iid) => projectId + '!' + iid;
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1624,7 +1740,7 @@ function renderFindings(job, mr) {
   return findings.map((f) => {
     const loc = f.line ? f.file + ':' + f.line : (f.file || 'کل MR');
     const vote = f.fingerprint ? votes[f.fingerprint] : null;
-    return '<div class="finding">' +
+    return '<div class="finding sev-' + esc(f.severity) + '">' +
       '<div class="finding-head">' +
         '<span class="sev ' + esc(f.severity) + '">' + esc(f.severity) + '</span>' +
         '<strong style="min-width:0;word-break:break-word">' + esc(f.title) + '</strong>' +
@@ -1904,6 +2020,49 @@ function scoreClass(score) {
   return 'score-bad';
 }
 
+// The score as a ring, for the person page's hero. r=31 → circumference
+// 2πr ≈ 194.8; the filled arc is that times score/100, and "no data" draws
+// an empty grey track with an em dash rather than a zero — a 0 and "we have
+// nothing to score you on" are opposite claims, and this is the one place
+// they would be easiest to confuse.
+// Scrolls one of the person page's sections into view and flashes it, so a
+// jump that lands mid-page doesn't leave the reader hunting for what moved.
+//
+// The smooth scroll is attempted, then *verified*: some engines (and any
+// browser honouring prefers-reduced-motion) ignore behavior:'smooth'
+// entirely, and when they do, nothing moves at all — the link reads as
+// broken rather than as "animation skipped". Checking that the page
+// actually went somewhere and falling back to an instant jump means the
+// click always lands, and only the animation is ever what's lost.
+function scrollToDevSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const before = window.scrollY;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => {
+    if (Math.abs(window.scrollY - before) < 4) el.scrollIntoView({ behavior: 'auto', block: 'center' });
+  }, 350);
+  el.classList.remove('flash');
+  void el.offsetWidth; // restart the animation if the same target is clicked twice
+  el.classList.add('flash');
+}
+
+const RING_CIRCUMFERENCE = 2 * Math.PI * 31;
+function renderScoreRing(score) {
+  const known = score != null;
+  const cls = known ? scoreClass(score) : 'score-none';
+  const filled = known ? (RING_CIRCUMFERENCE * Math.max(0, Math.min(100, score))) / 100 : 0;
+  return '<svg class="score-ring ' + cls + '" viewBox="0 0 80 80" role="img" ' +
+      'aria-label="امتیاز خودکار: ' + (known ? score + ' از ۱۰۰' : 'بدون داده') + '">' +
+    '<circle class="ring-track" cx="40" cy="40" r="31"></circle>' +
+    '<circle class="ring-fill" cx="40" cy="40" r="31" ' +
+      'stroke-dasharray="' + filled.toFixed(1) + ' ' + RING_CIRCUMFERENCE.toFixed(1) + '"></circle>' +
+    '<text class="ring-num" x="40" y="41" text-anchor="middle" dominant-baseline="middle">' +
+      (known ? score : '—') + '</text>' +
+    '<text class="ring-cap" x="40" y="55" text-anchor="middle">امتیاز خودکار</text>' +
+  '</svg>';
+}
+
 async function loadDevRoster(force) {
   const box = document.getElementById('devRoster');
   try {
@@ -1944,12 +2103,11 @@ function renderDevRoster() {
       const score = row && row.score != null
         ? '<span class="mini-score ' + scoreClass(row.score) + '">' + row.score + '</span>' : '';
       const flag = row && row.attention > 0 ? '<span class="flag" title="موارد نیازمند رسیدگی">●</span>' : '';
-      return '<div class="dev-roster-item ' + (DEV.selected === d.username ? 'active' : '') + '" data-username="' + esc(d.username) + '">' +
+      return '<div class="dev-roster-item ' + (DEV.selected === d.username ? 'active' : '') + '" data-username="' + esc(d.username) + '"' +
+        ' tabindex="0" role="button" aria-pressed="' + (DEV.selected === d.username) + '">' +
         '<span class="grow">👤 ' + esc(d.name) + '</span>' + flag + score + '</div>';
     }).join('');
-  box.querySelectorAll('[data-username]').forEach((el) => {
-    el.onclick = () => selectDeveloper(el.dataset.username);
-  });
+  box.querySelectorAll('[data-username]').forEach((el) => activate(el, () => selectDeveloper(el.dataset.username)));
 }
 
 // ---- Team view -------------------------------------------------------------
@@ -2014,7 +2172,7 @@ function teamCell(row, col) {
   const v = row[col.key];
   if (v == null) return '<td class="num zero">—</td>';
   if (col.hours) return '<td class="num">' + esc(humanHours(v)) + '</td>';
-  if (col.key === 'score') return '<td class="num ' + scoreClass(v) + '">' + v + '</td>';
+  if (col.key === 'score') return '<td class="num"><span class="score-pill ' + scoreClass(v) + '">' + v + '</span></td>';
   const cls = v === 0 ? 'zero' : (col.hot ? 'hot' : (col.warm ? 'warm' : ''));
   return '<td class="num ' + cls + '">' + v + '</td>';
 }
@@ -2044,16 +2202,24 @@ function renderTeam() {
       esc(c.label) + (c.key === sortKey ? ' &#9662;' : '') + '</th>'
   )).join('');
 
+  // tabindex/role on the clickable rows: opening a person's page was
+  // mouse-only, so a whole page of this dashboard was unreachable by
+  // keyboard. The row is the click target, so the row is what has to be
+  // focusable — the alternative, a link inside the name cell, would leave
+  // the other eleven cells inert while looking equally clickable.
+  const openable = (username) => 'data-open="' + esc(username) + '" tabindex="0" role="button" ' +
+    'aria-label="' + esc('باز کردن صفحه‌ی ' + username) + '"';
+
   const body = rows.map((r) => {
     if (r.error) {
-      return '<tr data-open="' + esc(r.username) + '"><td class="who">' + esc(r.name || r.username) + '</td>' +
+      return '<tr ' + openable(r.username) + '><td class="who">' + esc(r.name || r.username) + '</td>' +
         '<td colspan="' + (TEAM_COLUMNS.length - 1) + '" class="zero">خواندن اطلاعات این فرد شکست خورد: ' + esc(r.error) + '</td></tr>';
     }
     if (r.pending) {
       return '<tr><td class="who">' + esc(r.name || r.username) + '</td>' +
         TEAM_COLUMNS.slice(1).map(() => '<td class="num"><span class="team-loading"></span></td>').join('') + '</tr>';
     }
-    return '<tr data-open="' + esc(r.username) + '">' + TEAM_COLUMNS.map((c) => teamCell(r, c)).join('') + '</tr>';
+    return '<tr ' + openable(r.username) + '>' + TEAM_COLUMNS.map((c) => teamCell(r, c)).join('') + '</tr>';
   }).join('');
 
   const sum = teamSummary(loaded);
@@ -2084,9 +2250,11 @@ function renderTeam() {
     '<div style="overflow-x:auto"><table class="team-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
     '<div class="muted" style="font-size:11px;margin-top:6px">⚠️ ستون امتیاز ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی — فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده.</div>';
 
-  main.querySelectorAll('[data-open]').forEach((el) => { el.onclick = () => selectDeveloper(el.dataset.open); });
+  main.querySelectorAll('[data-open]').forEach((el) => activate(el, () => selectDeveloper(el.dataset.open)));
   main.querySelectorAll('[data-teamsort]').forEach((el) => {
-    el.onclick = () => { DEV.teamSort = el.dataset.teamsort; renderTeam(); };
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    activate(el, () => { DEV.teamSort = el.dataset.teamsort; renderTeam(); });
   });
   document.getElementById('teamFilterApply').onclick = () => {
     DEV.since = document.getElementById('teamSince').value;
@@ -2318,13 +2486,18 @@ function renderDevMain() {
   // who worked this week, so 0×0.7 + 100×0.3 = 30 every time. Two different
   // "auto scores" on one page, one of them stuck, is worse than none.
   const auto = (a && a.autoScore) || {};
-  const autoBadge = auto.score == null
-    ? '<span class="score-badge">امتیاز خودکار: بدون داده</span>'
-    : '<span class="score-badge ' + scoreClass(auto.score) + '" title="' + esc(auto.reason || '') + '">امتیاز خودکار: <span class="num">' + auto.score + '</span></span>';
   const monthLabel = scoreData.month ? ' (' + esc(faMonth(scoreData.month)) + ')' : '';
   const manualBadge = scoreData.ratingOverall != null
     ? '<span class="score-badge ' + scoreClass(scoreData.ratingOverall) + '">امتیاز دستی' + monthLabel + ': <span class="num">' + scoreData.ratingOverall + '</span></span>'
     : '<span class="score-badge">امتیاز دستی' + monthLabel + ': ثبت نشده</span>';
+
+  // How many things on this page actually need doing — counted from the very
+  // list renderAttentionBand draws below, surfaced beside the name so the
+  // answer to "should I open this person today" needs no scrolling.
+  const attnItems = attentionItems(a);
+  const attentionChip = attnItems.length
+    ? '<span class="score-badge score-bad" id="heroAttentionChip" style="cursor:pointer" title="رفتن به فهرست موارد نیازمند رسیدگی">&#9888; ' + attnItems.length + ' مورد رسیدگی</span>'
+    : '<span class="score-badge score-good">&#10003; موردی برای رسیدگی نیست</span>';
 
   const cacheNote = a.cachedAt
     ? '<span class="tag">' + (a.fromCache ? 'کش‌شده — ' : 'همین الان محاسبه شد — ') + esc(relativeTime(a.cachedAt)) + '</span>'
@@ -2338,20 +2511,30 @@ function renderDevMain() {
 
   // Recency used to be worth 5% of the score. It is a status, not a
   // performance measure — a week of approved leave is not a drop in
-  // engineering quality — so it says what it is and scores nothing.
-  const lastSeenBadge = a.lastActivityMs
-    ? '<span class="score-badge" title="آخرین رویداد یا ریویوی ثبت‌شده — در امتیاز تأثیری ندارد">آخرین فعالیت: ' + esc(relativeTime(a.lastActivityMs)) + '</span>'
-    : '';
+  // engineering quality — so it rides in the hero's meta line, stated as
+  // what it is, and scores nothing.
 
   main.innerHTML =
-    // ---- Identity line: who, how they are scoring, and where that is heading.
-    '<div class="row" style="justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px">' +
-      '<div class="row" style="gap:8px; flex-wrap:wrap">' +
-        '<strong>&#128100; ' + esc(displayName) + '</strong>' +
-        autoBadge + trendBadge + manualBadge + lastSeenBadge +
+    // ---- The hero: who, the one number, and the caveat that number needs.
+    // Everything below this line on the page is evidence for the figure in
+    // the ring, so it leads rather than sitting fifth in a row of pills.
+    '<div class="dev-hero">' +
+      renderScoreRing(auto.score == null ? null : auto.score) +
+      '<div class="hero-id">' +
+        '<div class="hero-name">&#128100; ' + esc(displayName) + trendBadge + '</div>' +
+        '<div class="hero-meta">' +
+          (a.lastActivityMs ? '<span title="آخرین رویداد یا ریویوی ثبت‌شده — در امتیاز تأثیری ندارد">آخرین فعالیت: ' + esc(relativeTime(a.lastActivityMs)) + '</span>' : '') +
+          (auto.reason ? '<span title="' + esc(auto.reason) + '">چطور حساب شد؟</span>' : '') +
+        '</div>' +
+        '<div class="hero-chips">' + attentionChip + manualBadge + '</div>' +
       '</div>' +
-      '<div class="row" style="gap:8px">' + cacheNote +
+      '<div class="hero-actions">' + cacheNote +
         '<button class="ghost" id="devRefreshBtn">🔄 بروزرسانی این فرد</button>' +
+      '</div>' +
+      '<div class="hero-caveat">' +
+        '<b>⚠️ این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی.</b> ' +
+        'فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده — ' +
+        '<a id="heroBreakdownLink">تفکیک کامل شش مؤلفه‌اش را ببین ↓</a>' +
       '</div>' +
     '</div>' +
     '<div class="date-filter">' +
@@ -2440,6 +2623,20 @@ function renderDevMain() {
     loadDevMain();
   };
   document.getElementById('devRefreshBtn').onclick = () => loadDevMain(true);
+
+  // Hero shortcuts. The score's caveat is only honest if the breakdown it
+  // points at is one click away; the attention chip is only useful if it
+  // takes you to the list it counted.
+  const breakdownLink = document.getElementById('heroBreakdownLink');
+  if (breakdownLink) breakdownLink.onclick = () => scrollToDevSection('autoScoreSection');
+  const attnChip = document.getElementById('heroAttentionChip');
+  if (attnChip) {
+    attnChip.onclick = () => {
+      const fold = document.getElementById('attentionFold');
+      if (fold) fold.open = true; // a chip that scrolls you to a collapsed section has told you nothing
+      scrollToDevSection('attentionFold');
+    };
+  }
   // Switching panes is pure re-render off data already in hand — no refetch.
   for (const btn of document.querySelectorAll('[data-tasktab]')) {
     btn.onclick = () => { DEV.taskTab = btn.dataset.tasktab; renderDevMain(); };
@@ -2540,7 +2737,11 @@ function renderNowBand(a) {
 // Built as one prioritized list rather than several counters scattered over
 // the page: a manager should not have to assemble "who is stuck on what"
 // from four different tables.
-function renderAttentionBand(a) {
+// The attention list itself, split out from its rendering so the hero chip
+// beside the person's name counts exactly what this band lists. Two places
+// on one page disagreeing about "how many things are wrong" is the kind of
+// small inconsistency that costs a dashboard its credibility entirely.
+function attentionItems(a) {
   const items = [];
 
   for (const { t, days } of overdueTasks(a)) {
@@ -2574,6 +2775,11 @@ function renderAttentionBand(a) {
   // High severity first, and never more than a screenful: a list of thirty
   // things is a list nobody reads.
   items.sort((x, y) => (x.level === y.level ? 0 : x.level === 'high' ? -1 : 1));
+  return items;
+}
+
+function renderAttentionBand(a) {
+  const items = attentionItems(a);
   const shown = items.slice(0, 8);
   const rest = items.length - shown.length;
 
@@ -2601,7 +2807,7 @@ function renderAttentionBand(a) {
         (high ? ' · ' + high + ' مورد جدی' : '') + '</span>'
     : '<span class="cover-chip ok">&#10003; چیزی نیست</span>';
 
-  return '<details class="fold"' + (items.length ? ' open' : '') + '>' +
+  return '<details class="fold" id="attentionFold"' + (items.length ? ' open' : '') + '>' +
       '<summary>&#9888; نیازمند رسیدگی ' + chip +
       '<span class="band-note">فقط چیزهایی که همین حالا اشکال دارند، هرکدام با لینک خودش' +
       (rest > 0 ? '؛ ' + shown.length + ' مورد اول نمایش داده شده' : '') + '.</span></summary>' +
@@ -3044,7 +3250,7 @@ function renderAutoScore(a) {
           : '') + '</td>' +
     '</tr>';
   }).join('');
-  return '<h4 style="margin:18px 0 6px">🎯 امتیاز خودکار — <span style="color:var(--cyan)">' + s.score + '</span> از ۱۰۰</h4>' +
+  return '<h4 id="autoScoreSection" style="margin:18px 0 6px">🎯 امتیاز خودکار — <span style="color:var(--cyan)">' + s.score + '</span> از ۱۰۰</h4>' +
     renderScoreGovernanceBanner() +
     '<div class="muted" style="margin-bottom:8px">' + esc(s.reason) + '</div>' +
     '<table class="score-table"><thead><tr><th>مؤلفه</th><th>امتیاز</th><th>وزن مؤثر</th><th></th><th>بر چه اساسی</th></tr></thead><tbody>' +
