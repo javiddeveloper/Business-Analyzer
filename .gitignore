@@ -1,5 +1,6 @@
 node_modules/
 secrets.env
 data/
+backups/
 *.log
 .internal-token

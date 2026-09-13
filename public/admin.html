@@ -739,6 +739,18 @@
       <button id="projSaveBtn">ذخیره پروژه</button>
     </div>
     <div class="settings-panel" id="auditPanel" hidden>
+      <div class="group-title">💾 پشتیبان‌گیری از data/</div>
+      <p class="meta">
+        data/ تنها نسخه‌ی تاریخچه‌ی امتیاز، فعالیت، لاگ‌ها و secrets.env است — هر روز خودکار در <code>backups/</code> کپی می‌شود
+        (۱۴ نسخه‌ی آخر نگه داشته می‌شود). این کپی روی همین دیسک است، نه یک مکان جدا — برای محافظت واقعی در برابر خرابی دیسک،
+        خودت هم پوشه‌ی <code>backups/</code> را جای دیگری کپی کن.
+      </p>
+      <div class="row" style="align-items:center;gap:10px;margin-bottom:14px">
+        <button class="ghost" id="backupNowBtn">📦 پشتیبان‌گیری همین حالا</button>
+        <span class="meta" id="lastBackupNote"></span>
+      </div>
+      <hr class="section-divider" />
+      <div class="group-title" style="margin-top:14px">🧾 لاگ تغییرات</div>
       <p class="meta">
         چه کسی تنظیمات/secrets.env/پروژه‌ها را عوض کرده و هر approve خودکار — این پروژه حساب کاربری ندارد
         (یک ADMIN_TOKEN مشترک، یا هیچ‌کدام روی localhost)، پس «چه کسی» یعنی آدرس IP درخواست، نه هویت یک فرد.
@@ -1108,7 +1120,7 @@ document.getElementById('stProjects').onclick = () => switchSettingsTab('project
 document.getElementById('stAudit').onclick = () => switchSettingsTab('audit');
 
 // ---- audit log tab (settings modal) ----------------------------------------
-const AUDIT_ACTION_LABEL = { settings: '⚙ تنظیمات', env: '🔑 secrets.env', approve: '✅ approve خودکار', project: '📁 پروژه' };
+const AUDIT_ACTION_LABEL = { settings: '⚙ تنظیمات', env: '🔑 secrets.env', approve: '✅ approve خودکار', project: '📁 پروژه', backup: '💾 پشتیبان‌گیری' };
 function auditDetailText(entry) {
   if (entry.action === 'settings') {
     return Object.entries(entry.detail || {}).map(([k, v]) => k + ': ' + JSON.stringify(v.from) + ' → ' + JSON.stringify(v.to)).join('، ');
@@ -1116,6 +1128,7 @@ function auditDetailText(entry) {
   if (entry.action === 'env') return 'فیلدهای بازنویسی‌شده: ' + ((entry.detail && entry.detail.keys) || []).join('، ');
   if (entry.action === 'approve') return 'پروژه ' + (entry.detail && entry.detail.projectId) + ' — !' + (entry.detail && entry.detail.mrIid);
   if (entry.action === 'project') return (entry.detail && entry.detail.op) + ' — ' + ((entry.detail && (entry.detail.name || entry.detail.id)) || '');
+  if (entry.action === 'backup') return (entry.detail && entry.detail.path) || '';
   return JSON.stringify(entry.detail || {});
 }
 async function loadAudit() {
@@ -1133,7 +1146,36 @@ async function loadAudit() {
   } catch (e) {
     box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
   }
+  await loadLastBackup();
 }
+
+async function loadLastBackup() {
+  const note = document.getElementById('lastBackupNote');
+  if (!note) return;
+  try {
+    const backups = await api('/api/backups');
+    note.textContent = backups.length
+      ? 'آخرین نسخه: ' + esc(backups[0].name.replace('T', ' ').slice(0, 19)) + ' (' + backups.length + ' نسخه نگه‌داری می‌شود)'
+      : 'هنوز هیچ نسخه‌ی پشتیبانی گرفته نشده.';
+  } catch (e) {
+    note.textContent = '';
+  }
+}
+
+document.getElementById('backupNowBtn').onclick = async () => {
+  const btn = document.getElementById('backupNowBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ در حال گرفتن نسخه…';
+  try {
+    await api('/api/backups', { method: 'POST' });
+    await loadAudit();
+  } catch (e) {
+    alert('خطا در پشتیبان‌گیری: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📦 پشتیبان‌گیری همین حالا';
+  }
+};
 
 // ---- projects tab (settings modal) + toolbar switcher ----------------------
 async function loadProjectsPanel() {

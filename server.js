@@ -12,6 +12,7 @@ const jobs = require('./lib/jobs');
 const usage = require('./lib/usage');
 const feedback = require('./lib/feedback');
 const audit = require('./lib/audit');
+const backup = require('./lib/backup');
 const state = require('./lib/state');
 const envFile = require('./lib/envFile');
 const activity = require('./lib/activity');
@@ -199,6 +200,17 @@ async function handleFeedbackAccuracy(req, res, searchParams) {
 async function handleAudit(req, res, searchParams) {
   const limit = Math.max(1, Math.min(1000, parseInt(searchParams.get('limit'), 10) || 200));
   return sendJson(res, 200, audit.list({ limit, action: searchParams.get('action') || null }));
+}
+
+// GET lists existing backups (see lib/backup.js) so the settings tab can
+// show "when was this last actually taken" instead of just trusting the
+// daily timer silently worked. POST takes one on demand — useful right
+// before a risky manual edit, without waiting for the next scheduled run.
+async function handleBackups(req, res) {
+  if (req.method === 'GET') return sendJson(res, 200, backup.list());
+  const result = backup.run();
+  if (!result.skipped) audit.record({ action: 'backup', actor: actorFor(req), detail: { path: result.path } });
+  return sendJson(res, 200, result);
 }
 
 async function handleStatus(req, res) {
@@ -890,6 +902,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'POST' && pathname === '/api/feedback') return await handlePostFeedback(req, res);
       if (req.method === 'GET' && pathname === '/api/feedback/accuracy') return await handleFeedbackAccuracy(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/audit') return await handleAudit(req, res, url.searchParams);
+      if (pathname === '/api/backups' && (req.method === 'GET' || req.method === 'POST')) return await handleBackups(req, res);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       const mrContextMatch = pathname.match(/^\/api\/merge-requests\/([^/]+)\/(\d+)\/context$/);
       if (req.method === 'GET' && mrContextMatch) {
@@ -960,4 +973,20 @@ server.listen(PORT, () => {
     console.log(`  ریویوی خودکار: روشن (هر ${settings.pollSeconds} ثانیه)`);
     scheduleAutoTick();
   }
+  scheduleBackups();
 });
+
+// One backup shortly after startup (covers a server that only stays up for
+// an hour or two — waiting a full day for the first backup would mean it
+// never happens), then every 24h after that. data/ is this service's only
+// copy of the score/activity/audit history and secrets.env; see
+// lib/backup.js for why a plain directory copy, not a compressed archive.
+const BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+function scheduleBackups() {
+  setTimeout(() => {
+    try { backup.run(); } catch (e) { console.error('[backup] failed:', e.message); }
+    setInterval(() => {
+      try { backup.run(); } catch (e) { console.error('[backup] failed:', e.message); }
+    }, BACKUP_INTERVAL_MS);
+  }, 60 * 1000); // give the server a minute to settle before the first pass
+}
