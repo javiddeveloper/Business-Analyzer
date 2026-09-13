@@ -9,6 +9,7 @@ const gitlab = require('./lib/gitlab');
 const reviewer = require('./lib/reviewer');
 const knowledge = require('./lib/knowledge');
 const jobs = require('./lib/jobs');
+const usage = require('./lib/usage');
 const state = require('./lib/state');
 const envFile = require('./lib/envFile');
 const activity = require('./lib/activity');
@@ -144,6 +145,15 @@ async function handleWebhook(req, res) {
 }
 
 // ---- dashboard API --------------------------------------------------------
+
+// How much model usage the last 30 days (default) actually cost, so "how
+// much are we spending on this" has an answer that isn't "read the logs".
+// ?days=N narrows/widens the window; kept generous since nothing here reads
+// GitLab or the model — it's one read of a local, capped JSON file.
+async function handleUsage(req, res, searchParams) {
+  const days = Math.max(1, Math.min(365, parseInt(searchParams.get('days'), 10) || 30));
+  return sendJson(res, 200, usage.summary({ days }));
+}
 
 async function handleStatus(req, res) {
   const settings = state.getSettings();
@@ -816,6 +826,7 @@ const server = http.createServer(async (req, res) => {
       if (!checkAdminAuth(req)) return sendJson(res, 401, { error: 'unauthorized' });
 
       if (req.method === 'GET' && pathname === '/api/status') return await handleStatus(req, res);
+      if (req.method === 'GET' && pathname === '/api/usage') return await handleUsage(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       const mrContextMatch = pathname.match(/^\/api\/merge-requests\/([^/]+)\/(\d+)\/context$/);
       if (req.method === 'GET' && mrContextMatch) {

@@ -605,6 +605,7 @@
     <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
     <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
     <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
+    <span class="badge" id="usageBadge" title="مصرف توکن مدل — برای جزئیات هر موتور، اینجا را نگه‌دار"></span>
   </div>
 </header>
 
@@ -864,6 +865,35 @@ function renderStatus() {
   if (!pp.set && !S.settingsOpenedOnce) {
     S.settingsOpenedOnce = true;
     openSettings();
+  }
+}
+
+// ---- header / usage badge ---------------------------------------------
+// A rough answer to "how much are we spending on this" right in the header
+// — the alternative (nothing on screen, the number only exists in a raw
+// JSON log) is how a tool like this quietly loses the room's trust the
+// first time someone asks and there's no answer.
+function formatTokenCount(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+
+async function loadUsage() {
+  try {
+    const u = await api('/api/usage?days=30');
+    const badge = document.getElementById('usageBadge');
+    if (!badge) return;
+    badge.textContent = '📊 امروز ' + formatTokenCount(u.today.totalTokens) + ' توکن (' + u.today.reviews + ' ریویو)';
+    const byProviderLines = u.byProvider
+      .sort((a, b) => b.totalTokens - a.totalTokens)
+      .map((p) => '  ' + p.provider + ': ' + formatTokenCount(p.totalTokens) + ' توکن، ' + p.reviews + ' ریویو');
+    badge.title = 'مصرف ۳۰ روز اخیر: ' + formatTokenCount(u.totalTokens) + ' توکن در ' + u.reviews + ' ریویو' +
+      (byProviderLines.length ? '\nبه تفکیک موتور:\n' + byProviderLines.join('\n') : '') +
+      '\n\nفقط شمارش توکن است، نه هزینه‌ی ریالی — claude-cli از اشتراک استفاده می‌کند و به‌ازای توکن صورتحساب نمی‌شود.';
+  } catch (e) {
+    // Usage is informational — a failure here must never block the rest of
+    // the header (GitLab/model status) from rendering.
   }
 }
 
@@ -3278,12 +3308,16 @@ showPage('home');
 loadStatus();
 loadMergeRequests().then(loadJobs);
 loadKb();
+loadUsage();
 
 // Live status for every tab at once — so several MRs reviewing in parallel all
 // stay up to date, not just the one being looked at.
 setInterval(loadJobs, 4000);
 // The MR list itself changes far more slowly than job state.
 setInterval(loadMergeRequests, 60000);
+// Usage only changes when a review finishes — no need to poll as often as
+// job status, but often enough that the badge doesn't look stuck all day.
+setInterval(loadUsage, 60000);
 </script>
 </body>
 </html>
