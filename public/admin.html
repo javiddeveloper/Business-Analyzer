@@ -2869,7 +2869,16 @@ function isInReview(t) {
 function buildHandoffReport(a, displayName) {
   const now = Date.now();
   const tasks = a.jiraTasks || [];
-  const daysLate = (t) => (t.dueDate ? Math.floor((now - new Date(t.dueDate + 'T23:59:59').getTime()) / 86400000) : null);
+  // Measured to the moment the ticket actually closed, not to today — the
+  // same rule devScore.onTime uses. Counting a finished ticket's lateness
+  // from now says "62 days overdue" about work that shipped two months ago
+  // and keeps inflating every day nobody looks at it.
+  const daysLate = (t) => {
+    if (!t.dueDate) return null;
+    const due = new Date(t.dueDate + 'T23:59:59').getTime();
+    const at = t.resolvedAt ? new Date(t.resolvedAt).getTime() : now;
+    return Math.floor((at - due) / 86400000);
+  };
 
   const lead = [];
   const dev = { overdue: [], noMr: [], noWorklog: [] };
@@ -2909,13 +2918,31 @@ function buildHandoffReport(a, displayName) {
 // three lines long in a chat window.
 //
 // Sections are sorted longest-overdue first and separated by a rule that
-// carries its own one-word label. The label rides on the separator rather
-// than taking a line of its own so that every other line in the message is
-// still nothing but a ticket and a number — four blocks of bare URLs with
-// no way to tell which block is which would need explaining in a follow-up
-// message, which defeats the point of a paste-and-send list.
-function handoffRule(label) {
-  return '=============== ' + label + ' ===============';
+// carries its own label and count. The label rides on the separator rather
+// than taking a line of its own — four blocks of URLs with no way to tell
+// which block is which would need explaining in a follow-up message, which
+// defeats the point of a paste-and-send list.
+function handoffRule(label, count) {
+  return '=============== ' + label + ' (' + count + ') ===============';
+}
+
+// "83 روز" on its own says nothing about what the 83 measures, and the
+// answer differs by state: for an open ticket it is how long it has been
+// sitting past its date and still counting, for a closed one it is how late
+// it landed and is now fixed. Saying which is the difference between a
+// number somebody can act on and one they have to go and interpret.
+function latenessPhrase(t, late) {
+  const closed = !!t.resolvedAt;
+  if (late == null) return closed ? 'بسته شده' : 'بدون سررسید';
+  if (late > 0) return closed ? `با ${late} روز تأخیر بسته شده` : `${late} روز از سررسید گذشته`;
+  return closed ? 'سر موعد بسته شده' : 'هنوز به سررسید نرسیده';
+}
+
+// A summary long enough to wrap turns a scannable column into a paragraph,
+// and the full text is one click away on the ticket itself.
+function shortSummary(text) {
+  const s = String(text || '').trim().replace(/\s+/g, ' ');
+  return s.length > 60 ? s.slice(0, 59) + '…' : s;
 }
 
 function handoffSections(report, which) {
@@ -2932,9 +2959,21 @@ function handoffSections(report, which) {
   ];
 }
 
+// Two lines per ticket: everything a person reads on the first, the URL on
+// the second.
+//
+// An earlier pass cut this to `<url> => 83 روز`, which turned out to say too
+// little to act on — the number had no unit of meaning attached (83 days of
+// what?), and without the title every line was an opaque ID you had to open
+// to identify. The greeting, sprint and signature that the same pass removed
+// stay gone; those really were noise. The URL keeps its own line because it
+// is long enough to wrap and push everything else out of alignment.
 function handoffText(report, which) {
-  const line = ({ t, late }) =>
-    `${t.url} => ${late != null && late > 0 ? late + ' روز' : 'بدون سررسید'}`;
+  const line = ({ t, late }) => {
+    const bits = [latenessPhrase(t, late), t.status];
+    if (!(t.spentHours > 0)) bits.push('بدون ثبت زمان');
+    return `${t.key} — ${shortSummary(t.summary)}\n${bits.join(' · ')}\n${t.url}`;
+  };
 
   const out = [];
   for (const section of handoffSections(report, which)) {
@@ -2942,7 +2981,7 @@ function handoffText(report, which) {
     // Same ticket reaches only one section (buildHandoffReport puts each in
     // exactly one pile), so this is a pure sort, not a de-duplication.
     const items = [...section.items].sort((x, y) => (y.late || 0) - (x.late || 0));
-    out.push(handoffRule(section.label), ...items.map(line), '');
+    out.push(handoffRule(section.label, items.length), '', ...items.flatMap((i) => [line(i), '']));
   }
   return out.join('\n').trimEnd();
 }
@@ -2950,9 +2989,11 @@ function handoffText(report, which) {
 function renderHandoffList(items, emptyText) {
   if (!items.length) return '<div class="attn-empty">&#10003; ' + esc(emptyText) + '</div>';
   return '<div class="attn">' + items.map(({ t, late }) => {
-    const bits = [t.status];
-    if (late != null && late > 0) bits.push(late + ' روز از سررسید گذشته');
-    if (t.estimateHours > 0 && !(t.spentHours > 0)) bits.push('بدون ثبت زمان');
+    // Same phrasing as the copied text, from the same helper — a panel and a
+    // clipboard saying different things about one ticket is how a reader
+    // stops trusting both.
+    const bits = [latenessPhrase(t, late), t.status];
+    if (!(t.spentHours > 0)) bits.push('بدون ثبت زمان');
     return '<div class="attn-item ' + (late > 14 ? 'high' : 'mid') + '">' +
       '<span class="grow"><a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer">' +
         esc(t.key) + ' — ' + esc(t.summary || '') + '</a></span>' +
