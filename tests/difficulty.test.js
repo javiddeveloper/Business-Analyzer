@@ -98,6 +98,30 @@ test('complexity adjusts what delivered work is worth, within a bound', () => {
   assert.ok(Math.abs(easy.complexityAdjustment) <= 12);
 });
 
+// The exemption this closes was found on real data: a developer with one
+// rated MR (C****) took the full +12 — 17% of their final score — from a
+// single character, while their code-quality component, resting on that same
+// single MR, was correctly damped to 17% of its nominal weight.
+test('the complexity nudge is damped by sample size, like every other component', () => {
+  const one = devScore.compute({ ...BASE, ratings: [{ complexity: 4, length: 3 }] });
+  const many = devScore.compute({ ...BASE, ratings: Array.from({ length: 30 }, () => ({ complexity: 4, length: 3 })) });
+
+  assert.equal(one.complexityAdjustment, 2, 'C**** on one MR is worth +2, not the full +12');
+  assert.ok(
+    many.complexityAdjustment > one.complexityAdjustment,
+    `the same average rating over thirty MRs must count for more (${many.complexityAdjustment} vs ${one.complexityAdjustment})`
+  );
+  assert.ok(many.complexityAdjustment <= 12, 'the cap still holds at any sample size');
+  assert.equal(one.complexityConfidence, 17, 'and the confidence behind it is reported, not hidden');
+});
+
+// The cap has to survive the reordering: confidence is applied first, so a
+// large well-rated sample must still be clamped rather than sailing past 12.
+test('a large sample of the hardest work still cannot exceed the bound', () => {
+  const out = devScore.compute({ ...BASE, ratings: Array.from({ length: 200 }, () => ({ complexity: 5, length: 1 })) });
+  assert.equal(out.complexityAdjustment, 12, 'raw nudge would be ~19.5 here; the ±12 ceiling is what holds it');
+});
+
 test('complexity does not cancel out the size penalty', () => {
   const hardSmall = devScore.compute({ ...BASE, ratings: [{ complexity: 5, length: 1 }] });
   const hardHuge = devScore.compute({ ...BASE, ratings: [{ complexity: 5, length: 5 }] });
