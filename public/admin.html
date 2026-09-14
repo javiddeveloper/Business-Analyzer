@@ -2899,44 +2899,33 @@ function buildHandoffReport(a, displayName) {
   return { lead, dev, displayName, generatedAt: now };
 }
 
-// Plain text, for pasting into a chat. Deliberately not markdown: this lands
-// in Jira comments, Rocket.Chat and Telegram, none of which render the same
-// dialect, and a bullet list with bare URLs survives all three.
-function handoffText(report, which) {
-  const line = ({ t, late }) => {
-    const bits = [t.status];
-    if (late != null && late > 0) bits.push(late + ' روز از سررسید گذشته');
-    if (t.estimateHours > 0 && !(t.spentHours > 0)) bits.push('بدون ثبت زمان');
-    if (t.sprint) bits.push(t.sprint);
-    return `• ${t.key} — ${t.summary || ''}\n  (${bits.join(' · ')})\n  ${t.url}`;
-  };
+// Plain text, for pasting into a chat: one line per ticket, nothing else.
+//
+// The long form this replaced carried status, sprint, summary and a greeting,
+// and it was the wrong shape for the job — the person reading it already
+// knows their own tickets, and the only two things they cannot see at a
+// glance are which ticket and how long it has been sitting. Everything else
+// was noise to scroll past, and the summaries in particular made each entry
+// three lines long in a chat window.
+//
+// Sorted longest-overdue first, and flat rather than grouped: the groups
+// exist on screen, where they can carry a heading that explains them. A
+// heading-less separator in a pasted message explains nothing.
+const HANDOFF_SEPARATOR = '======================================';
 
-  const out = [];
-  if (which === 'dev') {
-    out.push(`سلام ${report.displayName} 👋`);
-    out.push('این تسک‌ها تعیین تکلیف می‌خواهند — لطفاً برای هرکدام بگو تمام می‌شود، بلاک است، یا باید بسته/منتقل شود:');
-    if (report.dev.overdue.length) {
-      out.push('', `⏰ از سررسید گذشته و هنوز باز است (${report.dev.overdue.length} تسک):`);
-      out.push(...report.dev.overdue.map(line));
-    }
-    if (report.dev.noMr.length) {
-      out.push('', `🔀 در جریان است ولی هیچ Merge Request ای برایش باز نشده (${report.dev.noMr.length} تسک):`);
-      out.push(...report.dev.noMr.map(line));
-    }
-    if (report.dev.noWorklog.length) {
-      out.push('', `⏱ زمان صرف‌شده ثبت نشده (${report.dev.noWorklog.length} تسک) — تا این پر نشود دقت تخمین قابل محاسبه نیست:`);
-      out.push(...report.dev.noWorklog.map(line));
-    }
-    if (!report.dev.overdue.length && !report.dev.noMr.length && !report.dev.noWorklog.length) {
-      out.push('', '✅ چیزی برای تعیین تکلیف نیست.');
-    }
-  } else {
-    out.push(`تسک‌های ${report.displayName} که در In Review مانده‌اند (${report.lead.length} تسک) — این‌ها دست خودش نیست:`);
-    out.push(...report.lead.map(line));
-    if (!report.lead.length) out.push('', '✅ هیچ تسکی در صف ریویو گیر نکرده.');
-  }
-  out.push('', `— گزارش خودکار Coder Review، ${jalaliLabel(new Date(report.generatedAt).toISOString().slice(0, 10))}`);
-  return out.join('\n');
+function handoffText(report, which) {
+  const line = ({ t, late }) =>
+    `${t.url} => ${late != null && late > 0 ? late + ' روز' : 'بدون سررسید'}`;
+
+  const items = which === 'dev'
+    ? [...report.dev.overdue, ...report.dev.noMr, ...report.dev.noWorklog]
+    : [...report.lead];
+
+  // Same ticket can reach here only once (buildHandoffReport puts each in one
+  // pile), so this is a pure sort, not a de-duplication.
+  items.sort((x, y) => (y.late || 0) - (x.late || 0));
+
+  return [HANDOFF_SEPARATOR, ...items.map(line)].join('\n');
 }
 
 function renderHandoffList(items, emptyText) {
