@@ -4,6 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Coder Review — داشبورد</title>
+<!-- The mark is what this tool does, in its own palette: code brackets with a
+     review's verdict inside. Inline as a data URI rather than a file in
+     public/ for the same reason the rest of this project has no build step —
+     it costs no request, no asset pipeline and nothing to keep in sync. SVG
+     only: an .ico would be the one binary in a repo that has none. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1426'/%3E%3Cpath d='M11 9 5.5 16 11 23' fill='none' stroke='%2334e3e3' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M21 9 26.5 16 21 23' fill='none' stroke='%2334e3e3' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M13.5 17.4 15.9 19.9 19.2 13.4' fill='none' stroke='%2341e08a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<meta name="theme-color" content="#0d1426" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
 
@@ -52,7 +59,7 @@
     background: var(--panel); backdrop-filter: blur(14px);
   }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .logo { font-size: 22px; filter: drop-shadow(0 0 8px var(--cyan)); }
+  .logo { flex: 0 0 auto; filter: drop-shadow(0 0 8px var(--cyan)); }
   .badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 100%; min-width: 0; }
   .badge {
     display: inline-flex; align-items: center; gap: 6px;
@@ -763,7 +770,18 @@
 <body>
 
 <header>
-  <div class="brand"><span class="logo">🤖</span><h1>Coder Review</h1></div>
+  <!-- Same mark as the favicon, so the tab and the page agree on what this
+       is. It used to be 🤖, which this UI already spends on agent mode
+       ("ریویوی کل پروژه با ایجنت") — one emoji meaning both "this product"
+       and "this particular review engine" made neither of them a signal. -->
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+      <path d="M11 9 5.5 16 11 23" fill="none" stroke="var(--cyan)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M21 9 26.5 16 21 23" fill="none" stroke="var(--cyan)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M13.5 17.4 15.9 19.9 19.2 13.4" fill="none" stroke="var(--green)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>Coder Review</h1>
+  </div>
   <div class="badges">
     <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
     <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
