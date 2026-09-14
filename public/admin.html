@@ -2908,24 +2908,43 @@ function buildHandoffReport(a, displayName) {
 // was noise to scroll past, and the summaries in particular made each entry
 // three lines long in a chat window.
 //
-// Sorted longest-overdue first, and flat rather than grouped: the groups
-// exist on screen, where they can carry a heading that explains them. A
-// heading-less separator in a pasted message explains nothing.
-const HANDOFF_SEPARATOR = '======================================';
+// Sections are sorted longest-overdue first and separated by a rule that
+// carries its own one-word label. The label rides on the separator rather
+// than taking a line of its own so that every other line in the message is
+// still nothing but a ticket and a number — four blocks of bare URLs with
+// no way to tell which block is which would need explaining in a follow-up
+// message, which defeats the point of a paste-and-send list.
+function handoffRule(label) {
+  return '=============== ' + label + ' ===============';
+}
+
+function handoffSections(report, which) {
+  if (which === 'lead') return [{ label: 'در صف ریویو', items: report.lead }];
+  return [
+    { label: 'عقب‌افتاده', items: report.dev.overdue },
+    { label: 'بدون MR', items: report.dev.noMr },
+    { label: 'بدون ثبت زمان', items: report.dev.noWorklog },
+    // Included in the developer's own copy, clearly fenced off: it is not
+    // work they can act on, and seeing it listed under its own heading is
+    // what stops the rest of the message from reading as "all of this is
+    // late because of you".
+    { label: 'در صف ریویو (دست تو نیست)', items: report.lead },
+  ];
+}
 
 function handoffText(report, which) {
   const line = ({ t, late }) =>
     `${t.url} => ${late != null && late > 0 ? late + ' روز' : 'بدون سررسید'}`;
 
-  const items = which === 'dev'
-    ? [...report.dev.overdue, ...report.dev.noMr, ...report.dev.noWorklog]
-    : [...report.lead];
-
-  // Same ticket can reach here only once (buildHandoffReport puts each in one
-  // pile), so this is a pure sort, not a de-duplication.
-  items.sort((x, y) => (y.late || 0) - (x.late || 0));
-
-  return [HANDOFF_SEPARATOR, ...items.map(line)].join('\n');
+  const out = [];
+  for (const section of handoffSections(report, which)) {
+    if (!section.items.length) continue;
+    // Same ticket reaches only one section (buildHandoffReport puts each in
+    // exactly one pile), so this is a pure sort, not a de-duplication.
+    const items = [...section.items].sort((x, y) => (y.late || 0) - (x.late || 0));
+    out.push(handoffRule(section.label), ...items.map(line), '');
+  }
+  return out.join('\n').trimEnd();
 }
 
 function renderHandoffList(items, emptyText) {
@@ -2957,7 +2976,7 @@ function renderHandoffBand(a, displayName) {
     '<div class="handoff-block">' +
       '<div class="handoff-head">' +
         '<b>&#128100; با ' + esc(displayName) + ' — تعیین تکلیف کند</b>' +
-        '<button class="ghost" data-copy="dev">&#128203; کپی متن برای دولوپر</button>' +
+        '<button class="ghost" data-copy="dev" title="همه‌ی بخش‌ها در یک متن — عقب‌افتاده، بدون MR، بدون ثبت زمان، و صف ریویو (جدا و برچسب‌خورده)">&#128203; کپی کل فهرست</button>' +
       '</div>' +
       (report.dev.overdue.length ? '<div class="handoff-group">⏰ از سررسید گذشته (' + report.dev.overdue.length + ')</div>' + renderHandoffList(report.dev.overdue, '') : '') +
       (report.dev.noMr.length ? '<div class="handoff-group">🔀 در جریان، بدون MR (' + report.dev.noMr.length + ')</div>' + renderHandoffList(report.dev.noMr, '') : '') +
