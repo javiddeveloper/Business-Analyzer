@@ -404,6 +404,23 @@
     font-size: 11px; background: rgba(155,140,255,.15); color: var(--violet); text-decoration: none;
   }
   a.jira-badge:hover { background: rgba(155,140,255,.28); }
+  /* ---- handoff report ---- */
+  .handoff-block {
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; margin-top: 12px; background: rgba(0,0,0,.18);
+  }
+  .handoff-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap; margin-bottom: 8px;
+  }
+  .handoff-head b { font-size: 13px; }
+  .handoff-head button { padding: 4px 10px; font-size: 12px; }
+  .handoff-group {
+    font-size: 11px; color: var(--muted); margin: 10px 0 2px;
+    padding-top: 8px; border-top: 1px dashed var(--border);
+  }
+  .handoff-group:first-of-type { border-top: none; padding-top: 0; margin-top: 4px; }
+
   .score-governance-banner {
     border: 1px solid rgba(255,179,71,.35); background: rgba(255,179,71,.08); color: #ffd8a8;
     border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 12px; line-height: 1.6;
@@ -2558,6 +2575,10 @@ function renderDevMain() {
     // it is the only band that names things by name, and a manager opening
     // one person's page is usually here to find out what to do about them.
     renderAttentionBand(a) +
+    // ---- 2b. The same trouble, split by who can actually clear it, with the
+    // text to hand over. "Needs attention" says what is wrong; this says who
+    // has to do something about it.
+    renderHandoffBand(a, displayName) +
     // ---- 3. What got delivered in the window.
     renderDeliveredBand(a) +
     // ---- 4. Direction, then the score it produced.
@@ -2634,6 +2655,9 @@ function renderDevMain() {
   // takes you to the list it counted.
   const breakdownLink = document.getElementById('heroBreakdownLink');
   if (breakdownLink) breakdownLink.onclick = () => scrollToDevSection('autoScoreSection');
+  for (const btn of document.querySelectorAll('[data-copy]')) {
+    btn.onclick = () => copyHandoff(btn.dataset.copy, btn);
+  }
   const attnChip = document.getElementById('heroAttentionChip');
   if (attnChip) {
     attnChip.onclick = () => {
@@ -2820,6 +2844,179 @@ function renderAttentionBand(a) {
 }
 
 // Band 3 — what came out the other end.
+// ---- The handoff report ----------------------------------------------------
+// Splits everything currently unresolved into the two piles that have
+// different owners, because they call for different actions by different
+// people:
+//
+//   1. The developer's pile — nothing here moves until they decide something:
+//      is it finishing, is it blocked, when is it landing, where is the code,
+//      how many hours did it take.
+//   2. The lead's pile — work already handed off and sitting in review. The
+//      developer cannot clear these by trying harder, and asking them to is
+//      how a queue that belongs to the team gets charged to one person. (This
+//      is exactly what was found on r_derikvand: 13 of 23 tasks stuck In
+//      Review for 33-48 days, dragging both onTime and completion — half his
+//      score weight — for time spent waiting on somebody else.)
+//
+// One task lands in exactly one pile, chosen by whose action unblocks it. An
+// in-review task that also lacks a worklog stays on the lead's side with the
+// gap noted inline, rather than being listed twice and read as two problems.
+function isInReview(t) {
+  return t.statusCategory !== 'done' && /review/i.test(String(t.status || ''));
+}
+
+function buildHandoffReport(a, displayName) {
+  const now = Date.now();
+  const tasks = a.jiraTasks || [];
+  const daysLate = (t) => (t.dueDate ? Math.floor((now - new Date(t.dueDate + 'T23:59:59').getTime()) / 86400000) : null);
+
+  const lead = [];
+  const dev = { overdue: [], noMr: [], noWorklog: [] };
+
+  for (const t of tasks) {
+    if (t.statusCategory === 'done') {
+      // A closed ticket needs nothing — except the hours, which can still be
+      // filled in after the fact and without which the estimate-accuracy
+      // number for this person is built on a smaller sample than it looks.
+      if (!(t.spentHours > 0)) dev.noWorklog.push({ t, late: daysLate(t) });
+      continue;
+    }
+    if (isInReview(t)) { lead.push({ t, late: daysLate(t) }); continue; }
+
+    const late = daysLate(t);
+    if (late != null && late > 0) dev.overdue.push({ t, late });
+    else if (t.statusCategory === 'indeterminate' && !t.hasMr) dev.noMr.push({ t, late });
+    else if (!(t.spentHours > 0) && t.statusCategory === 'indeterminate') dev.noWorklog.push({ t, late });
+  }
+
+  const byLate = (x, y) => (y.late || 0) - (x.late || 0);
+  lead.sort(byLate);
+  dev.overdue.sort(byLate);
+  dev.noMr.sort(byLate);
+  dev.noWorklog.sort(byLate);
+
+  return { lead, dev, displayName, generatedAt: now };
+}
+
+// Plain text, for pasting into a chat. Deliberately not markdown: this lands
+// in Jira comments, Rocket.Chat and Telegram, none of which render the same
+// dialect, and a bullet list with bare URLs survives all three.
+function handoffText(report, which) {
+  const line = ({ t, late }) => {
+    const bits = [t.status];
+    if (late != null && late > 0) bits.push(late + ' روز از سررسید گذشته');
+    if (t.estimateHours > 0 && !(t.spentHours > 0)) bits.push('بدون ثبت زمان');
+    if (t.sprint) bits.push(t.sprint);
+    return `• ${t.key} — ${t.summary || ''}\n  (${bits.join(' · ')})\n  ${t.url}`;
+  };
+
+  const out = [];
+  if (which === 'dev') {
+    out.push(`سلام ${report.displayName} 👋`);
+    out.push('این تسک‌ها تعیین تکلیف می‌خواهند — لطفاً برای هرکدام بگو تمام می‌شود، بلاک است، یا باید بسته/منتقل شود:');
+    if (report.dev.overdue.length) {
+      out.push('', `⏰ از سررسید گذشته و هنوز باز است (${report.dev.overdue.length} تسک):`);
+      out.push(...report.dev.overdue.map(line));
+    }
+    if (report.dev.noMr.length) {
+      out.push('', `🔀 در جریان است ولی هیچ Merge Request ای برایش باز نشده (${report.dev.noMr.length} تسک):`);
+      out.push(...report.dev.noMr.map(line));
+    }
+    if (report.dev.noWorklog.length) {
+      out.push('', `⏱ زمان صرف‌شده ثبت نشده (${report.dev.noWorklog.length} تسک) — تا این پر نشود دقت تخمین قابل محاسبه نیست:`);
+      out.push(...report.dev.noWorklog.map(line));
+    }
+    if (!report.dev.overdue.length && !report.dev.noMr.length && !report.dev.noWorklog.length) {
+      out.push('', '✅ چیزی برای تعیین تکلیف نیست.');
+    }
+  } else {
+    out.push(`تسک‌های ${report.displayName} که در In Review مانده‌اند (${report.lead.length} تسک) — این‌ها دست خودش نیست:`);
+    out.push(...report.lead.map(line));
+    if (!report.lead.length) out.push('', '✅ هیچ تسکی در صف ریویو گیر نکرده.');
+  }
+  out.push('', `— گزارش خودکار Coder Review، ${jalaliLabel(new Date(report.generatedAt).toISOString().slice(0, 10))}`);
+  return out.join('\n');
+}
+
+function renderHandoffList(items, emptyText) {
+  if (!items.length) return '<div class="attn-empty">&#10003; ' + esc(emptyText) + '</div>';
+  return '<div class="attn">' + items.map(({ t, late }) => {
+    const bits = [t.status];
+    if (late != null && late > 0) bits.push(late + ' روز از سررسید گذشته');
+    if (t.estimateHours > 0 && !(t.spentHours > 0)) bits.push('بدون ثبت زمان');
+    return '<div class="attn-item ' + (late > 14 ? 'high' : 'mid') + '">' +
+      '<span class="grow"><a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer">' +
+        esc(t.key) + ' — ' + esc(t.summary || '') + '</a></span>' +
+      '<span class="why">' + esc(bits.join(' · ')) + '</span>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function renderHandoffBand(a, displayName) {
+  const report = buildHandoffReport(a, displayName);
+  HANDOFF.report = report;
+  const devCount = report.dev.overdue.length + report.dev.noMr.length + report.dev.noWorklog.length;
+
+  return '<details class="fold"' + (devCount || report.lead.length ? ' open' : '') + ' id="handoffFold">' +
+    '<summary>&#128203; تعیین تکلیف ' +
+      '<span class="cover-chip ' + (devCount ? 'warn' : 'ok') + '">' + (devCount ? devCount + ' مورد با دولوپر' : '&#10003; چیزی با دولوپر نیست') + '</span>' +
+      '<span class="cover-chip ' + (report.lead.length ? 'bad' : 'ok') + '">' + (report.lead.length ? report.lead.length + ' مورد با تو' : '&#10003; صف ریویو خالی') + '</span>' +
+      '<span class="band-note">دو فهرست جدا، چون دو نفر متفاوت باید کاری بکنند.</span>' +
+    '</summary>' +
+
+    '<div class="handoff-block">' +
+      '<div class="handoff-head">' +
+        '<b>&#128100; با ' + esc(displayName) + ' — تعیین تکلیف کند</b>' +
+        '<button class="ghost" data-copy="dev">&#128203; کپی متن برای دولوپر</button>' +
+      '</div>' +
+      (report.dev.overdue.length ? '<div class="handoff-group">⏰ از سررسید گذشته (' + report.dev.overdue.length + ')</div>' + renderHandoffList(report.dev.overdue, '') : '') +
+      (report.dev.noMr.length ? '<div class="handoff-group">🔀 در جریان، بدون MR (' + report.dev.noMr.length + ')</div>' + renderHandoffList(report.dev.noMr, '') : '') +
+      (report.dev.noWorklog.length ? '<div class="handoff-group">⏱ بدون ثبت زمان (' + report.dev.noWorklog.length + ')</div>' + renderHandoffList(report.dev.noWorklog, '') : '') +
+      (devCount ? '' : '<div class="attn-empty">&#10003; چیزی برای تعیین تکلیف نیست.</div>') +
+    '</div>' +
+
+    '<div class="handoff-block">' +
+      '<div class="handoff-head">' +
+        '<b>&#128064; با تو — در صف ریویو مانده</b>' +
+        '<button class="ghost" data-copy="lead">&#128203; کپی این فهرست</button>' +
+      '</div>' +
+      '<div class="band-note" style="margin-bottom:6px">کار تحویل‌شده که منتظر ریویو است. این‌ها هم «تحویل به‌موقع» و هم «تکمیل تسک‌ها» را پایین می‌آورند، در حالی که دست دولوپر نیست.</div>' +
+      renderHandoffList(report.lead, 'هیچ تسکی در صف ریویو گیر نکرده.') +
+    '</div>' +
+  '</details>';
+}
+
+// Holds the report the buttons copy, so the click handler doesn't rebuild it
+// from a different render pass than the one on screen.
+const HANDOFF = { report: null };
+
+async function copyHandoff(which, btn) {
+  if (!HANDOFF.report) return;
+  const text = handoffText(HANDOFF.report, which);
+  const label = btn.textContent;
+  let ok = true;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    // clipboard API needs a secure context and permission; a textarea +
+    // execCommand still works where it doesn't, and this dashboard is also
+    // opened over plain http on other machines on the LAN.
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e2) { ok = false; }
+  }
+  btn.textContent = ok ? '✓ کپی شد' : '✗ کپی نشد — دستی انتخاب کن';
+  setTimeout(() => { btn.textContent = label; }, 2000);
+}
+
 function renderDeliveredBand(a) {
   const d = a.delivery || {};
   const tasks = a.jiraTasks || [];
