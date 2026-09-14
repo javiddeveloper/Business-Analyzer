@@ -93,18 +93,21 @@ test('the tool does not review its own review reports', () => {
   assert.ok(!verdict('docs/MR-191.md').skip, 'only under review/, not any file that looks like one');
 });
 
-// A Persian prompt is not the same as asking for a Persian answer: over an
-// English/Kotlin codebase the model follows the code. MR !191 came back with
-// an English summary and English finding titles, into a report file and a
-// dashboard that are Persian throughout.
-test('both review paths ask for Persian prose while leaving code identifiers alone', () => {
+// The team's documented standard (review/README.md in the reviewed project)
+// is an English report with exactly two Persian exceptions. The prompts being
+// written in Persian is not the same as the report being Persian, and an
+// earlier pass here got that backwards — forcing Persian output and making
+// the tool contradict the process it exists to automate.
+test('both review paths carry the documented report language, English with its two exceptions', () => {
   const { files } = reviewer.prepareFiles([{ new_path: 'app/Foo.kt', diff: SAMPLE_DIFF }]);
   const batchPrompt = reviewer.buildUserPrompt({ mr: { title: 'x' }, batch: files, batchIndex: 0, batchCount: 1 });
   const agentPrompt = agentReview.buildPrompt({ mr: { title: 'x' }, files, skipped: [] });
 
   for (const [name, prompt] of [['batch', batchPrompt], ['agent', agentPrompt]]) {
-    assert.ok(prompt.includes(reviewer.PERSIAN_OUTPUT_RULE), `${name} path states the output language`);
-    assert.match(prompt, /نام فایل، مسیر، نام تابع/, `${name} path exempts identifiers from translation`);
+    assert.ok(prompt.includes(reviewer.OUTPUT_LANGUAGE_RULE), `${name} path states the report language`);
+    assert.match(prompt, /زبان گزارش انگلیسی است/, `${name} path asks for an English report`);
+    assert.match(prompt, /old_android/, `${name} path names the business-flow exception`);
+    assert.match(prompt, /سناریوی مهم کسب‌وکار/, `${name} path names the missing-test exception`);
   }
 });
 

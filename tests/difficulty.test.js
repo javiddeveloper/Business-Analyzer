@@ -156,6 +156,24 @@ test('a rating the reviewer produced survives the report and parses back', () =>
   }
 });
 
+// review/README.md is explicit that this line must be "a bare C<stars>
+// L<stars> token, nothing else… it must not be explained, titled, expanded,
+// or called out anywhere in the report itself". The report writer used to
+// print a legend directly above it, which broke that rule in the one file
+// that gets pushed to the merge request's branch.
+test('the C/L line is bare and last — no legend, no heading', () => {
+  const reportFile = require('../lib/reportFile');
+  const mr = { source_branch: 'b', target_branch: 'develop', author: { name: 'x' }, diff_refs: { head_sha: 'a1' } };
+  const md = reportFile.buildMarkdown({
+    mrIid: 1, mr,
+    result: { decision: 'APPROVE', summary: 's', positives: [], findings: [], rating: { complexity: 3, length: 4 }, stats: { files: 2, skipped: 0, mode: 'agent' } },
+  });
+
+  const lines = md.split('\n').map((l) => l.trim()).filter(Boolean);
+  assert.equal(lines[lines.length - 1], 'C*** L****', 'the rating is the final line of the file, on its own');
+  assert.ok(!/C\s*=|L\s*=|پیچیدگی|حجم کدی/.test(md), 'and nothing in the report explains what C or L mean');
+});
+
 test('a review with no rating writes no rating line', () => {
   const reportFile = require('../lib/reportFile');
   const mr = { source_branch: 'b', target_branch: 'develop', author: { name: 'x' }, diff_refs: { head_sha: 'a1' } };
