@@ -27,6 +27,7 @@ const monthly = require('./lib/monthly');
 const xlsx = require('./lib/xlsx');
 const deliveryMetrics = require('./lib/deliveryMetrics');
 const teamOverview = require('./lib/teamOverview');
+const reviewSignoff = require('./lib/reviewSignoff');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -531,6 +532,51 @@ async function rosterAuthors() {
   return (await loadRoster()).value;
 }
 
+// Who GitLab says carries maintainer standing, for the settings page to show.
+//
+// This is the same list lib/reviewSignoff.js gates review sign-off on, read
+// from the same place, so the settings page cannot claim a different set of
+// maintainers than the one actually deciding whose committed review file
+// counts. It is read-only on purpose: maintainer standing is a GitLab role,
+// and letting the dashboard invent one would mean a score could rest on an
+// authority GitLab never granted.
+async function loadMaintainers({ force = false } = {}) {
+  return cache.cached('maintainers', 'all', ROSTER_CACHE_TTL_MS, async () => {
+    const configured = projects.listProjects();
+    const ids = configured.length ? configured.map((p) => p.id) : [undefined];
+    const lists = await Promise.all(ids.map(async (id) => {
+      try {
+        return reviewSignoff.maintainersFrom(await gitlab.listProjectMembers(id));
+      } catch (e) {
+        // One unreachable project must not blank out the whole list — the
+        // other projects' maintainers are still real.
+        return [];
+      }
+    }));
+    const seen = new Map();
+    for (const m of lists.flat()) {
+      if (m.username && !seen.has(m.username)) seen.set(m.username, m);
+    }
+    return Array.from(seen.values()).sort((a, b) => (b.access_level || 0) - (a.access_level || 0));
+  }, { force });
+}
+
+async function handleMaintainers(req, res, query) {
+  try {
+    const { value, at, fromCache } = await loadMaintainers({ force: query.get('refresh') === '1' });
+    const roster = await rosterAuthors();
+    const inRoster = new Set(roster.map((a) => a.username));
+    return sendJson(res, 200, {
+      maintainers: value.map((m) => ({ ...m, inRoster: inRoster.has(m.username) })),
+      includeMaintainers: !!state.getSettings().includeMaintainers,
+      cachedAt: at,
+      fromCache,
+    });
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
+}
+
 async function handleDeveloperRoster(req, res, query) {
   try {
     const { value, at, fromCache } = await loadRoster({ force: query.get('refresh') === '1' });
@@ -915,6 +961,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.method === 'GET' && pathname === '/api/developers') return await handleDevelopers(req, res);
       if (req.method === 'GET' && pathname === '/api/developers/roster') return await handleDeveloperRoster(req, res, url.searchParams);
+      if (req.method === 'GET' && pathname === '/api/maintainers') return await handleMaintainers(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/models') return await handleModels(req, res);
       if (pathname === '/api/engines') return await handleEngines(req, res);
       if (req.method === 'POST' && pathname === '/api/engines/test') return await handleEngineTest(req, res);

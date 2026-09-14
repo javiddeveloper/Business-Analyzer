@@ -278,6 +278,37 @@
   .settings-page-head { border-bottom: 1px solid var(--border); padding-bottom: 10px; }
   .settings-panel { display: flex; flex-direction: column; gap: 12px; }
   .settings-panel[hidden] { display: none !important; }
+  /* secrets.env is 20 single-line fields. Stacked one per row they each ran
+     the full width of the page — a 6-character port number in a 987px box —
+     and pushed the list to ~1800px of scrolling. auto-fit packs them into as
+     many columns as fit, so the panel is read rather than scrolled, and
+     collapses back to one column on a narrow screen without a breakpoint. */
+  #settingsBody { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px 18px; align-items: start; }
+  /* Headings, engine sections and the closing note are rows, not cells:
+     a group title sitting in column 2 would label the field beside it. */
+  #settingsBody > .group-title,
+  #settingsBody > .engine-group,
+  #settingsBody > .hint { grid-column: 1 / -1; }
+  #settingsBody > .group-title { margin-top: 4px; }
+  /* A filesystem path or a base URL is the one kind of value here that is
+     genuinely long, and reading it truncated in a 317px box is how the wrong
+     PROJECT_PATH goes unnoticed. Only once the panel is wide enough to hold
+     three columns: below that, spanning two would force a second column onto
+     a layout that had collapsed to one on purpose. */
+  @media (min-width: 1150px) {
+    #settingsBody > .field.wide, .engine-group > .field.wide { grid-column: span 2; }
+  }
+  .engine-group[open] { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px 18px; align-items: start; }
+  .engine-group > summary { grid-column: 1 / -1; }
+  .maint-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 12px; margin-bottom: 8px; background: rgba(0,0,0,.15);
+  }
+  .maint-who { flex: 1; min-width: 0; }
+  .maint-name { font-size: 13px; font-weight: 700; }
+  .maint-user { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr; }
+  .tag.ok { color: var(--green); }
   .settings-foot {
     display: flex; align-items: center; gap: 12px;
     border-top: 1px solid var(--border); padding-top: 12px;
@@ -840,6 +871,7 @@
       <button class="panel-tab active" id="stEnv">secrets.env</button>
       <button class="panel-tab" id="stKb">📚 پایگاه دانش</button>
       <button class="panel-tab" id="stProjects">📁 پروژه‌ها</button>
+      <button class="panel-tab" id="stMaintainers">👤 Maintainerها</button>
       <button class="panel-tab" id="stAudit">🧾 لاگ تغییرات</button>
     </div>
     <div class="settings-panel" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
@@ -865,6 +897,35 @@
       <input type="text" id="projNewName" placeholder="نام نمایشی (اختیاری)" />
       <input type="text" id="projNewPath" placeholder="مسیر چک‌اوت محلی روی همین سرور (مثلاً D:\\Projects\\repo)" />
       <button id="projSaveBtn">ذخیره پروژه</button>
+    </div>
+    <div class="settings-panel" id="maintainersPanel" hidden>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="group-title" style="margin:0">👤 maintainerهای گیت‌لب</div>
+        <button class="ghost" id="maintRefreshBtn" style="padding:2px 8px;font-size:11px" title="بروزرسانی از گیت‌لب">🔄</button>
+      </div>
+      <p class="meta">
+        این لیست از خود گیت‌لب خوانده می‌شود (نقش Maintainer یا Owner) و قابل ویرایش از اینجا نیست —
+        maintainer بودن یک نقش در گیت‌لب است، و اگر داشبورد می‌توانست خودش کسی را maintainer کند،
+        امتیاز افراد به اختیاری تکیه می‌کرد که گیت‌لب هرگز نداده. برای عوض کردنش، نقش فرد را در خود گیت‌لب تغییر بده.
+      </p>
+      <div id="maintList"><div class="empty">در حال بارگذاری…</div></div>
+      <hr class="section-divider" />
+      <div class="group-title">در گزارش‌ها چطور دیده شوند</div>
+      <label class="check" style="margin-top:4px">
+        <input type="checkbox" id="setIncludeMaintainersSettings" />
+        maintainerها هم دقیقاً مثل یک دولوپر در آنالیز بیایند
+      </label>
+      <p class="meta" style="margin-top:2px">
+        روشن که باشد، هر maintainer که حداقل یک MR باز کرده باشد در لیست آنالیز دولوپرها می‌آید و
+        <strong>همان صفحه و همان امتیاز کامل</strong> را می‌گیرد که یک دولوپر می‌گیرد — هیچ محاسبه‌ای برایش فرق نمی‌کند.
+        خاموش که باشد (پیش‌فرض)، فقط اعضای با نقش Developer در لیست می‌آیند، چون در حالت معمول maintainer ریویوکننده است نه ریویوشونده.
+      </p>
+      <p class="meta" style="margin-top:6px;color:var(--amber)">
+        ⚠ یک نکته که محاسبه‌اش واقعاً فرق دارد: امضای ریویو (sign-off). فایل <code>review/MR-&lt;iid&gt;.md</code> فقط وقتی
+        «تأییدشده» حساب می‌شود که یک maintainer آن را کامیت کرده باشد — پس یک maintainer می‌تواند ریویوی MR خودش را امضا کند،
+        کاری که یک دولوپر نمی‌تواند.
+      </p>
+      <span class="save-state" id="maintSaveState"></span>
     </div>
     <div class="settings-panel" id="auditPanel" hidden>
       <div class="group-title">💾 پشتیبان‌گیری از data/</div>
@@ -1035,7 +1096,7 @@ function renderStatus() {
   document.getElementById('setAutoApprove').checked = !!st.autoApprove;
   document.getElementById('setAgentMode').checked = st.agentMode !== false;
   document.getElementById('setPushReport').checked = !!st.pushReport;
-  document.getElementById('setIncludeMaintainers').checked = !!st.includeMaintainers;
+  syncMaintainerSwitches(st.includeMaintainers);
 
   const banner = document.getElementById('pathBanner');
   banner.hidden = !!pp.set;
@@ -1126,6 +1187,7 @@ document.getElementById('setIncludeMaintainers').onchange = async (e) => {
   try {
     const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ includeMaintainers: el.checked }) });
     if (S.status) S.status.settings = next;
+    syncMaintainerSwitches(next.includeMaintainers);
     await loadDevRoster();
   } catch (err) {
     alert('خطا در ذخیره تنظیمات: ' + err.message);
@@ -1263,10 +1325,12 @@ function switchSettingsTab(which) {
   document.getElementById('stEnv').classList.toggle('active', which === 'env');
   document.getElementById('stKb').classList.toggle('active', which === 'kb');
   document.getElementById('stProjects').classList.toggle('active', which === 'projects');
+  document.getElementById('stMaintainers').classList.toggle('active', which === 'maintainers');
   document.getElementById('stAudit').classList.toggle('active', which === 'audit');
   document.getElementById('settingsBody').hidden = which !== 'env';
   document.getElementById('kbPanel').hidden = which !== 'kb';
   document.getElementById('projectsPanel').hidden = which !== 'projects';
+  document.getElementById('maintainersPanel').hidden = which !== 'maintainers';
   document.getElementById('auditPanel').hidden = which !== 'audit';
   // The foot's Save button only applies to secrets.env — every other tab
   // saves per-item via its own inline controls (or, for audit, has nothing
@@ -1274,12 +1338,92 @@ function switchSettingsTab(which) {
   document.getElementById('settingsFoot').hidden = which !== 'env';
   if (which === 'kb') loadKb();
   if (which === 'projects') loadProjectsPanel();
+  if (which === 'maintainers') loadMaintainers();
   if (which === 'audit') loadAudit();
 }
 document.getElementById('stEnv').onclick = () => switchSettingsTab('env');
 document.getElementById('stKb').onclick = () => switchSettingsTab('kb');
 document.getElementById('stProjects').onclick = () => switchSettingsTab('projects');
+document.getElementById('stMaintainers').onclick = () => switchSettingsTab('maintainers');
 document.getElementById('stAudit').onclick = () => switchSettingsTab('audit');
+
+// ---- maintainers tab (settings) --------------------------------------------
+const ACCESS_LABEL = { 40: 'Maintainer', 50: 'Owner' };
+
+async function loadMaintainers({ force = false } = {}) {
+  const box = document.getElementById('maintList');
+  box.innerHTML = '<div class="empty">در حال بارگذاری…</div>';
+  let data;
+  try {
+    data = await api('/api/maintainers' + (force ? '?refresh=1' : ''));
+  } catch (e) {
+    box.innerHTML = '<div class="error-box">خطا در خواندن از گیت‌لب: ' + esc(e.message) + '</div>';
+    return;
+  }
+  document.getElementById('setIncludeMaintainersSettings').checked = !!data.includeMaintainers;
+  const list = data.maintainers || [];
+  if (!list.length) {
+    // Not the same as "there are none": without a project id GitLab has no
+    // members list to read at all, and saying "no maintainers" there would be
+    // a claim the tool never actually checked.
+    box.innerHTML = '<div class="empty">هیچ maintainerای پیدا نشد — اگر GITLAB_PROJECT_ID تنظیم نشده باشد، گیت‌لب اصلاً لیست اعضایی برای خواندن ندارد.</div>';
+    return;
+  }
+  box.innerHTML = list.map((m) => {
+    // "Not in the roster" has two different causes and the difference is the
+    // whole question the reader came here with. With the switch off it is the
+    // switch; with it on, the roster is built from people who have actually
+    // opened a merge request, so a maintainer who only ever reviews has
+    // nothing to analyse — saying just "not in the list" would read as the
+    // switch being broken.
+    const status = m.inRoster
+      ? { cls: 'ok', text: '✓ در لیست آنالیز' }
+      : data.includeMaintainers
+        ? { cls: '', text: '— هیچ MRای باز نکرده' }
+        : { cls: '', text: '— با سوییچ پایین وارد می‌شود' };
+    return '<div class="maint-row">' +
+      '<div class="maint-who">' +
+        '<div class="maint-name">' + esc(m.name || m.username) + '</div>' +
+        '<div class="maint-user">@' + esc(m.username) + '</div>' +
+      '</div>' +
+      '<span class="tag">' + esc(ACCESS_LABEL[m.access_level] || ('level ' + m.access_level)) + '</span>' +
+      '<span class="tag ' + status.cls + '">' + esc(status.text) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+document.getElementById('maintRefreshBtn').onclick = () => loadMaintainers({ force: true });
+
+document.getElementById('setIncludeMaintainersSettings').onchange = async (ev) => {
+  const el = ev.target;
+  const note = document.getElementById('maintSaveState');
+  el.disabled = true;
+  note.textContent = 'در حال ذخیره…';
+  try {
+    const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ includeMaintainers: el.checked }) });
+    if (S.status) S.status.settings = next;
+    syncMaintainerSwitches(next.includeMaintainers);
+    note.textContent = '✓ ذخیره شد';
+    await loadDevRoster();
+    await loadMaintainers();
+  } catch (e) {
+    note.textContent = 'خطا: ' + e.message;
+    el.checked = !el.checked;
+  } finally {
+    el.disabled = false;
+  }
+  setTimeout(() => { note.textContent = ''; }, 2500);
+};
+
+// One stored flag, two controls (here and beside the roster it changes). They
+// have to move together — a checkbox showing the opposite of what is saved is
+// worse than not offering the second one at all.
+function syncMaintainerSwitches(value) {
+  for (const id of ['setIncludeMaintainers', 'setIncludeMaintainersSettings']) {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!value;
+  }
+}
 
 // ---- audit log tab (settings modal) ----------------------------------------
 const AUDIT_ACTION_LABEL = { settings: '⚙ تنظیمات', env: '🔑 secrets.env', approve: '✅ approve خودکار', project: '📁 پروژه', backup: '💾 پشتیبان‌گیری' };
@@ -1462,7 +1606,8 @@ function renderEnvField(entry, activeModelKey) {
   const hint = isActiveModel
     ? (entry.hint ? entry.hint + ' — ' : '') + 'لیست پیشنهادی از همین موتور (که الان فعال است) خوانده می‌شود؛ اگر مدلت آنجا نبود دستی تایپ کن.'
     : entry.hint;
-  return '<div class="field">' +
+  const wide = /(_URL|_PATH)$/.test(entry.key) ? ' wide' : '';
+  return '<div class="field' + wide + '">' +
     '<label>' + esc(entry.key) + (entry.required ? ' <span style="color:var(--red)">*</span>' : '') + '</label>' +
     '<div class="field-input" style="' + (entry.secret ? 'padding-inline-start:26px' : '') + '">' +
       '<input type="' + inputType + '" data-key="' + esc(entry.key) + '" value="' + esc(entry.value) + '"' +
