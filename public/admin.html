@@ -811,6 +811,13 @@
         <span class="tag" id="devRosterCacheNote"></span>
         <button class="ghost" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب" style="padding:2px 8px; font-size:11px">🔄</button>
       </div>
+      <!-- Beside the roster it controls, not buried in the settings page:
+           this changes who is on the list right here, and a switch two pages
+           away from its own effect is a switch nobody connects to it. -->
+      <label class="check" id="includeMaintainersLabel" style="font-size:11px; margin-bottom:8px"
+             title="پیش‌فرض فقط اعضای با نقش Developer در لیست می‌آیند، چون معمولاً maintainerها ریویوکننده‌اند نه ریویوشونده. اگر لید تیم خودش هم فیچر می‌زند، این را روشن کن تا Maintainer و Owner هم بیایند.">
+        <input type="checkbox" id="setIncludeMaintainers" /> maintainerها هم در لیست بیایند
+      </label>
       <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
     </div>
     <div class="dev-main" id="devMain">
@@ -1028,6 +1035,7 @@ function renderStatus() {
   document.getElementById('setAutoApprove').checked = !!st.autoApprove;
   document.getElementById('setAgentMode').checked = st.agentMode !== false;
   document.getElementById('setPushReport').checked = !!st.pushReport;
+  document.getElementById('setIncludeMaintainers').checked = !!st.includeMaintainers;
 
   const banner = document.getElementById('pathBanner');
   banner.hidden = !!pp.set;
@@ -1108,6 +1116,24 @@ bindSetting('setAutoPost', 'autoPost');
 bindSetting('setAutoApprove', 'autoApprove');
 bindSetting('setAgentMode', 'agentMode');
 bindSetting('setPushReport', 'pushReport');
+
+// Not bindSetting: this one changes who is in the list, so saving it without
+// reloading the roster would leave the switch flipped and the list unchanged
+// — which looks exactly like a switch that does nothing.
+document.getElementById('setIncludeMaintainers').onchange = async (e) => {
+  const el = e.target;
+  el.disabled = true;
+  try {
+    const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ includeMaintainers: el.checked }) });
+    if (S.status) S.status.settings = next;
+    await loadDevRoster();
+  } catch (err) {
+    alert('خطا در ذخیره تنظیمات: ' + err.message);
+    el.checked = !el.checked;
+  } finally {
+    el.disabled = false;
+  }
+};
 
 document.getElementById('autoReview').onchange = async (e) => {
   document.getElementById('autoReviewLabel').classList.toggle('on', e.target.checked);

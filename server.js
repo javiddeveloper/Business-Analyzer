@@ -510,10 +510,15 @@ async function handleDeveloperRating(req, res, author, query) {
 // multi-page GitLab crawl (MR history + project members) for something that
 // changes at most a few times a month.
 async function loadRoster({ force = false } = {}) {
-  return cache.cached('dev-roster', 'all', ROSTER_CACHE_TTL_MS, async () => {
+  const includeMaintainers = !!state.getSettings().includeMaintainers;
+  // The setting is part of the cache key, not just the computation: keyed on
+  // a constant, flipping the switch would go on serving the previous roster
+  // until the 15-minute TTL expired, which reads as the switch being broken.
+  const key = includeMaintainers ? 'all+maintainers' : 'all';
+  return cache.cached('dev-roster', key, ROSTER_CACHE_TTL_MS, async () => {
     const configured = projects.listProjects();
     const ids = configured.length ? configured.map((p) => p.id) : [undefined];
-    const lists = await Promise.all(ids.map((id) => gitlab.listAllAuthors(id)));
+    const lists = await Promise.all(ids.map((id) => gitlab.listAllAuthors(id, { includeMaintainers })));
     const seen = new Map();
     for (const author of lists.flat()) {
       if (!seen.has(author.username)) seen.set(author.username, author);

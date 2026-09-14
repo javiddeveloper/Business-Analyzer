@@ -82,6 +82,54 @@ test('listAllAuthors keeps only Developer-role members when a project id is set'
   }
 });
 
+// For a team whose lead ships features rather than only reviewing them —
+// leaving them out then means the analytics page omits a chunk of the work
+// the team actually did.
+test('includeMaintainers widens the roster to Maintainers and Owners', async () => {
+  stub('../lib/ai_bridge', {
+    secret: (k) => (k === 'GITLAB_PROJECT_ID' ? '99' : k === 'GITLAB_URL' ? 'https://example.test' : ''),
+  });
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    const u = String(url);
+    if (u.includes('/merge_requests')) {
+      return {
+        ok: true,
+        text: async () => JSON.stringify([
+          { author: { username: 'dev1', name: 'Dev One' } },
+          { author: { username: 'maintainer1', name: 'Maintainer One' } },
+          { author: { username: 'owner1', name: 'Owner One' } },
+          { author: { username: 'guest1', name: 'Guest One' } },
+        ]),
+      };
+    }
+    if (u.includes('/members/all')) {
+      return {
+        ok: true,
+        text: async () => JSON.stringify([
+          { username: 'dev1', access_level: 30 },
+          { username: 'maintainer1', access_level: 40 },
+          { username: 'owner1', access_level: 50 },
+          { username: 'guest1', access_level: 10 }, // Guest — below Developer, never in the roster
+        ]),
+      };
+    }
+    throw new Error('unexpected fetch: ' + u);
+  };
+  try {
+    const gitlab = freshGitlab();
+    const wide = await gitlab.listAllAuthors(undefined, { includeMaintainers: true });
+    assert.deepEqual(wide.map((a) => a.username), ['dev1', 'maintainer1', 'owner1'],
+      'Owner (50) comes in with Maintainer (40) — an owner who writes code belongs here for the same reason');
+    assert.ok(!wide.some((a) => a.username === 'guest1'), 'the switch widens upward, never down to Guest/Reporter');
+
+    const narrow = await gitlab.listAllAuthors(undefined, { includeMaintainers: false });
+    assert.deepEqual(narrow.map((a) => a.username), ['dev1'], 'and off is still the old behaviour exactly');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('listAllAuthors returns everyone unfiltered when there is no project id to look up roles in', async () => {
   stub('../lib/ai_bridge', {
     secret: (k) => (k === 'GITLAB_URL' ? 'https://example.test' : ''), // no GITLAB_PROJECT_ID
