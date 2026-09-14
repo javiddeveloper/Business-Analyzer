@@ -12,6 +12,7 @@ process.env.CR_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'coder-review-re
 const diffLib = require('../lib/diff');
 const checks = require('../lib/checks');
 const reviewer = require('../lib/reviewer');
+const agentReview = require('../lib/agentReview');
 const publish = require('../lib/publish');
 
 const SAMPLE_DIFF = [
@@ -71,6 +72,40 @@ test('classify skips lockfiles, generated output and binaries but keeps source',
   assert.ok(skip('lib/model.freezed.dart'));
   assert.ok(!skip('app/src/main/kotlin/Foo.kt'));
   assert.ok(diffLib.classify({ new_path: 'a.kt', deleted_file: true, diff: 'x' }).skip);
+});
+
+// Once a review report is committed it appears in the very MR it describes,
+// so the next round read the previous round's report back as code under
+// review. Seen on MR !191, where review/MR-191.md was among the 47 files
+// "reviewed": tokens spent re-reading its own output, the file count (and so
+// the too-big check) inflated by it, and the model free to raise findings
+// about the wording of its own prior review.
+test('the tool does not review its own review reports', () => {
+  const verdict = (p) => diffLib.classify({ new_path: p, diff: '@@ -1 +1 @@\n+x' });
+  assert.ok(verdict('review/MR-191.md').skip);
+  assert.ok(verdict('some/nested/review/MR-7.md').skip);
+  assert.match(verdict('review/MR-191.md').reason, /گزارش ریویو/, 'and says why, so the file is visibly skipped rather than silently gone');
+
+  // Narrow on purpose: a hand-written note in review/ is somebody's work and
+  // belongs in the review like any other file.
+  assert.ok(!verdict('review/README.md').skip);
+  assert.ok(!verdict('review/checklist.md').skip);
+  assert.ok(!verdict('docs/MR-191.md').skip, 'only under review/, not any file that looks like one');
+});
+
+// A Persian prompt is not the same as asking for a Persian answer: over an
+// English/Kotlin codebase the model follows the code. MR !191 came back with
+// an English summary and English finding titles, into a report file and a
+// dashboard that are Persian throughout.
+test('both review paths ask for Persian prose while leaving code identifiers alone', () => {
+  const { files } = reviewer.prepareFiles([{ new_path: 'app/Foo.kt', diff: SAMPLE_DIFF }]);
+  const batchPrompt = reviewer.buildUserPrompt({ mr: { title: 'x' }, batch: files, batchIndex: 0, batchCount: 1 });
+  const agentPrompt = agentReview.buildPrompt({ mr: { title: 'x' }, files, skipped: [] });
+
+  for (const [name, prompt] of [['batch', batchPrompt], ['agent', agentPrompt]]) {
+    assert.ok(prompt.includes(reviewer.PERSIAN_OUTPUT_RULE), `${name} path states the output language`);
+    assert.match(prompt, /نام فایل، مسیر، نام تابع/, `${name} path exempts identifiers from translation`);
+  }
 });
 
 test('secret scan flags a real credential and ignores env lookups and placeholders', () => {
