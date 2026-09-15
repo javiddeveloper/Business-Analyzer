@@ -476,6 +476,30 @@
     border-radius: 10px; padding: 8px 10px; font-size: 13px;
   }
   .sentry-status { font-size: 12px; }
+  .sentry-item.is-resolved { opacity: .6; }
+  .sentry-detail { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .sentry-stack-title { font-size: 11px; color: var(--muted); margin: 10px 0 4px; }
+  .sentry-stack {
+    background: #060a14; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; overflow-x: auto; font-size: 11.5px; line-height: 1.75;
+    margin: 0; direction: ltr; text-align: left; max-height: 340px;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+  }
+  .sentry-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+  /* Visibly a machine's reading, not a diagnosis — a violet edge, the same
+     colour this dashboard already uses for model-produced content. */
+  .sentry-analysis {
+    border: 1px solid rgba(155,140,255,.3); border-inline-start-width: 3px;
+    border-inline-start-color: var(--violet);
+    background: rgba(155,140,255,.06); border-radius: 10px;
+    padding: 10px 12px; margin: 8px 0; font-size: 12.5px; line-height: 1.8;
+  }
+  .sentry-analysis p { margin: 4px 0; }
+  .sentry-analysis-tag { font-size: 11px; color: var(--violet); margin-bottom: 6px; }
+  .sentry-form select {
+    background: rgba(0,0,0,.3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 10px; font-size: 13px;
+  }
 
   /* ---- handoff report ---- */
   .handoff-block {
@@ -970,6 +994,12 @@
       <input type="text" id="projNewId" placeholder="شناسه‌ی عددی پروژه در گیت‌لب (Project ID)" />
       <input type="text" id="projNewName" placeholder="نام نمایشی (اختیاری)" />
       <input type="text" id="projNewPath" placeholder="مسیر چک‌اوت محلی روی همین سرور (مثلاً D:\\Projects\\repo)" />
+      <input type="text" id="projNewSentry" placeholder="slug پروژه در Sentry (خالی = مقدار عمومی SENTRY_PROJECT)" />
+      <input type="text" id="projNewJira" placeholder="کلید پروژه در جیرا، مثلاً EM (خالی = مقدار عمومی JIRA_PROJECT_KEY)" />
+      <p class="hint" style="margin:2px 0 8px">
+        این دو برای هر ریپازیتوری جداست: کرش‌های یک اپ در پروژه‌ی Sentry خودش جمع می‌شوند و تسک‌هایش باید در پروژه‌ی جیرای خودش ثبت شوند.
+        آدرس و توکن Sentry و جیرا مشترک می‌مانند — یک نصب Sentry و یک جیرا بیشتر نداریم.
+      </p>
       <button id="projSaveBtn">ذخیره پروژه</button>
     </div>
     <div class="settings-panel" id="maintainersPanel" hidden>
@@ -1593,6 +1623,8 @@ function renderProjectsPanel() {
       document.getElementById('projNewId').value = p.id;
       document.getElementById('projNewName').value = p.name || '';
       document.getElementById('projNewPath').value = p.path || '';
+      document.getElementById('projNewSentry').value = p.sentryProject || '';
+      document.getElementById('projNewJira').value = p.jiraProjectKey || '';
     };
   });
   box.querySelectorAll('[data-remove-project]').forEach((btn) => {
@@ -1608,12 +1640,14 @@ document.getElementById('projSaveBtn').onclick = async () => {
   const id = document.getElementById('projNewId').value.trim();
   const name = document.getElementById('projNewName').value.trim();
   const path = document.getElementById('projNewPath').value.trim();
+  const sentryProject = document.getElementById('projNewSentry').value.trim();
+  const jiraProjectKey = document.getElementById('projNewJira').value.trim();
   if (!id) { alert('شناسه‌ی عددی پروژه (Project ID) لازم است.'); return; }
   try {
-    await api('/api/projects', { method: 'POST', body: JSON.stringify({ id, name, path }) });
-    document.getElementById('projNewId').value = '';
-    document.getElementById('projNewName').value = '';
-    document.getElementById('projNewPath').value = '';
+    await api('/api/projects', { method: 'POST', body: JSON.stringify({ id, name, path, sentryProject, jiraProjectKey }) });
+    for (const f of ['projNewId', 'projNewName', 'projNewPath', 'projNewSentry', 'projNewJira']) {
+      document.getElementById(f).value = '';
+    }
     await loadProjectsPanel();
     await loadStatus();
   } catch (e) {
@@ -4199,7 +4233,7 @@ async function saveDevRating(author) {
 // Read-only against Sentry: list the unresolved errors and turn one into a
 // Jira ticket. Resolving/assigning stays in Sentry's own UI, so issue state
 // never lives in two places that can disagree about it.
-const SENTRY = { data: null, openForm: null, loading: false };
+const SENTRY = { data: null, openForm: null, openDetail: null, details: {}, loading: false };
 
 const SENTRY_LEVEL_LABEL = { fatal: 'fatal', error: 'error', warning: 'warning', info: 'info', debug: 'debug' };
 
@@ -4272,11 +4306,14 @@ function renderSentryIssue(issue) {
   const action = task
     ? '<a class="jira-badge" href="' + esc(task.url) + '" target="_blank" rel="noreferrer" title="تسک ساخته‌شده برای این خطا">🎫 ' + esc(task.key) + '</a>'
     : '<button class="ghost sentry-make" data-issue="' + esc(issue.id) + '">🎫 ساخت تسک در جیرا</button>';
+  const expanded = SENTRY.openDetail === issue.id;
 
-  return '<div class="sentry-item lvl-' + esc(issue.level || 'unknown') + '">' +
+  return '<div class="sentry-item lvl-' + esc(issue.level || 'unknown') + (issue.resolved ? ' is-resolved' : '') + '">' +
     '<div class="sentry-head">' +
       '<span class="sentry-level lvl-' + esc(issue.level || 'unknown') + '">' + esc(lvl) + '</span>' +
       '<a class="sentry-title" href="' + esc(issue.permalink) + '" target="_blank" rel="noreferrer">' + esc(issue.title) + '</a>' +
+      (issue.resolved ? '<span class="sentry-level" style="background:rgba(65,224,138,.16);color:var(--green)">✓ فیکس شد</span>' : '') +
+      '<button class="ghost sentry-detail-btn" data-issue="' + esc(issue.id) + '">' + (expanded ? '▲ بستن' : '▼ جزئیات و لاگ') + '</button>' +
       action +
     '</div>' +
     (issue.culprit ? '<div class="sentry-culprit mono">' + esc(issue.culprit) + '</div>' : '') +
@@ -4288,7 +4325,55 @@ function renderSentryIssue(issue) {
       '<span class="tag">' + esc(issue.project || '') + '</span>' +
       (issue.shortId ? '<span class="tag mono">' + esc(issue.shortId) + '</span>' : '') +
     '</div>' +
+    (expanded ? renderSentryDetail(issue.id) : '') +
     (isOpen ? renderSentryForm(issue) : '') +
+  '</div>';
+}
+
+// The expanded view: the stack, the Persian reading of it, and the actions
+// that change something (resolve in Sentry, file in Jira).
+function renderSentryDetail(issueId) {
+  const d = SENTRY.details[issueId];
+  if (!d) return '<div class="sentry-detail"><div class="meta">در حال خواندن جزئیات…</div></div>';
+  if (d.error) return '<div class="sentry-detail"><div class="error-box">' + esc(d.error) + '</div></div>';
+
+  const a = d.analysis;
+  let analysisHtml;
+  if (!a) {
+    analysisHtml = '<button class="ghost sentry-analyze" data-issue="' + esc(issueId) + '">🧠 تفسیر فارسی این خطا</button>';
+  } else if (a.error) {
+    analysisHtml = '<div class="error-box">تفسیر ساخته نشد: ' + esc(a.error) + '</div>' +
+      '<button class="ghost sentry-analyze" data-issue="' + esc(issueId) + '">تلاش دوباره</button>';
+  } else {
+    analysisHtml =
+      '<div class="sentry-analysis">' +
+        '<div class="sentry-analysis-tag">🧠 تفسیر خودکار — خروجی مدل روی همین استک‌تریس. راهنماست، نه تشخیص قطعی.</div>' +
+        (a.summary ? '<p><b>چه اتفاقی می‌افتد:</b> ' + esc(a.summary) + '</p>' : '') +
+        (a.cause ? '<p><b>علت محتمل:</b> ' + esc(a.cause) + '</p>' : '') +
+        (a.where ? '<p><b>از کجا شروع کن:</b> <span class="mono">' + esc(a.where) + '</span></p>' : '') +
+        (a.fix ? '<p><b>پیشنهاد رفع:</b> ' + esc(a.fix) + '</p>' : '') +
+        '<button class="ghost sentry-analyze" data-issue="' + esc(issueId) + '" data-refresh="1" style="font-size:11px;padding:2px 8px">↻ تفسیر دوباره</button>' +
+      '</div>';
+  }
+
+  const tags = Object.entries(d.issue.tags || {}).slice(0, 10);
+
+  return '<div class="sentry-detail">' +
+    '<div class="row" style="gap:8px; margin-bottom:10px; flex-wrap:wrap">' +
+      '<span class="tag">اولویت پیشنهادی جیرا: <b>' + esc(d.priority) + '</b></span>' +
+      (d.issue.release ? '<span class="tag">نسخه: ' + esc(d.issue.release) + '</span>' : '') +
+      (d.issue.environment ? '<span class="tag">محیط: ' + esc(d.issue.environment) + '</span>' : '') +
+      '<button class="ghost sentry-resolve" data-issue="' + esc(issueId) + '">✓ فیکس شد (در Sentry بسته شود)</button>' +
+      '<span class="sentry-resolve-status meta"></span>' +
+    '</div>' +
+    analysisHtml +
+    (tags.length
+      ? '<div class="sentry-tags">' + tags.map(([k, v]) =>
+          '<span class="tag mono">' + esc(k) + ': ' + esc(v) + '</span>').join('') + '</div>'
+      : '') +
+    '<div class="sentry-stack-title">استک‌تریس' +
+      '<span class="meta"> — خطوط با <span class="mono">&gt;</span> کد خودِ پروژه است</span></div>' +
+    '<pre class="sentry-stack">' + esc(d.stack || '(استک‌تریسی ثبت نشده)') + '</pre>' +
   '</div>';
 }
 
@@ -4296,22 +4381,52 @@ function renderSentryIssue(issue) {
 // never depends on the clock of whichever machine has the dashboard open.
 function renderSentryForm(issue) {
   const def = issue.defaults || {};
+  const detail = SENTRY.details[issue.id];
+  const priority = (detail && detail.priority) || 'Medium';
+  const suggestions = (detail && detail.suggestions) || [];
+
+  // The description is rebuilt from the detail once it is in hand, so the
+  // ticket carries the stack and the interpretation rather than the short
+  // list-only version.
+  const description = detail && detail.descriptionWithDetail
+    ? detail.descriptionWithDetail
+    : (issue.suggestedDescription || '');
+
+  const assigneeOptions = suggestions.length
+    ? '<select class="sentry-assignee" style="min-width:220px">' +
+        '<option value="">— بدون اساین (خودت بعداً تعیین کن) —</option>' +
+        suggestions.map((s, i) =>
+          '<option value="' + esc(s.username) + '">' + esc(s.name) +
+          ' — بار کاری ' + esc(s.load) + ' (' + esc(s.inProgress) + ' تسک، ' + esc(s.openMrs) + ' MR باز)' +
+          (i === 0 ? ' ★ خلوت‌ترین' : '') + '</option>').join('') +
+      '</select>'
+    : '<span class="meta">پیشنهاد اساین در دسترس نیست — یک بار صفحه‌ی «دولوپرها» را باز کن تا داده‌ی بار کاری تیم محاسبه شود.</span>';
+
   return '<div class="sentry-form" data-form="' + esc(issue.id) + '">' +
     '<div class="sentry-form-note">' +
       'نوع تسک: <b>Bug</b> · پروژه: <b>' + esc((SENTRY.data && SENTRY.data.projectKey) || '—') + '</b>' +
       ' — سررسید و تخمین از روی شدت خطا پیش‌پر شده‌اند' +
       (def.widespread ? ' (به‌خاطر تعداد کاربران متأثر، سررسید جلو کشیده شد)' : '') +
-      '؛ هر دو قابل ویرایش‌اند.' +
+      '؛ همه قابل ویرایش‌اند.' +
+      (detail ? '' : ' <b>در حال خواندن لاگ و تفسیر…</b> اگر همین حالا بسازی، توضیحات بدون استک‌تریس ثبت می‌شود.') +
     '</div>' +
     '<label class="sentry-label">عنوان</label>' +
     '<input type="text" class="sentry-summary" value="' + esc(issue.suggestedSummary || '') + '" />' +
-    '<label class="sentry-label">توضیحات</label>' +
-    '<textarea class="sentry-desc" style="min-height:150px">' + esc(issue.suggestedDescription || '') + '</textarea>' +
-    '<div class="row" style="gap:12px; align-items:flex-end">' +
+    '<label class="sentry-label">توضیحات — شامل لاگ و تفسیر</label>' +
+    '<textarea class="sentry-desc" style="min-height:200px">' + esc(description) + '</textarea>' +
+    '<div class="row" style="gap:12px; align-items:flex-end; margin-top:6px">' +
       '<div><label class="sentry-label">سررسید (اجباری)</label>' +
         '<input type="date" class="sentry-due" value="' + esc(def.dueDate || '') + '" style="width:170px" /></div>' +
       '<div><label class="sentry-label">تخمین (ساعت، اجباری)</label>' +
         '<input type="text" class="sentry-est" value="' + esc(def.estimateHours || '') + '" style="width:110px" /></div>' +
+      '<div><label class="sentry-label">اولویت</label>' +
+        '<select class="sentry-priority" style="min-width:120px">' +
+          ['Highest', 'High', 'Medium', 'Low', 'Lowest'].map((p) =>
+            '<option value="' + p + '"' + (p === priority ? ' selected' : '') + '>' + p + '</option>').join('') +
+        '</select></div>' +
+    '</div>' +
+    '<div style="margin-top:8px">' +
+      '<label class="sentry-label">اساین به — مرتب‌شده از خلوت‌ترین</label>' + assigneeOptions +
     '</div>' +
     '<div class="row" style="margin-top:10px">' +
       '<button class="sentry-submit" data-issue="' + esc(issue.id) + '">ساخت تسک</button>' +
@@ -4323,7 +4438,14 @@ function renderSentryForm(issue) {
 
 function bindSentryRows() {
   for (const btn of document.querySelectorAll('.sentry-make')) {
-    btn.onclick = () => { SENTRY.openForm = btn.dataset.issue; renderSentry(); };
+    btn.onclick = () => {
+      SENTRY.openForm = btn.dataset.issue;
+      // The form quotes the stack and the interpretation, so the detail has
+      // to be in hand before it renders — otherwise the first ticket filed
+      // from an unexpanded row would silently carry neither.
+      if (!SENTRY.details[btn.dataset.issue]) loadSentryDetail(btn.dataset.issue);
+      renderSentry();
+    };
   }
   for (const btn of document.querySelectorAll('.sentry-cancel')) {
     btn.onclick = () => { SENTRY.openForm = null; renderSentry(); };
@@ -4331,17 +4453,74 @@ function bindSentryRows() {
   for (const btn of document.querySelectorAll('.sentry-submit')) {
     btn.onclick = () => submitSentryTask(btn);
   }
+  for (const btn of document.querySelectorAll('.sentry-detail-btn')) {
+    btn.onclick = () => {
+      const id = btn.dataset.issue;
+      SENTRY.openDetail = SENTRY.openDetail === id ? null : id;
+      if (SENTRY.openDetail && !SENTRY.details[id]) loadSentryDetail(id);
+      renderSentry();
+    };
+  }
+  for (const btn of document.querySelectorAll('.sentry-analyze')) {
+    btn.onclick = () => loadSentryDetail(btn.dataset.issue, { analyze: true, refresh: btn.dataset.refresh === '1' });
+  }
+  for (const btn of document.querySelectorAll('.sentry-resolve')) {
+    btn.onclick = () => resolveSentryIssue(btn);
+  }
+}
+
+async function loadSentryDetail(issueId, { analyze = false, refresh = false } = {}) {
+  if (analyze) {
+    // The model call takes a few seconds; say so rather than leaving a
+    // button that looks like it did nothing.
+    SENTRY.details[issueId] = { ...(SENTRY.details[issueId] || {}), analysis: null, analyzing: true };
+    renderSentry();
+    const box = document.querySelector('.sentry-detail');
+    if (box) box.insertAdjacentHTML('afterbegin', '<div class="meta" id="sentryAnalyzing">🧠 در حال تفسیر… (چند ثانیه طول می‌کشد)</div>');
+  }
+  try {
+    const qs = new URLSearchParams();
+    if (analyze) qs.set('analyze', '1');
+    if (refresh) qs.set('refresh', '1');
+    SENTRY.details[issueId] = await api('/api/sentry/issues/' + encodeURIComponent(issueId) + '?' + qs);
+  } catch (e) {
+    SENTRY.details[issueId] = { error: e.message };
+  }
+  renderSentry();
+}
+
+async function resolveSentryIssue(btn) {
+  const id = btn.dataset.issue;
+  const status = btn.parentElement.querySelector('.sentry-resolve-status');
+  if (!confirm('این خطا در Sentry به‌عنوان resolved بسته شود؟')) return;
+  btn.disabled = true;
+  if (status) status.textContent = 'در حال بستن…';
+  try {
+    await api('/api/sentry/resolve', { method: 'POST', body: JSON.stringify({ issueId: id, status: 'resolved' }) });
+    const hit = (SENTRY.data.issues || []).find((i) => i.id === id);
+    if (hit) hit.resolved = true;
+    renderSentry();
+  } catch (e) {
+    if (status) status.textContent = 'خطا: ' + e.message;
+    btn.disabled = false;
+  }
 }
 
 async function submitSentryTask(btn) {
   const form = btn.closest('.sentry-form');
   const statusEl = form.querySelector('.sentry-status');
+  const assigneeEl = form.querySelector('.sentry-assignee');
   const payload = {
     sentryIssueId: btn.dataset.issue,
     summary: form.querySelector('.sentry-summary').value.trim(),
     description: form.querySelector('.sentry-desc').value,
     dueDate: form.querySelector('.sentry-due').value,
     estimateHours: parseFloat(form.querySelector('.sentry-est').value),
+    priority: form.querySelector('.sentry-priority').value,
+    // Empty unless the reader actually chose someone — the suggestion is a
+    // ranking, not a decision, and nobody should find a crash assigned to
+    // them because an algorithm thought they looked free.
+    assignee: assigneeEl ? assigneeEl.value : '',
   };
   // Checked here as well as on the server so the reader is told which field
   // is missing before a round trip, in the same words the server would use.

@@ -30,6 +30,7 @@ const teamOverview = require('./lib/teamOverview');
 const reviewSignoff = require('./lib/reviewSignoff');
 const sentry = require('./lib/sentry');
 const sentryTasks = require('./lib/sentryTasks');
+const sentryAnalysis = require('./lib/sentryAnalysis');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -210,18 +211,23 @@ async function handleSentryIssues(req, res, searchParams) {
   }
   const statsPeriod = searchParams.get('statsPeriod') || '14d';
   const query = searchParams.get('query') || 'is:unresolved';
+  // Scoped to the dashboard's active project, so the errors on screen belong
+  // to the repository the rest of the page is about. Falls back to the
+  // global SENTRY_PROJECT when that project has no slug of its own.
+  const activeId = searchParams.get('projectId') || projects.getActiveProjectId();
+  const slugs = projects.getSentryProjects(activeId);
   try {
-    const { issues, errors, projects } = await sentry.listIssues({ query, statsPeriod });
+    const { issues, errors, projects: used } = await sentry.listIssues({ query, statsPeriod, projects: slugs });
     const links = sentryTasks.linksFor(issues.map((i) => i.id));
     return sendJson(res, 200, {
       configured: true,
-      projects,
+      projects: used,
       errors,
-      canCreateTask: jira.canCreate(),
+      canCreateTask: jira.canCreate() || !!projects.getJiraProjectKey(activeId),
       // Shown on the create form so the reader can see which Jira project a
       // ticket is about to land in, rather than trusting it is the one they
       // assume — this dashboard can be pointed at more than one repo.
-      projectKey: secret('JIRA_PROJECT_KEY') || null,
+      projectKey: projects.getJiraProjectKey(activeId) || null,
       issues: issues.map((i) => ({
         ...i,
         jiraTask: links[i.id] || null,
@@ -232,6 +238,69 @@ async function handleSentryIssues(req, res, searchParams) {
     });
   } catch (e) {
     return sendJson(res, 502, { configured: true, error: e.message });
+  }
+}
+
+// One issue in full: the stack of its most recent event, its tags, the
+// Persian reading of it, the priority it maps to, and who currently has room
+// to take it. Assembled here rather than in four browser round-trips, since
+// a reader opening an error wants all of it at once.
+async function handleSentryDetail(req, res, issueId, searchParams) {
+  if (!sentry.isConfigured()) return sendJson(res, 400, { error: 'Sentry تنظیم نشده است' });
+  try {
+    const detail = await sentry.issueDetail(issueId);
+    // The explanation costs a model call, so it is skipped unless asked for.
+    // The stack and the numbers are the part a reader needs immediately.
+    const wantAnalysis = searchParams.get('analyze') === '1';
+    const analysis = wantAnalysis
+      ? await sentryAnalysis.explain(detail, { force: searchParams.get('refresh') === '1' })
+      : null;
+
+    let suggestions = [];
+    try {
+      suggestions = sentryAnalysis.suggestAssignees(await loadTeamRows());
+    } catch (e) {
+      // Advisory only — a team view that cannot be built must not stop the
+      // crash itself from being shown.
+      suggestions = [];
+    }
+
+    const stack = sentryAnalysis.renderStack(detail.exceptions);
+    return sendJson(res, 200, {
+      issue: detail,
+      analysis,
+      priority: sentryAnalysis.priorityFor(detail),
+      suggestions,
+      stack,
+      jiraTask: sentryTasks.linkFor(issueId),
+      defaults: sentryTasks.defaultsFor(detail),
+      // The full ticket body, with the log and (when present) the Persian
+      // reading folded in — built here so the form shows exactly the text
+      // that will be filed, rather than assembling it a second way in the
+      // browser and risking the two diverging.
+      descriptionWithDetail: sentryTasks.buildDescription(detail, { analysis, stack }),
+    });
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
+}
+
+// Marks the issue resolved in Sentry itself — see lib/sentry.js for why this
+// is not a local flag.
+async function handleSentryResolve(req, res) {
+  const body = await readJsonBody(req);
+  if (!body || !body.issueId) return sendJson(res, 400, { error: 'issueId لازم است' });
+  const status = body.status === 'unresolved' ? 'unresolved' : 'resolved';
+  try {
+    await sentry.setIssueStatus(body.issueId, status);
+    audit.record({
+      action: 'sentry-status',
+      actor: actorFor(req),
+      detail: { issueId: String(body.issueId), status },
+    });
+    return sendJson(res, 200, { ok: true, status });
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
   }
 }
 
@@ -257,12 +326,22 @@ async function handleSentryCreateTask(req, res) {
       issueType: 'Bug',
       dueDate: body.dueDate,
       estimateHours: body.estimateHours,
+      priority: body.priority || undefined,
+      // Only when the reader picked one. The suggestion is advisory, and
+      // auto-assigning from a workload guess would hand someone a crash
+      // nobody decided to give them.
+      assignee: body.assignee || undefined,
+      projectKey: projects.getJiraProjectKey(body.projectId || projects.getActiveProjectId()) || undefined,
     });
     const link = sentryTasks.recordLink(body.sentryIssueId, { ...created, summary: body.summary });
     audit.record({
       action: 'sentry-task',
       actor: actorFor(req),
-      detail: { sentryIssueId: String(body.sentryIssueId), key: created.key, dueDate: body.dueDate, estimateHours: body.estimateHours },
+      detail: {
+        sentryIssueId: String(body.sentryIssueId), key: created.key,
+        dueDate: body.dueDate, estimateHours: body.estimateHours,
+        priority: body.priority || null, assignee: body.assignee || null,
+      },
     });
     return sendJson(res, 200, { ok: true, task: link });
   } catch (e) {
@@ -495,7 +574,10 @@ async function handleProjects(req, res) {
   const body = await readJsonBody(req);
   if (!body || !body.id) return sendJson(res, 400, { error: 'id (شناسه‌ی عددی پروژه در گیت‌لب) لازم است' });
   try {
-    const entry = projects.upsertProject({ id: body.id, name: body.name, path: body.path });
+    const entry = projects.upsertProject({
+      id: body.id, name: body.name, path: body.path,
+      sentryProject: body.sentryProject, jiraProjectKey: body.jiraProjectKey,
+    });
     audit.record({ action: 'project', actor: actorFor(req), detail: { op: 'upsert', id: entry.id, name: entry.name } });
     return sendJson(res, 200, { project: entry, projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
   } catch (e) {
@@ -779,6 +861,24 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
 // Everything underneath is the same cached loadDeveloperAnalytics the detail
 // page uses, so opening someone from this table is usually instant and the
 // two views can never disagree about the same number.
+// Team rows for the assignee suggestion, built only from analytics already
+// in cache. Computing them would mean a full analytics build per developer —
+// dozens of GitLab calls — on a request whose real job is showing one crash.
+// A cold cache yields an empty list, and the UI says so rather than pausing
+// for half a minute to produce a hint.
+async function loadTeamRows() {
+  const roster = await rosterAuthors();
+  const rows = [];
+  for (const entry of roster) {
+    const hit = cache.peek(ANALYTICS_CACHE, `${entry.username}||`, ANALYTICS_CACHE_TTL_MS);
+    if (!hit) continue;
+    try {
+      rows.push(teamOverview.buildRow({ username: entry.username, name: entry.name || entry.username, analytics: hit.value }));
+    } catch (e) { /* one unbuildable row must not drop the rest */ }
+  }
+  return rows;
+}
+
 async function handleTeamRow(req, res, author, query) {
   const since = query.get('since') || undefined;
   const until = query.get('until') || undefined;
@@ -1029,6 +1129,11 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'GET' && pathname === '/api/audit') return await handleAudit(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/sentry/issues') return await handleSentryIssues(req, res, url.searchParams);
       if (req.method === 'POST' && pathname === '/api/sentry/task') return await handleSentryCreateTask(req, res);
+      if (req.method === 'POST' && pathname === '/api/sentry/resolve') return await handleSentryResolve(req, res);
+      const sentryDetailMatch = pathname.match(/^\/api\/sentry\/issues\/([^/]+)$/);
+      if (req.method === 'GET' && sentryDetailMatch) {
+        return await handleSentryDetail(req, res, decodeURIComponent(sentryDetailMatch[1]), url.searchParams);
+      }
       if (pathname === '/api/backups' && (req.method === 'GET' || req.method === 'POST')) return await handleBackups(req, res);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       const mrContextMatch = pathname.match(/^\/api\/merge-requests\/([^/]+)\/(\d+)\/context$/);
