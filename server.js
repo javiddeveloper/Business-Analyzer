@@ -31,6 +31,7 @@ const reviewSignoff = require('./lib/reviewSignoff');
 const sentry = require('./lib/sentry');
 const sentryTasks = require('./lib/sentryTasks');
 const sentryAnalysis = require('./lib/sentryAnalysis');
+const sentryStore = require('./lib/sentryStore');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -216,11 +217,62 @@ async function handleSentryIssues(req, res, searchParams) {
   // global SENTRY_PROJECT when that project has no slug of its own.
   const activeId = searchParams.get('projectId') || projects.getActiveProjectId();
   const slugs = projects.getSentryProjects(activeId);
+  // Enrich whichever list we end up with — live or stored — the same way, so
+  // a snapshot is not a second-class view missing its Jira links.
+  const decorate = (issues) => {
+    const links = sentryTasks.linksFor(issues.map((i) => i.id));
+    return issues.map((i) => ({
+      ...i,
+      jiraTask: links[i.id] || null,
+      defaults: sentryTasks.defaultsFor(i),
+      suggestedSummary: sentryTasks.buildSummary(i),
+      suggestedDescription: sentryTasks.buildDescription(i),
+    }));
+  };
+
+  // Serves the stored copy; returns whether it did.
+  //
+  // Returns an explicit boolean rather than passing sendJson's value along:
+  // sendJson has no return statement, so `return sendJson(...)` is undefined,
+  // and a caller reading that as "nothing was served" goes on to send a
+  // second response. That crashed the process with ERR_HTTP_HEADERS_SENT the
+  // first time this ran against a real outage.
+  const fallback = (reason) => {
+    const snapshot = sentryStore.loadIssues(slugs, statsPeriod);
+    if (!snapshot) return false;
+    sendJson(res, 200, {
+      configured: true,
+      stale: true,
+      staleAt: snapshot.at,
+      staleReason: reason,
+      projects: slugs,
+      errors: [],
+      canCreateTask: jira.canCreate() || !!projects.getJiraProjectKey(activeId),
+      projectKey: projects.getJiraProjectKey(activeId) || null,
+      issues: decorate(snapshot.issues),
+    });
+    return true;
+  };
+
   try {
     const { issues, errors, projects: used } = await sentry.listIssues({ query, statsPeriod, projects: slugs });
-    const links = sentryTasks.linksFor(issues.map((i) => i.id));
+
+    // listIssues isolates failures per project and resolves rather than
+    // throwing, so a total outage arrives here as "no issues, every project
+    // errored" — not as an exception. Without checking for that, the
+    // snapshot would only ever be used when the whole call blew up, which is
+    // the rarer case: an unreachable Sentry produces exactly this shape.
+    if (slugs.length && errors.length === slugs.length) {
+      if (fallback(errors.map((x) => x.error).join(' · '))) return;
+    }
+
+    // Only a clean read is worth storing. Saving a partial list over a good
+    // snapshot would mean a half-failed fetch quietly destroys the copy that
+    // exists for exactly this situation.
+    if (!errors.length) sentryStore.saveIssues(slugs, statsPeriod, issues);
     return sendJson(res, 200, {
       configured: true,
+      stale: false,
       projects: used,
       errors,
       canCreateTask: jira.canCreate() || !!projects.getJiraProjectKey(activeId),
@@ -228,15 +280,15 @@ async function handleSentryIssues(req, res, searchParams) {
       // ticket is about to land in, rather than trusting it is the one they
       // assume — this dashboard can be pointed at more than one repo.
       projectKey: projects.getJiraProjectKey(activeId) || null,
-      issues: issues.map((i) => ({
-        ...i,
-        jiraTask: links[i.id] || null,
-        defaults: sentryTasks.defaultsFor(i),
-        suggestedSummary: sentryTasks.buildSummary(i),
-        suggestedDescription: sentryTasks.buildDescription(i),
-      })),
+      issues: decorate(issues),
     });
   } catch (e) {
+    // Sentry is down or unreachable. Serve the last clean snapshot rather
+    // than an error page — this install goes down often enough that the
+    // errors page being unavailable during an outage is precisely when it is
+    // wanted most. Always labelled: a stale count presented as current is
+    // worse than no count.
+    if (fallback(e.message)) return;
     return sendJson(res, 502, { configured: true, error: e.message });
   }
 }
@@ -247,8 +299,24 @@ async function handleSentryIssues(req, res, searchParams) {
 // a reader opening an error wants all of it at once.
 async function handleSentryDetail(req, res, issueId, searchParams) {
   if (!sentry.isConfigured()) return sendJson(res, 400, { error: 'Sentry تنظیم نشده است' });
+  let stale = false;
+  let staleAt = null;
+  let staleReason = null;
   try {
-    const detail = await sentry.issueDetail(issueId);
+    var detail = await sentry.issueDetail(issueId);
+    // Stored on every successful expand, so the stack trace of a crash
+    // somebody already opened survives the next outage — that is usually
+    // the one being worked on.
+    sentryStore.saveDetail(issueId, detail);
+  } catch (e) {
+    const snapshot = sentryStore.loadDetail(issueId);
+    if (!snapshot) return sendJson(res, 502, { error: e.message });
+    detail = snapshot.detail;
+    stale = true;
+    staleAt = snapshot.at;
+    staleReason = e.message;
+  }
+  try {
     // The explanation costs a model call, so it is skipped unless asked for.
     // The stack and the numbers are the part a reader needs immediately.
     const wantAnalysis = searchParams.get('analyze') === '1';
@@ -268,6 +336,7 @@ async function handleSentryDetail(req, res, issueId, searchParams) {
     const stack = sentryAnalysis.renderStack(detail.exceptions);
     return sendJson(res, 200, {
       issue: detail,
+      stale, staleAt, staleReason,
       analysis,
       priority: sentryAnalysis.priorityFor(detail),
       suggestions,

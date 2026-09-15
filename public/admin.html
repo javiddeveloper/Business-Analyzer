@@ -4275,10 +4275,20 @@ function renderSentry() {
   const issues = d.issues || [];
   const withTask = issues.filter((i) => i.jiraTask).length;
 
-  const head =
+  // A snapshot must never be mistakable for live data — a stale count read
+  // as current is worse than no count at all.
+  const staleBanner = d.stale
+    ? '<div class="banner" style="margin:0 0 10px">' +
+        '📦 Sentry در دسترس نیست — این نسخه‌ی <b>ذخیره‌شده</b> از ' + esc(relativeTime(d.staleAt)) + ' است، نه وضعیت الان.' +
+        (d.staleReason ? '<span class="meta"> (' + esc(d.staleReason) + ')</span>' : '') +
+      '</div>'
+    : '';
+
+  const head = staleBanner +
     '<div class="row" style="justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px">' +
       '<span class="tag">' + issues.length + ' خطای باز در ' + (d.projects || []).length + ' پروژه' +
-        (withTask ? ' · ' + withTask + ' تا از قبل تسک دارند' : '') + '</span>' +
+        (withTask ? ' · ' + withTask + ' تا از قبل تسک دارند' : '') +
+        (d.stale ? ' · داده‌ی ذخیره‌شده' : '') + '</span>' +
       (d.canCreateTask ? '' : '<span class="tag" style="color:var(--amber)">جیرا برای ساخت تسک تنظیم نشده — JIRA_PROJECT_KEY لازم است</span>') +
     '</div>';
 
@@ -4359,6 +4369,10 @@ function renderSentryDetail(issueId) {
   const tags = Object.entries(d.issue.tags || {}).slice(0, 10);
 
   return '<div class="sentry-detail">' +
+    (d.stale
+      ? '<div class="banner" style="margin:0 0 10px">📦 این جزئیات از نسخه‌ی ذخیره‌شده‌ی ' +
+          esc(relativeTime(d.staleAt)) + ' است — Sentry الان در دسترس نیست، پس «فیکس شد» هم کار نمی‌کند.</div>'
+      : '') +
     '<div class="row" style="gap:8px; margin-bottom:10px; flex-wrap:wrap">' +
       '<span class="tag">اولویت پیشنهادی جیرا: <b>' + esc(d.priority) + '</b></span>' +
       (d.issue.release ? '<span class="tag">نسخه: ' + esc(d.issue.release) + '</span>' : '') +

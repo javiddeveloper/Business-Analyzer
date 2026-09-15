@@ -206,3 +206,60 @@ test('a ticket filed before the model answered is still complete, just shorter',
   assert.ok(body.includes('NullPointerException'), 'the error itself is still there');
   assert.ok(body.includes('https://sentry.example/issues/991/'));
 });
+
+// ---- the local snapshot ----------------------------------------------------
+// This Sentry install goes down often enough that the team asked for a stored
+// copy: an outage is exactly when somebody is looking for the crash taking
+// production down, and that is the worst moment for the page to be empty.
+
+function freshStore() {
+  process.env.CR_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'coder-review-sentrystore-'));
+  delete require.cache[require.resolve('../lib/sentryStore')];
+  return require('../lib/sentryStore');
+}
+
+test('a saved list comes back for the same projects and window', () => {
+  const s = freshStore();
+  assert.equal(s.loadIssues(['a'], '14d'), null, 'nothing stored yet');
+
+  s.saveIssues(['a'], '14d', [issue()]);
+  const hit = s.loadIssues(['a'], '14d');
+  assert.equal(hit.issues.length, 1);
+  assert.ok(hit.at > 0, 'and carries when it was taken, so the UI can say how old it is');
+});
+
+// The same project looks different over 24h and 90d; serving one as the other
+// would be quietly wrong in a way nobody would catch.
+test('snapshots are separated by window and by project set', () => {
+  const s = freshStore();
+  s.saveIssues(['a'], '14d', [issue({ id: '1' })]);
+  s.saveIssues(['a'], '90d', [issue({ id: '2' }), issue({ id: '3' })]);
+
+  assert.equal(s.loadIssues(['a'], '14d').issues.length, 1);
+  assert.equal(s.loadIssues(['a'], '90d').issues.length, 2);
+  assert.equal(s.loadIssues(['b'], '14d'), null, 'a different project has its own snapshot');
+});
+
+test('project order does not create a second snapshot of the same thing', () => {
+  const s = freshStore();
+  s.saveIssues(['a', 'b'], '14d', [issue()]);
+  assert.ok(s.loadIssues(['b', 'a'], '14d'), 'the key is order-independent');
+});
+
+test('an expanded issue keeps its stack for the next outage', () => {
+  const s = freshStore();
+  assert.equal(s.loadDetail('42'), null);
+  s.saveDetail('42', { id: '42', exceptions: [{ type: 'NPE', frames: [] }] });
+  assert.equal(s.loadDetail('42').detail.id, '42');
+  assert.equal(s.loadDetail(42).detail.id, '42', 'number or string id, same record');
+});
+
+// Stack traces are large; without a cap this file grows with every issue
+// anyone ever clicked.
+test('stored details are capped, evicting the least recently saved', () => {
+  const s = freshStore();
+  for (let i = 0; i < s.MAX_DETAILS + 25; i++) s.saveDetail(String(i), { id: String(i) });
+  assert.equal(s.stats().details, s.MAX_DETAILS);
+  assert.equal(s.loadDetail('0'), null, 'the oldest went first');
+  assert.ok(s.loadDetail(String(s.MAX_DETAILS + 24)), 'the newest is kept');
+});
