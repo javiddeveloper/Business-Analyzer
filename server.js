@@ -396,6 +396,7 @@ async function handleSentryCreateTask(req, res) {
       dueDate: body.dueDate,
       estimateHours: body.estimateHours,
       priority: body.priority || undefined,
+      epicKey: body.epicKey || undefined,
       // Only when the reader picked one. The suggestion is advisory, and
       // auto-assigning from a workload guess would hand someone a crash
       // nobody decided to give them.
@@ -415,6 +416,22 @@ async function handleSentryCreateTask(req, res) {
     return sendJson(res, 200, { ok: true, task: link });
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
+  }
+}
+
+// The Jira epics a new ticket can be filed under. Per project, since which
+// epics exist is a property of the Jira project this repo files into.
+// ?refresh=1 skips the hour-long cache, for right after someone creates an
+// epic in Jira and comes straight back here wondering where it is.
+async function handleJiraEpics(req, res, searchParams) {
+  const projectId = searchParams.get('projectId') || projects.getActiveProjectId();
+  const key = projects.getJiraProjectKey(projectId);
+  if (!key) return sendJson(res, 200, { configured: false, projectKey: null, epics: [] });
+  try {
+    const epics = await jira.listEpics(key, { force: searchParams.get('refresh') === '1' });
+    return sendJson(res, 200, { configured: true, projectKey: key, epics });
+  } catch (e) {
+    return sendJson(res, 502, { configured: true, projectKey: key, error: e.message, epics: [] });
   }
 }
 
@@ -1196,6 +1213,7 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'POST' && pathname === '/api/feedback') return await handlePostFeedback(req, res);
       if (req.method === 'GET' && pathname === '/api/feedback/accuracy') return await handleFeedbackAccuracy(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/audit') return await handleAudit(req, res, url.searchParams);
+      if (req.method === 'GET' && pathname === '/api/jira/epics') return await handleJiraEpics(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/sentry/issues') return await handleSentryIssues(req, res, url.searchParams);
       if (req.method === 'POST' && pathname === '/api/sentry/task') return await handleSentryCreateTask(req, res);
       if (req.method === 'POST' && pathname === '/api/sentry/resolve') return await handleSentryResolve(req, res);

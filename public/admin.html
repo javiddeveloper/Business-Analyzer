@@ -970,6 +970,7 @@
       <button class="panel-tab" id="stKb">📚 پایگاه دانش</button>
       <button class="panel-tab" id="stProjects">📁 پروژه‌ها</button>
       <button class="panel-tab" id="stMaintainers">👤 Maintainerها</button>
+      <button class="panel-tab" id="stEpics">🗂 اپیک‌ها</button>
       <button class="panel-tab" id="stAudit">🧾 لاگ تغییرات</button>
     </div>
     <div class="settings-panel" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
@@ -1030,6 +1031,18 @@
         کاری که یک دولوپر نمی‌تواند.
       </p>
       <span class="save-state" id="maintSaveState"></span>
+    </div>
+    <div class="settings-panel" id="epicsPanel" hidden>
+      <div class="group-title">🗂 اپیک‌های جیرا</div>
+      <p class="meta">
+        اپیک‌های پروژه‌ی جیرایی که این ریپازیتوری در آن تسک ثبت می‌کند. همین لیست در فرم «ساخت تسک از خطای Sentry» هم می‌آید.
+        فقط خواندنی است — ساخت و ویرایش اپیک در خود جیرا انجام می‌شود. یک ساعت کش می‌شود.
+      </p>
+      <div class="row" style="margin-bottom:10px">
+        <button class="ghost" id="epicsRefreshBtn">🔄 خواندن دوباره از جیرا</button>
+        <span class="meta" id="epicsNote"></span>
+      </div>
+      <div id="epicsList"><div class="empty">در حال بارگذاری…</div></div>
     </div>
     <div class="settings-panel" id="auditPanel" hidden>
       <div class="group-title">💾 پشتیبان‌گیری از data/</div>
@@ -1431,10 +1444,12 @@ function switchSettingsTab(which) {
   document.getElementById('stProjects').classList.toggle('active', which === 'projects');
   document.getElementById('stMaintainers').classList.toggle('active', which === 'maintainers');
   document.getElementById('stAudit').classList.toggle('active', which === 'audit');
+  document.getElementById('stEpics').classList.toggle('active', which === 'epics');
   document.getElementById('settingsBody').hidden = which !== 'env';
   document.getElementById('kbPanel').hidden = which !== 'kb';
   document.getElementById('projectsPanel').hidden = which !== 'projects';
   document.getElementById('maintainersPanel').hidden = which !== 'maintainers';
+  document.getElementById('epicsPanel').hidden = which !== 'epics';
   document.getElementById('auditPanel').hidden = which !== 'audit';
   // The foot's Save button only applies to secrets.env — every other tab
   // saves per-item via its own inline controls (or, for audit, has nothing
@@ -1444,7 +1459,9 @@ function switchSettingsTab(which) {
   if (which === 'projects') loadProjectsPanel();
   if (which === 'maintainers') loadMaintainers();
   if (which === 'audit') loadAudit();
+  if (which === 'epics') renderEpicsPanel();
 }
+document.getElementById('stEpics').onclick = () => switchSettingsTab('epics');
 document.getElementById('stEnv').onclick = () => switchSettingsTab('env');
 document.getElementById('stKb').onclick = () => switchSettingsTab('kb');
 document.getElementById('stProjects').onclick = () => switchSettingsTab('projects');
@@ -4243,6 +4260,10 @@ async function loadSentry() {
   SENTRY.loading = true;
   box.innerHTML = '<div class="empty">در حال خواندن از Sentry…</div>';
   const period = document.getElementById('sentryPeriod').value;
+  // Alongside, not before: the epic list only matters once somebody opens
+  // the create form, and waiting on Jira to show the errors would make a
+  // slow Jira look like a slow Sentry.
+  if (!EPICS.list) loadEpics().then(() => { if (SENTRY.openForm) renderSentry(); });
   try {
     SENTRY.data = await api('/api/sentry/issues?statsPeriod=' + encodeURIComponent(period));
   } catch (e) {
@@ -4442,6 +4463,9 @@ function renderSentryForm(issue) {
     '<div style="margin-top:8px">' +
       '<label class="sentry-label">اساین به — مرتب‌شده از خلوت‌ترین</label>' + assigneeOptions +
     '</div>' +
+    '<div style="margin-top:8px">' +
+      '<label class="sentry-label">اپیک</label>' + renderEpicSelect() +
+    '</div>' +
     '<div class="row" style="margin-top:10px">' +
       '<button class="sentry-submit" data-issue="' + esc(issue.id) + '">ساخت تسک</button>' +
       '<button class="ghost sentry-cancel">انصراف</button>' +
@@ -4482,6 +4506,79 @@ function bindSentryRows() {
     btn.onclick = () => resolveSentryIssue(btn);
   }
 }
+
+// Jira epics, shared between the Sentry task form and the settings tab so
+// both show the same list and neither re-fetches what the other already has.
+const EPICS = { list: null, projectKey: null, error: null, loading: false };
+
+async function loadEpics({ force = false } = {}) {
+  if (EPICS.loading) return;
+  EPICS.loading = true;
+  try {
+    const d = await api('/api/jira/epics' + (force ? '?refresh=1' : ''));
+    EPICS.list = d.epics || [];
+    EPICS.projectKey = d.projectKey;
+    EPICS.error = d.error || null;
+  } catch (e) {
+    EPICS.error = e.message;
+    EPICS.list = EPICS.list || [];
+  }
+  EPICS.loading = false;
+}
+
+// Open epics first: a crash is usually filed under work in flight, and
+// burying the live ones under a dozen finished ones makes the common case
+// the hardest to reach. Closed ones stay in the list — a crash in a feature
+// that shipped last quarter still belongs under that feature's epic.
+function renderEpicSelect() {
+  if (!EPICS.list) return '<span class="meta">در حال خواندن اپیک‌ها…</span>';
+  if (!EPICS.list.length) {
+    return '<span class="meta">' + (EPICS.error ? 'خطا در خواندن اپیک‌ها: ' + esc(EPICS.error) : 'اپیکی در این پروژه پیدا نشد.') + '</span>';
+  }
+  const open = EPICS.list.filter((e) => !e.done);
+  const done = EPICS.list.filter((e) => e.done);
+  const opt = (e) => '<option value="' + esc(e.key) + '">' + esc(e.key) + ' — ' + esc(e.name) + '</option>';
+  return '<select class="sentry-epic" style="min-width:280px">' +
+    '<option value="">— بدون اپیک —</option>' +
+    (open.length ? '<optgroup label="باز">' + open.map(opt).join('') + '</optgroup>' : '') +
+    (done.length ? '<optgroup label="بسته‌شده">' + done.map(opt).join('') + '</optgroup>' : '') +
+  '</select>';
+}
+
+// The settings view of the same list. Read-only: epics are created and
+// edited in Jira, and a second place to do it would be a second place for
+// the two to disagree.
+async function renderEpicsPanel({ force = false } = {}) {
+  const box = document.getElementById('epicsList');
+  const note = document.getElementById('epicsNote');
+  if (!box) return;
+  if (force || !EPICS.list) {
+    box.innerHTML = '<div class="empty">در حال خواندن از جیرا…</div>';
+    await loadEpics({ force });
+  }
+  note.textContent = EPICS.projectKey ? 'پروژه‌ی جیرا: ' + EPICS.projectKey : 'پروژه‌ی جیرا تنظیم نشده';
+
+  if (EPICS.error) { box.innerHTML = '<div class="error-box">' + esc(EPICS.error) + '</div>'; return; }
+  if (!EPICS.list.length) {
+    box.innerHTML = '<div class="empty">اپیکی پیدا نشد — یا این پروژه اپیک ندارد، یا کلید پروژه‌ی جیرا تنظیم نشده.</div>';
+    return;
+  }
+  const open = EPICS.list.filter((e) => !e.done);
+  const done = EPICS.list.filter((e) => e.done);
+  const row = (e) =>
+    '<tr>' +
+      '<td class="mono"><a href="' + esc(e.url) + '" target="_blank" rel="noreferrer">' + esc(e.key) + '</a></td>' +
+      '<td>' + esc(e.name) + '</td>' +
+      '<td class="muted">' + esc(e.status || '—') + '</td>' +
+    '</tr>';
+  box.innerHTML =
+    '<table class="score-table"><thead><tr><th>کلید</th><th>نام اپیک</th><th>وضعیت</th></tr></thead><tbody>' +
+      (open.length ? '<tr><td colspan="3" class="muted" style="padding-top:10px"><b>باز (' + open.length + ')</b></td></tr>' + open.map(row).join('') : '') +
+      (done.length ? '<tr><td colspan="3" class="muted" style="padding-top:12px"><b>بسته‌شده (' + done.length + ')</b></td></tr>' + done.map(row).join('') : '') +
+    '</tbody></table>';
+}
+
+document.getElementById('epicsRefreshBtn').onclick = () => renderEpicsPanel({ force: true });
 
 async function loadSentryDetail(issueId, { analyze = false, refresh = false } = {}) {
   if (analyze) {
@@ -4535,6 +4632,7 @@ async function submitSentryTask(btn) {
     // ranking, not a decision, and nobody should find a crash assigned to
     // them because an algorithm thought they looked free.
     assignee: assigneeEl ? assigneeEl.value : '',
+    epicKey: (form.querySelector('.sentry-epic') || {}).value || '',
   };
   // Checked here as well as on the server so the reader is told which field
   // is missing before a round trip, in the same words the server would use.
