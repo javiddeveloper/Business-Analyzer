@@ -28,6 +28,8 @@ const xlsx = require('./lib/xlsx');
 const deliveryMetrics = require('./lib/deliveryMetrics');
 const teamOverview = require('./lib/teamOverview');
 const reviewSignoff = require('./lib/reviewSignoff');
+const sentry = require('./lib/sentry');
+const sentryTasks = require('./lib/sentryTasks');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -194,6 +196,78 @@ async function handlePostFeedback(req, res) {
 
 async function handleFeedbackAccuracy(req, res, searchParams) {
   return sendJson(res, 200, feedback.accuracy({ category: searchParams.get('category') || null }));
+}
+
+// ---- Sentry ----------------------------------------------------------------
+
+// The unresolved issues, each already carrying the Jira task it produced (if
+// any) and the defaults the create form should start from. Computed here
+// rather than in the browser so the deadline a task gets never depends on
+// the clock of whichever machine has the dashboard open.
+async function handleSentryIssues(req, res, searchParams) {
+  if (!sentry.isConfigured()) {
+    return sendJson(res, 200, { configured: false, issues: [], errors: [], projects: [] });
+  }
+  const statsPeriod = searchParams.get('statsPeriod') || '14d';
+  const query = searchParams.get('query') || 'is:unresolved';
+  try {
+    const { issues, errors, projects } = await sentry.listIssues({ query, statsPeriod });
+    const links = sentryTasks.linksFor(issues.map((i) => i.id));
+    return sendJson(res, 200, {
+      configured: true,
+      projects,
+      errors,
+      canCreateTask: jira.canCreate(),
+      // Shown on the create form so the reader can see which Jira project a
+      // ticket is about to land in, rather than trusting it is the one they
+      // assume — this dashboard can be pointed at more than one repo.
+      projectKey: secret('JIRA_PROJECT_KEY') || null,
+      issues: issues.map((i) => ({
+        ...i,
+        jiraTask: links[i.id] || null,
+        defaults: sentryTasks.defaultsFor(i),
+        suggestedSummary: sentryTasks.buildSummary(i),
+        suggestedDescription: sentryTasks.buildDescription(i),
+      })),
+    });
+  } catch (e) {
+    return sendJson(res, 502, { configured: true, error: e.message });
+  }
+}
+
+// Creates the Jira issue and records the link. Always a Bug — the team's
+// choice — and always through the form's values rather than recomputed
+// defaults, so what the reader saw is what gets filed.
+async function handleSentryCreateTask(req, res) {
+  const body = await readJsonBody(req);
+  if (!body || !body.sentryIssueId) return sendJson(res, 400, { error: 'sentryIssueId لازم است' });
+
+  // Refuse a second task for the same error rather than quietly making one:
+  // the duplicate would land on the same board, and the loudest error is the
+  // one most likely to get clicked twice.
+  const existing = sentryTasks.linkFor(body.sentryIssueId);
+  if (existing && !body.force) {
+    return sendJson(res, 409, { error: 'برای این خطا قبلاً تسک ساخته شده', existing });
+  }
+
+  try {
+    const created = await jira.createIssue({
+      summary: body.summary,
+      description: body.description,
+      issueType: 'Bug',
+      dueDate: body.dueDate,
+      estimateHours: body.estimateHours,
+    });
+    const link = sentryTasks.recordLink(body.sentryIssueId, { ...created, summary: body.summary });
+    audit.record({
+      action: 'sentry-task',
+      actor: actorFor(req),
+      detail: { sentryIssueId: String(body.sentryIssueId), key: created.key, dueDate: body.dueDate, estimateHours: body.estimateHours },
+    });
+    return sendJson(res, 200, { ok: true, task: link });
+  } catch (e) {
+    return sendJson(res, 502, { error: e.message });
+  }
 }
 
 // Who changed settings/env/projects, and every auto-approve — see
@@ -953,6 +1027,8 @@ const server = http.createServer(async (req, res) => {
       if (req.method === 'POST' && pathname === '/api/feedback') return await handlePostFeedback(req, res);
       if (req.method === 'GET' && pathname === '/api/feedback/accuracy') return await handleFeedbackAccuracy(req, res, url.searchParams);
       if (req.method === 'GET' && pathname === '/api/audit') return await handleAudit(req, res, url.searchParams);
+      if (req.method === 'GET' && pathname === '/api/sentry/issues') return await handleSentryIssues(req, res, url.searchParams);
+      if (req.method === 'POST' && pathname === '/api/sentry/task') return await handleSentryCreateTask(req, res);
       if (pathname === '/api/backups' && (req.method === 'GET' || req.method === 'POST')) return await handleBackups(req, res);
       if (req.method === 'GET' && pathname === '/api/merge-requests') return await handleMergeRequests(req, res);
       const mrContextMatch = pathname.match(/^\/api\/merge-requests\/([^/]+)\/(\d+)\/context$/);

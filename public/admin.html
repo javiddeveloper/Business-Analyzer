@@ -442,6 +442,41 @@
     font-size: 11px; background: rgba(155,140,255,.15); color: var(--violet); text-decoration: none;
   }
   a.jira-badge:hover { background: rgba(155,140,255,.28); }
+  /* ---- Sentry issues ---- */
+  .sentry-item {
+    border: 1px solid var(--border); border-inline-start-width: 3px; border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 10px; background: rgba(0,0,0,.2);
+  }
+  /* Severity as a colour bar, same idea as the review findings: scanning a
+     page of errors for the fatal ones should not mean reading every badge. */
+  .sentry-item.lvl-fatal { border-inline-start-color: var(--red); }
+  .sentry-item.lvl-error { border-inline-start-color: #ff8a5c; }
+  .sentry-item.lvl-warning { border-inline-start-color: var(--amber); }
+  .sentry-item.lvl-info, .sentry-item.lvl-debug { border-inline-start-color: var(--dim); }
+  .sentry-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sentry-title { flex: 1; min-width: 0; font-weight: 700; word-break: break-word; color: var(--text); text-decoration: none; }
+  .sentry-title:hover { color: var(--cyan); }
+  .sentry-level {
+    flex: 0 0 auto; border-radius: 5px; padding: 2px 8px; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .sentry-level.lvl-fatal { background: rgba(255,107,129,.2); color: #ffb3bf; }
+  .sentry-level.lvl-error { background: rgba(255,138,92,.18); color: #ffc0a8; }
+  .sentry-level.lvl-warning { background: rgba(255,179,71,.16); color: #ffd8a8; }
+  .sentry-level.lvl-info, .sentry-level.lvl-debug { background: rgba(120,140,200,.14); color: var(--muted); }
+  .sentry-culprit { font-size: 11px; color: var(--muted); margin-top: 4px; word-break: break-all; }
+  .sentry-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dim); margin-top: 6px; }
+  .sentry-form {
+    margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border);
+  }
+  .sentry-form-note { font-size: 11px; color: var(--muted); margin-bottom: 10px; line-height: 1.7; }
+  .sentry-label { display: block; font-size: 11px; color: var(--dim); margin-bottom: 3px; }
+  .sentry-form input[type=date] {
+    background: rgba(0,0,0,.3); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 10px; font-size: 13px;
+  }
+  .sentry-status { font-size: 12px; }
+
   /* ---- handoff report ---- */
   .handoff-block {
     border: 1px solid var(--border); border-radius: 12px;
@@ -806,6 +841,7 @@
   <button class="nav-item" data-page="home">&#127968; <span>خانه</span></button>
   <button class="nav-item" data-page="review">&#128269; <span>کد ریویو</span></button>
   <button class="nav-item" data-page="devs">&#128202; <span>دولوپرها</span></button>
+  <button class="nav-item" data-page="sentry">&#128680; <span>سنتری</span></button>
   <button class="nav-item" data-page="settings">&#9881; <span>تنظیمات</span></button>
 </nav>
 
@@ -843,6 +879,26 @@
     <div class="tabs" id="tabs"></div>
     <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
   </div>
+</section>
+
+<!-- ---- Sentry: the unresolved errors, and one click from an error to a
+     Jira ticket. Read-only against Sentry on purpose — resolving and
+     assigning stay in Sentry's own UI, so issue state never lives in two
+     places that can disagree. ---- -->
+<section class="card" id="sentryPage" hidden>
+  <div class="row" style="justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px">
+    <h3 style="margin:0">🚨 خطاهای Sentry</h3>
+    <div class="row" style="gap:8px">
+      <select id="sentryPeriod" class="project-picker" title="بازه‌ی آماری">
+        <option value="24h">۲۴ ساعت اخیر</option>
+        <option value="14d" selected>۱۴ روز اخیر</option>
+        <option value="30d">۳۰ روز اخیر</option>
+        <option value="90d">۹۰ روز اخیر</option>
+      </select>
+      <button class="ghost" id="sentryRefreshBtn">🔄 بروزرسانی</button>
+    </div>
+  </div>
+  <div id="sentryBody"><div class="empty">در حال بارگذاری…</div></div>
 </section>
 
 <!-- ---- developer analytics: a full page, not a tab inside the MR card —
@@ -2189,6 +2245,7 @@ const PAGES = {
   home: 'homePage',
   review: 'mrPanelWrap',
   devs: 'devPage',
+  sentry: 'sentryPage',
   settings: 'settingsPage',
 };
 
@@ -2205,6 +2262,7 @@ function showPage(name) {
   }
   if (page === 'home') openHome();
   if (page === 'devs') openDevPage();
+  if (page === 'sentry') loadSentry();
   if (page === 'settings') openSettings();
 }
 
@@ -4136,6 +4194,187 @@ async function saveDevRating(author) {
     alert('خطا در ذخیره امتیاز: ' + e.message);
   }
 }
+
+// ---- Sentry -----------------------------------------------------------------
+// Read-only against Sentry: list the unresolved errors and turn one into a
+// Jira ticket. Resolving/assigning stays in Sentry's own UI, so issue state
+// never lives in two places that can disagree about it.
+const SENTRY = { data: null, openForm: null, loading: false };
+
+const SENTRY_LEVEL_LABEL = { fatal: 'fatal', error: 'error', warning: 'warning', info: 'info', debug: 'debug' };
+
+async function loadSentry() {
+  const box = document.getElementById('sentryBody');
+  if (SENTRY.loading) return;
+  SENTRY.loading = true;
+  box.innerHTML = '<div class="empty">در حال خواندن از Sentry…</div>';
+  const period = document.getElementById('sentryPeriod').value;
+  try {
+    SENTRY.data = await api('/api/sentry/issues?statsPeriod=' + encodeURIComponent(period));
+  } catch (e) {
+    box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
+    SENTRY.loading = false;
+    return;
+  }
+  SENTRY.loading = false;
+  renderSentry();
+}
+
+function renderSentry() {
+  const box = document.getElementById('sentryBody');
+  const d = SENTRY.data || {};
+
+  // Not configured is a setup state, not an error — say what is missing and
+  // where to put it, rather than showing an empty list that looks like "no
+  // errors, all good".
+  if (!d.configured) {
+    box.innerHTML = '<div class="banner" style="margin:0">' +
+      '⚙️ Sentry هنوز تنظیم نشده. در ⚙ تنظیمات → بخش «سنتری» این چهار مقدار را وارد کن: ' +
+      '<code>SENTRY_URL</code>، <code>SENTRY_ORG</code>، <code>SENTRY_PROJECT</code>، <code>SENTRY_AUTH_TOKEN</code>' +
+      ' — توکن فقط به اسکوپ‌های خواندنی <code>org:read</code>، <code>project:read</code>، <code>event:read</code> نیاز دارد.' +
+      '<button id="sentrySettingsBtn">رفتن به تنظیمات</button></div>';
+    const b = document.getElementById('sentrySettingsBtn');
+    if (b) b.onclick = () => showPage('settings');
+    return;
+  }
+
+  const issues = d.issues || [];
+  const withTask = issues.filter((i) => i.jiraTask).length;
+
+  const head =
+    '<div class="row" style="justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px">' +
+      '<span class="tag">' + issues.length + ' خطای باز در ' + (d.projects || []).length + ' پروژه' +
+        (withTask ? ' · ' + withTask + ' تا از قبل تسک دارند' : '') + '</span>' +
+      (d.canCreateTask ? '' : '<span class="tag" style="color:var(--amber)">جیرا برای ساخت تسک تنظیم نشده — JIRA_PROJECT_KEY لازم است</span>') +
+    '</div>';
+
+  // A project that failed is named, not folded into an empty list: "no
+  // errors" and "we could not reach that project" must never look alike.
+  const failures = (d.errors || []).length
+    ? '<div class="error-box" style="margin-bottom:10px">' +
+        (d.errors).map((e) => 'پروژه‌ی ' + esc(e.project) + ': ' + esc(e.error)).join('<br>') + '</div>'
+    : '';
+
+  if (!issues.length) {
+    box.innerHTML = head + failures + '<div class="attn-empty">✓ هیچ خطای بازی در این بازه نیست.</div>';
+    return;
+  }
+
+  box.innerHTML = head + failures + issues.map(renderSentryIssue).join('');
+  bindSentryRows();
+}
+
+function renderSentryIssue(issue) {
+  const lvl = SENTRY_LEVEL_LABEL[issue.level] || issue.level || '—';
+  const task = issue.jiraTask;
+  const isOpen = SENTRY.openForm === issue.id;
+
+  const action = task
+    ? '<a class="jira-badge" href="' + esc(task.url) + '" target="_blank" rel="noreferrer" title="تسک ساخته‌شده برای این خطا">🎫 ' + esc(task.key) + '</a>'
+    : '<button class="ghost sentry-make" data-issue="' + esc(issue.id) + '">🎫 ساخت تسک در جیرا</button>';
+
+  return '<div class="sentry-item lvl-' + esc(issue.level || 'unknown') + '">' +
+    '<div class="sentry-head">' +
+      '<span class="sentry-level lvl-' + esc(issue.level || 'unknown') + '">' + esc(lvl) + '</span>' +
+      '<a class="sentry-title" href="' + esc(issue.permalink) + '" target="_blank" rel="noreferrer">' + esc(issue.title) + '</a>' +
+      action +
+    '</div>' +
+    (issue.culprit ? '<div class="sentry-culprit mono">' + esc(issue.culprit) + '</div>' : '') +
+    '<div class="sentry-meta">' +
+      '<span>' + esc(issue.count) + ' رخداد</span>' +
+      '<span>' + esc(issue.userCount) + ' کاربر</span>' +
+      '<span>آخرین: ' + esc(relativeIso(issue.lastSeen)) + '</span>' +
+      '<span>اولین: ' + esc(relativeIso(issue.firstSeen)) + '</span>' +
+      '<span class="tag">' + esc(issue.project || '') + '</span>' +
+      (issue.shortId ? '<span class="tag mono">' + esc(issue.shortId) + '</span>' : '') +
+    '</div>' +
+    (isOpen ? renderSentryForm(issue) : '') +
+  '</div>';
+}
+
+// The create form, prefilled from the server's own defaults so the deadline
+// never depends on the clock of whichever machine has the dashboard open.
+function renderSentryForm(issue) {
+  const def = issue.defaults || {};
+  return '<div class="sentry-form" data-form="' + esc(issue.id) + '">' +
+    '<div class="sentry-form-note">' +
+      'نوع تسک: <b>Bug</b> · پروژه: <b>' + esc((SENTRY.data && SENTRY.data.projectKey) || '—') + '</b>' +
+      ' — سررسید و تخمین از روی شدت خطا پیش‌پر شده‌اند' +
+      (def.widespread ? ' (به‌خاطر تعداد کاربران متأثر، سررسید جلو کشیده شد)' : '') +
+      '؛ هر دو قابل ویرایش‌اند.' +
+    '</div>' +
+    '<label class="sentry-label">عنوان</label>' +
+    '<input type="text" class="sentry-summary" value="' + esc(issue.suggestedSummary || '') + '" />' +
+    '<label class="sentry-label">توضیحات</label>' +
+    '<textarea class="sentry-desc" style="min-height:150px">' + esc(issue.suggestedDescription || '') + '</textarea>' +
+    '<div class="row" style="gap:12px; align-items:flex-end">' +
+      '<div><label class="sentry-label">سررسید (اجباری)</label>' +
+        '<input type="date" class="sentry-due" value="' + esc(def.dueDate || '') + '" style="width:170px" /></div>' +
+      '<div><label class="sentry-label">تخمین (ساعت، اجباری)</label>' +
+        '<input type="text" class="sentry-est" value="' + esc(def.estimateHours || '') + '" style="width:110px" /></div>' +
+    '</div>' +
+    '<div class="row" style="margin-top:10px">' +
+      '<button class="sentry-submit" data-issue="' + esc(issue.id) + '">ساخت تسک</button>' +
+      '<button class="ghost sentry-cancel">انصراف</button>' +
+      '<span class="sentry-status meta"></span>' +
+    '</div>' +
+  '</div>';
+}
+
+function bindSentryRows() {
+  for (const btn of document.querySelectorAll('.sentry-make')) {
+    btn.onclick = () => { SENTRY.openForm = btn.dataset.issue; renderSentry(); };
+  }
+  for (const btn of document.querySelectorAll('.sentry-cancel')) {
+    btn.onclick = () => { SENTRY.openForm = null; renderSentry(); };
+  }
+  for (const btn of document.querySelectorAll('.sentry-submit')) {
+    btn.onclick = () => submitSentryTask(btn);
+  }
+}
+
+async function submitSentryTask(btn) {
+  const form = btn.closest('.sentry-form');
+  const statusEl = form.querySelector('.sentry-status');
+  const payload = {
+    sentryIssueId: btn.dataset.issue,
+    summary: form.querySelector('.sentry-summary').value.trim(),
+    description: form.querySelector('.sentry-desc').value,
+    dueDate: form.querySelector('.sentry-due').value,
+    estimateHours: parseFloat(form.querySelector('.sentry-est').value),
+  };
+  // Checked here as well as on the server so the reader is told which field
+  // is missing before a round trip, in the same words the server would use.
+  if (!payload.summary) { statusEl.textContent = 'عنوان خالی است.'; return; }
+  if (!payload.dueDate) { statusEl.textContent = 'سررسید اجباری است.'; return; }
+  if (!(payload.estimateHours > 0)) { statusEl.textContent = 'تخمین باید یک عدد بزرگ‌تر از صفر باشد.'; return; }
+
+  btn.disabled = true;
+  statusEl.textContent = 'در حال ساخت…';
+  try {
+    const out = await api('/api/sentry/task', { method: 'POST', body: JSON.stringify(payload) });
+    statusEl.textContent = '✓ ساخته شد: ' + out.task.key;
+    SENTRY.openForm = null;
+    // Reflect the new link locally rather than refetching every issue from
+    // Sentry just to learn something this client already knows.
+    const hit = (SENTRY.data.issues || []).find((i) => i.id === payload.sentryIssueId);
+    if (hit) hit.jiraTask = out.task;
+    renderSentry();
+  } catch (e) {
+    statusEl.textContent = 'خطا: ' + e.message;
+    btn.disabled = false;
+  }
+}
+
+// Sentry timestamps are ISO strings; relativeTime() takes epoch ms.
+function relativeIso(iso) {
+  if (!iso) return '—';
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? relativeTime(t) : '—';
+}
+
+document.getElementById('sentryRefreshBtn').onclick = () => loadSentry();
+document.getElementById('sentryPeriod').onchange = () => loadSentry();
 
 // ---- boot -----------------------------------------------------------------
 // Home first: the team table and the task board answer "what is going on"
