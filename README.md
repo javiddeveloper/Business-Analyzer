@@ -1,198 +1,306 @@
-<div dir="rtl" style="text-align: right; font-family: Tahoma, Arial, sans-serif;">
+# 🚀 Business Analyzer
 
-# 🤖 Coder Review
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0%20npm%20packages-blue.svg)](package.json)
+[![Tests Passing](https://img.shields.io/badge/tests-226%20passing-success.svg)](tests/)
+[![Architecture](https://img.shields.io/badge/architecture-Vanilla%20JS%20%7C%20Pure%20Node.js-orange.svg)](docs/ARCHITECTURE.md)
+[![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey.svg)](package.json)
 
-یک سرویس سبک و بدون وابستگی سنگین (فقط Node.js خالص) که به گیت‌لب وصل می‌شود، روی هر Merge Request به‌صورت خودکار ریویوی کد با هوش مصنوعی انجام می‌دهد و نتیجه را به شکل کامنت روی همان MR می‌گذارد.
+**Business Analyzer** (formerly *Coder Review*) is a high-performance, zero-dependency engineering intelligence platform that unifies **Autonomous AI Code Review** on GitLab Merge Requests with **Engineering Team Performance Analytics** powered by Jira and Sentry.
 
-این پروژه از معماری و تجربه‌ی [business-generator-light](../business-generator-light) الهام گرفته — همان الگوی «بدون دیتابیس، بدون فریم‌ورک سنگین، ذخیره‌سازی فایلی»، همان فیچر **پایگاه دانش** (استانداردهای تیم که در هر ریویو خودکار لحاظ می‌شود)، و حتی همان زبان بصری (فونت Vazirmatn، پس‌زمینه‌ی سرمه‌ای، پنل‌های شیشه‌ای) — اما فقط همین یک کار را انجام می‌دهد: **ریویوی کد**. هیچ Product Owner، Auto-Runner یا نوشتن خودکار کد در این پروژه نیست.
+Built with pure Node.js and vanilla browser technologies, it requires **zero npm packages**, runs on a single server or laptop, persists state atomically to local disk, and includes a modern, responsive Shadcn-style dark dashboard with dual-language (English/Persian) typography and bidirectional text isolation.
 
-> ⚠️ **پیش‌نیاز:** این سرویس به یک نسخه‌ی از قبل `git clone`شده از پروژه روی همین سیستم نیاز دارد (`PROJECT_PATH`). بدون آن هیچ ریویویی اجرا نمی‌شود — نه وب‌هوک، نه حالت خودکار، نه اجرای دستی. اولین باری که داشبورد را باز کنی، اگر تنظیم نشده باشد، پنل تنظیمات خودش باز می‌شود.
+---
 
-## ✨ قابلیت‌ها
+## 📑 Table of Contents
 
-### ریویو
-- **کامنت خطی روی همان خط کد:** هر یافته به‌صورت یک Discussion دقیقاً روی خطی که مشکل دارد ثبت می‌شود، نه یک کامنت طولانی ته صفحه. موقعیت هر کامنت از روی پارس واقعی دیف ساخته می‌شود؛ اگر مدل به خطی اشاره کند که در دیف نیست، آن یافته به‌جای کامنت خطی در خلاصه می‌آید (با ذکر اینکه خطش تأیید نشده).
-- **شدت‌بندی:** هر یافته High/Medium/Low است و تصمیم نهایی از روی خود یافته‌ها ساخته می‌شود، نه از حرف مدل — مدلی که یک باگ High فهرست کند و بعد بگوید APPROVE، نمی‌تواند تناقضش را به MR برساند.
-- **بررسی کل تغییرات (مسیر دیف، برای موتورهای HTTP):** فایل‌ها در چند دسته به مدل داده می‌شوند، به‌جای بریدن دیف در N کاراکتر اول. سقف دسته‌ها ۲۴ است (قبلاً ۸ بود و روی یک MR واقعیِ ۴۹ فایلی، ۳۳ فایل بی‌سروصدا کنار گذاشته می‌شد) و به‌جای شلیک هم‌زمان همه‌ی آن‌ها، حداکثر ۶ تا هم‌زمان اجرا می‌شوند. هر چیزی که واقعاً بررسی نشده، صریح در گزارش ذکر می‌شود.
-- **چک‌های قطعی (مستقل از مدل):** اسکن اعتبارنامه‌ی هاردکد (توکن گیت‌لب/گیت‌هاب، AWS، JWT، private key، …)، خروجی دیباگ و TODOی جامانده، نبود تست، و بزرگ بودن بیش‌ازحد MR. این‌ها الگوی قطعی‌اند و به شانسِ «مدل این‌بار دید یا ندید» وابسته نیستند.
-- **فیلتر فایل‌های بی‌ربط:** lockfile، کد تولیدشده، `node_modules`/`vendor`/`dist` و باینری‌ها به مدل داده نمی‌شوند (و در گزارش گفته می‌شود چه چیزی رد شد).
-- **بدون کامنت تکراری:** هر کامنت یک اثرانگشت نامرئی دارد؛ در ریویوی دورهای بعد، چیزی که قبلاً گفته شده دوباره ثبت نمی‌شود. همین است که ریویوی خودکار روی هر push را قابل‌تحمل می‌کند.
-- **اصلاح خودکار خروجی نامعتبر:** اگر مدل JSON خراب بدهد، یک‌بار از خودش خواسته می‌شود درستش کند (همان ایده‌ی self-correction در business-generator، بدون وابستگی Zod).
-- **دیدن فایل کامل، نه فقط دیف:** وقتی `PROJECT_PATH` تنظیم باشد، سرویس با `git fetch`ِ همان MR در همان ریپازیتوری محلی (بدون هیچ checkout و بدون دست‌زدن به working tree)، متن کامل فایل‌های تغییریافته را هم به مدل می‌دهد — نه فقط چند خط اطراف تغییر.
-- **🤖 ریویوی کل پروژه با ایجنت (حالت پیش‌فرض روی `claude-cli`):** MR در یک **worktree جداگانه** چک‌اوت می‌شود (`../.coder-review-worktrees/mr-<iid>`، detached — دقیقاً همان کاری که فرآیند دستی تیم می‌کند تا چک‌اوت اصلی دست‌نخورده بماند) و ایجنت `claude` داخل همان پوشه اجرا می‌شود تا **خودش پروژه را بگردد**: فایل کامل را باز کند، با Grep دنبال صداکننده‌های تابعِ تغییرکرده بگردد، تست‌های مربوطه را پیدا کند، و با پیاده‌سازی قبلی مقایسه کند. این تنها مسیری است که ایرادهایی مثل «این تغییر یک صداکننده‌ی سه فایل آن‌طرف‌تر را می‌شکند» را می‌گیرد — چیزی که هیچ مقدار context دیف‌محور به آن نمی‌رسد.
-  - **فقط‌خواندنی به‌صورت ساختاری:** با `--permission-mode plan` و allowlist صریح `Read Grep Glob` اجرا می‌شود؛ ایجنت امکان ویرایش پروژه را ندارد.
-  - **سقف فایل بی‌معنا شد:** در این حالت دیگر دیف تکه‌تکه به مدل داده نمی‌شود، پس پیام «N فایل به دلیل سقف حجم ریویو نشد» اصلاً پیش نمی‌آید.
-  - برای موتورهای HTTP (GapGPT/9Router/Gemini) این حالت ممکن نیست (ابزار ندارند) و خودکار به مسیر دیف برمی‌گردد؛ اگر ساخت worktree هم شکست بخورد، به مسیر دیف برمی‌گردد و **صریحاً در گزارش می‌نویسد** که ایجنت کل پروژه را ندیده.
-  - **زنجیره‌ی موتور جایگزین:** اگر خود ایجنت نتواند اجرا شود — که در عمل تقریباً همیشه یعنی سقف مصرف اشتراک Claude (`You've hit your session limit`) — ریویو به «فقط بررسی‌های خودکار» تنزل پیدا نمی‌کند: سرویس به‌ترتیب سراغ **هر موتوری که کلید دارد** می‌رود و روی دیف ریویو می‌کند، و چون «کلید دارد» تضمین نمی‌کند سرویسش الان بالا باشد (مثلاً پروکسی محلی 9Router)، موتوری که همه‌ی دسته‌هایش شکست بخورد رد می‌شود و نوبت به بعدی می‌رسد. هر نتیجه‌ای که بدهد، در گزارش می‌آید که ایجنت اجرا نشد و با کدام موتور و فقط روی دیف ریویو شده. اگر هیچ‌کدام جواب ندهند، گزارش **تک‌تک تلاش‌ها و دلیل شکستشان** را می‌نویسد به‌جای یک «ریویو نشد» خالی.
-- **گزارش در همان قرارداد تیم:** خروجی هر ریویو در `review/MR-<iid>.md` روی همان چک‌اوت محلی نوشته می‌شود — همان اسم فایلی که یک ریویوکننده‌ی انسانی هم می‌ساخت. این فایل با هر اجرا کامل بازنویسی می‌شود (یادداشت دستی روی آن نگه نمی‌دارد) و کامیت/پوش آن دستی و بر عهده‌ی خودت می‌ماند.
-- **ساختار گزارش، از جواب به جزئیات:** هر گزارش با **چکیده** شروع می‌شود — تصمیم، شمارش یافته‌ها به تفکیک شدت، و **فهرست مواردی که merge را نگه می‌دارند** با نام فایل و شماره‌ی خط. قبل از این، برای فهمیدن «چه چیزی جلوی merge را گرفته» باید کل فایل را می‌خواندی.
-- **قضاوت مدل و بررسی‌های قطعی، دو بخش جدا:** «توکن AWS روی خط ۳» (یک الگوی قطعی) دیگر وسط دو ایراد سبک سلیقه‌ای قرار نمی‌گیرد. هر یافته منبعش (مدل / بررسی خودکار) را در فهرست دارد.
-- **دامنه‌ی بررسی، صریح:** جدول فایل‌به‌فایل (چه تغییری، چند یافته)، فهرست فایل‌های رد شده با دلیل، فایل‌هایی که به سقف حجم خوردند، و یک فهرست ثابت از چیزهایی که **در هیچ حالتی** بررسی نشده‌اند (بیلد اجرا نشده، تست اجرا نشده، رفتار زمان اجرا دیده نشده). یک فایلِ بدون یافته حالا یک ادعای واقعی است («دیده شد و چیزی پیدا نشد») نه سکوت.
-- **یافته‌ی تکراری یک بار شمرده می‌شود:** یک مشکل که در چند دسته‌ی مختلف پیدا شده بود، قبلاً چند ایراد جدا به نظر می‌رسید.
-- **REQUEST_CHANGES بابت باگ، با REQUEST_CHANGES بابت شکستِ خودِ ریویو فرق دارد** و گزارش صریح می‌گوید کدام است.
+- [Key Capabilities](#-key-capabilities)
+  - [1. Autonomous AI Code Review](#1-autonomous-ai-code-review)
+  - [2. Engineering Performance Analytics](#2-engineering-performance-analytics)
+  - [3. Sentry Crash Triage & Jira Task Generation](#3-sentry-crash-triage--jira-task-generation)
+  - [4. Dynamic Team Knowledge Base](#4-dynamic-team-knowledge-base)
+  - [5. Multi-Project Management](#5-multi-project-management)
+- [Architecture & Design Philosophy](#-architecture--design-philosophy)
+- [Installation & Quick Start](#-installation--quick-start)
+- [Configuration Reference](#-configuration-reference)
+- [GitLab Integration (Webhook & Polling)](#-gitlab-integration-webhook--polling)
+- [Dashboard Walkthrough](#-dashboard-walkthrough)
+- [Mathematical Scoring Model](#-mathematical-scoring-model)
+- [Testing & Quality Assurance](#-testing--quality-assurance)
+- [Documentation Index](#-documentation-index)
+- [Intentional Design Trade-offs](#-intentional-design-trade-offs)
 
-### سقف context: چقدر کد واقعاً به مدل می‌رسد
+---
 
-قبلاً همه‌ی سقف‌ها عددِ ثابت و **مستقل از موتور** بودند: ۱۴۰۰۰ کاراکتر برای هر دسته، ۹۰۰۰ برای دیف هر فایل، ۴۰۰۰ برای متن کامل فایل، ۶۰۰۰ برای پایگاه دانش، ۴۰۰۰ برای شرح تسک جیرا، و `max_tokens` ثابت ۴۰۰۰ برای همه. یعنی Gemini (پنجره‌ی ۱M توکن) و یک مدل کوچک پشت 9Router دقیقاً به یک اندازه کد می‌گرفتند — برای یکی خیلی کم، برای آن یکی احتمالاً زیاد، و سرریز فقط به شکل یک خطای مبهم HTTP 400 دیده می‌شد.
+## ✨ Key Capabilities
 
-حالا `lib/contextBudget.js` تنها جایی است که به این سؤال جواب می‌دهد:
+### 1. Autonomous AI Code Review
 
-- **پنجره‌ی واقعی هر موتور:** claude-cli ۲۰۰K، openai-compatible ۱۲۸K، 9Router ۳۲K (چون درخواست ممکن است روی *هر* مدلی که جلویش را گرفته بنشیند، کوچک‌ترین پنجره فرض می‌شود نه بزرگ‌ترین)، Gemini ۱M. فقط ۷۰٪ پنجره پر می‌شود و خروجی از همان کنار گذاشته می‌شود.
-- **شمارش توکن، نه کاراکتر:** متن فارسی (پرامپت نقش، پایگاه دانش، شرح جیرا) حدود یک توکن به ازای هر ۱٫۲ کاراکتر است، در حالی که کد لاتین حدود ۳٫۶ — شمردن کاراکتر خام یعنی نسبت لاتین را برای متن فارسی هم فرض کردن، که سقف ۶۰۰۰ کاراکتری پایگاه دانش را در عمل سه برابر چیزی می‌کرد که به نظر می‌رسید.
-- **سرریز قبل از ارسال تشخیص داده می‌شود** و به‌جای ۴۰۰ گرفتن از سرویس، همان دسته صریحاً «بررسی‌نشده» گزارش می‌شود.
-- **بریدن روی مرز خط، نه وسط خط:** بریدن کاراکتری آخرین خط را نصفه رها می‌کرد، در حالی که شماره‌ی خط هنوز رویش بود — دقیقاً همان چیزی که مدل بعد رویش یافته ثبت می‌کند. تنها استثنا خطی است که از کل بودجه بلندتر است (باندل مینیفای‌شده، JSON تک‌خطی، رشته‌ی طولانی): چنین خطی داخل خودش بریده می‌شود، چون در غیر این‌صورت کل فایل به مدل نمی‌رسید در حالی که گزارش آن را «بررسی‌شده» فهرست می‌کرد.
-- **هرچه حذف شد، گفته می‌شود:** فایل‌های بریده‌شده، فایل‌هایی که اصلاً جا نشدند، و استانداردهایی از پایگاه دانش که در بودجه نگنجیدند — همه در گزارش نام برده می‌شوند. (قبلاً یک یادداشت بزرگ در پایگاه دانش باعث می‌شد همه‌ی یادداشت‌های بعدی‌اش بی‌صدا حذف شوند.)
-- **قابل تنظیم:** `REVIEW_CONTEXT_TOKENS` و `REVIEW_MAX_OUTPUT_TOKENS` در `secrets.env` برای همه‌ی موتورها، و کلیدهای جدا برای هر موتور (`CLAUDE_CONTEXT_TOKENS`، `AI_CONTEXT_TOKENS`، `NINEROUTER_CONTEXT_TOKENS`، `GEMINI_CONTEXT_TOKENS` و معادل‌های `*_MAX_OUTPUT_TOKENS`) در `secrets.env.example` مستند شده‌اند.
+- **Agentic Repository-Wide Inspection (Claude CLI Mode)**:
+  - Spawns the native `claude` CLI inside an isolated, detached git worktree (`../.coder-review-worktrees/mr-<iid>`).
+  - Read-only execution with `--permission-mode plan` and strictly allowlisted tools (`Read`, `Grep`, `Glob`).
+  - The AI autonomously traverses callers, implementations, unit tests, and cross-file interfaces to catch bugs that diff-only reviews miss.
+  - Leaves the developer's working directory and uncommitted work completely untouched.
+- **Diff-Driven Batching (HTTP Engines)**:
+  - Supports OpenAI-compatible endpoints (GapGPT, OpenRouter, self-hosted LLMs), 9Router, and Google Gemini.
+  - Intelligently filters lockfiles, build artifacts (`node_modules`, `dist`, `vendor`), binaries, and generated files.
+  - Dynamically packages diffs into clean batches bounded by engine-specific context budgets with up to 6-way concurrency.
+- **Deterministic Machine Checks (Independent of LLM)**:
+  - Scans for leaked credentials (AWS, JWT, private keys, GitLab/GitHub access tokens).
+  - Detects leftover debugging statements (`console.log`, `debugger`, `print()`, `var_dump`).
+  - Catches unmerged git conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
+  - Flags missing tests on non-trivial source code changes.
+- **Precision Line Anchor Positioning**:
+  - Diffs are parsed down to exact line coordinates. Comments are published directly onto the affected line as GitLab Discussions.
+  - If a model hallucinates a line number outside the diff, the finding is safely routed to the MR summary note rather than failing with an API error.
+- **Idempotent Finding Fingerprints**:
+  - Every finding has an invisible hash fingerprint. Re-reviewing updated branches never reposts duplicate comments.
+- **Sequential Merge-Order Auto-Approval**:
+  - When enabled, clean reviews (`APPROVE`) automatically approve the MR in GitLab.
+  - Enforces merge discipline: **Approvals are held until all earlier-created MRs in the same project have been approved**.
+  - **Safety First**: The tool *never* merges code automatically. Final merge execution remains in human hands and CI pipelines.
+- **Standardized Local Markdown Reports**:
+  - Generates comprehensive review reports at `review/MR-<iid>.md` matching senior human reviewer formatting.
 
-### اتصال و اجرا
-- **وب‌هوک گیت‌لب:** با باز شدن یا آپدیت‌شدن (کامیت جدید) هر Merge Request، خودکار فعال می‌شود.
-- **ریویوی مبتنی بر Tech Lead:** پرامپت `roles/tech-lead.md` چک‌لیست ریویو (منطق، امنیت، کد مرده، پوشش تست، ...) را تعریف می‌کند.
-- **پایگاه دانش:** از داشبورد استانداردهای پروژه‌ات را (نوشتن مستقیم، ویرایش، یا آپلود `.md`/`.txt`) ثبت کن؛ همه‌ی آن‌ها خودکار در هر ریویو به مدل داده می‌شود. متن کامل هر یادداشت در همان صفحه قابل باز کردن و خواندن است.
-- **کامنت روی MR:** نتیجه (APPROVE ✅ یا REQUEST_CHANGES 🔴 + خلاصه + نکات فایل‌به‌فایل) مستقیم روی خود Merge Request در گیت‌لب گذاشته می‌شود.
-- **داشبورد ریسپانسیو:** روی موبایل تک‌ستونه و روی دسکتاپ دو‌ستونه؛ وضعیت زنده‌ی اتصال گیت‌لب و مدل فعال در هدر، به‌همراه دکمه‌ی بروزرسانی لیست MRها.
-- **تب جدا برای هر Merge Request:** هر MR باز، یک تب در همان صفحه دارد (با چراغ وضعیت). چند MR می‌توانند **هم‌زمان** ریویو شوند — هر تب وضعیت و نتیجه‌ی خودش را جدا نگه می‌دارد. فقط برای یک MR مشخص، دو ریویوی هم‌زمان اجرا نمی‌شود.
-- **حالت ریویوی خودکار:** یک سوییچ در هدر؛ سرور هر چند ثانیه (پیش‌فرض ۱۲۰ ثانیه) MRهای باز را می‌بیند و هرکدام کامیت جدید داشته باشد را خودکار ریویو و کامنت می‌کند. برخلاف وب‌هوک، این حالت **نیازی ندارد سرور تو از سمت گیت‌لب قابل‌دسترسی باشد** — برای اجرای لوکال/پشت NAT همین کافی است. یک سوییچ کنارش («رد کردن MRهای Draft») باعث می‌شود کد ناتمام خودکار ریویو نشود.
-- **Approve خودکار طبق ترتیب merge (نه Merge):** MRها همیشه به ترتیب تاریخ ساخت (قدیمی‌تر اول) لیست می‌شوند — همان ترتیبی که باید merge شوند — و هر تب شماره‌ی ترتیبش را نشان می‌دهد. وقتی سوییچ Approve خودکار روشن باشد و نتیجه‌ی ریویو تمیز باشد (APPROVE)، سرویس همان MR را روی گیت‌لب Approve می‌کند — **ولی فقط اگر همه‌ی MRهای قدیمی‌ترِ همان پروژه از قبل approve شده باشند**؛ در غیر این‌صورت approve را نگه می‌دارد تا نوبتش برسد (پیغامش دقیقاً می‌گوید منتظر کدام MRهاست). **هرگز خودش را برای Merge نمی‌گذارد**؛ آن تصمیم همیشه دست انسان و پایپ‌لاین CI می‌ماند.
-- **توقف دستی یک ریویوی در حال اجرا:** اگر مدل کند یا گیر کرده باشد (مثلاً یک پروکسی محلی ناپایدار)، دکمه‌ی «⏹ توقف» کنار هر MR در حال ریویو همان لحظه فراخوانی مدل را لغو می‌کند — منتظر Timeout نمی‌مانی.
-- **پاسخ سریع به وب‌هوک:** درخواست گیت‌لب فوراً تأیید می‌شود و ریویوی واقعی در پس‌زمینه انجام می‌شود تا به Timeout وب‌هوک نخوریم.
-- **رنگ شاخه‌ی مقصد:** هر MR یک پیل رنگی دارد — سبز اگر مقصدش `develop` باشد، نارنجی برای هر شاخه‌ی دیگر (تا MRای که سهواً به شاخه‌ی اشتباه رفته، جلب توجه کند). کنارش، شماره‌ی تسک (`EM-1234`) هم از روی نام شاخه یا عنوان MR استخراج و نمایش داده می‌شود.
-- **انتخاب مدل، نه تایپ حدسی:** فیلد مدلِ موتور فعال یک ورودی با پیشنهاد زنده است — لیست مدل‌های واقعاً موجود از اندپوینت `/models` همان موتور خوانده می‌شود. (فقط روی موتور فعال، چون لیست از خود آن اندپوینت می‌آید.)
-- **تنظیمات هر موتور، جدا و تاشو:** در پنل تنظیمات، بخش هوش مصنوعی چهار گروه جمع‌شونده است (Claude / GapGPT / 9Router / Gemini) و فقط گروه موتور فعال باز است — با یک موتور فعال، فیلدهای سه موتور دیگر فقط نویزند. کنار هر گروه هم وضعیت واقعی‌اش نوشته شده (کلید تنظیم شده / کلید ناقص / برای Claude: نصب‌شده اما لاگین چک‌نشده).
-- **موتور هوش مصنوعی از نوار بالای داشبورد، نه فقط تنظیمات:** دکمه‌ی «مدل» در هدر یک پنجره‌ی کوچک باز می‌کند با چهار موتور — Claude (CLI)، openai-compatible، 9Router، Gemini. هرکدام کلید/آدرس/مدل جدای خودش را در `secrets.env` دارد (`CLAUDE_MODEL`، `AI_*`، `NINEROUTER_*`، `GEMINI_*`)، پس جابه‌جایی بین‌شان فوری است و تنظیمات موتور دیگر را پاک نمی‌کند؛ موتوری که کلیدش تنظیم نشده با یک نشان «کلید ناقص» علامت‌گذاری می‌شود.
-- **اتصال به Claude Code CLI (بدون API key):** اگر موتور فعال `claude-cli` باشد، سرویس مستقیم دستور `claude -p --output-format json` را با prompt ریویو اجرا می‌کند — یعنی از همان اشتراک/لاگین CLI خودت استفاده می‌شود، نه یک کلید API جدا. کافیست از قبل `npm install -g @anthropic-ai/claude-code` و `claude login` را زده باشی؛ `CLAUDE_MODEL` اختیاری است (خالی = مدل پیش‌فرض CLI).
+---
 
-### صفحه‌ی آنالیز دولوپرها
-یک صفحه‌ی کامل و جدا (نه یک تب کنار Merge Requestها) پشت دکمه‌ی «📊 آنالیز دولوپرها» در نوار بالای داشبورد — با کلیک، جای پنل MRها را می‌گیرد؛ «→ بازگشت به Merge Requestها» برمی‌گرداند.
+### 2. Engineering Performance Analytics
 
-صفحه از دو لایه ساخته شده: **نمای تیم** (صفحه‌ی فرود) و **صفحه‌ی یک نفر**. ترتیب هر دو از روی یک قاعده چیده شده — چیزی که مدیر با آن *کاری می‌کند* بالا، چیزی که فقط *خوب است بداند* پایین، و چیزی که درباره‌ی خودِ ابزار است (نه درباره‌ی آدم‌ها) تاشده در انتها.
+A dedicated analytics suite providing engineering leaders with data-driven team insights:
 
-#### 👥 نمای تیم
-بدون انتخاب هیچ اسمی، اولین چیزی که باز می‌شود یک جدول از کل تیم است — چون سؤال اول یک مدیر «اعضای تیمم دارند چه می‌کنند؟» است، نه «فلانی چطور است؟». قبلاً برای همین سؤال باید تک‌تک اسم‌ها را باز می‌کردی و چهار صفحه را در ذهنت نگه می‌داشتی.
+- **Team Overview (Managerial Landing View)**:
+  - Real-time status of all engineers: active tasks, open MRs, stale MRs (>72h), overdue deadlines, unlogged work, merged velocity, and overall scores.
+  - **Attention Priority Sorting**: Automatically surfaces engineers who have blocking issues *today* (e.g., severe overdue tickets, stalled MRs), rather than sorting by historical average scores.
+  - Progressive streaming rendering: Each developer row renders as soon as its GitLab and Jira data loads, avoiding UI lockups.
+- **Individual Developer Dossiers**:
+  - **Live Workload**: Open MRs, in-progress tasks, tasks missing MR branches, current sprint completion.
+  - **Needs Attention**: Prioritized, clickable links to overdue tasks (with delay days) and stalled reviews.
+  - **Delivery History**: Completed tasks, merged MRs, p50 and p90 merge duration, on-time delivery rates, and estimation variance.
+  - **Sprint Trends**: Visual 5-sprint performance trend graphs and monthly rating history.
+- **Zero-Dependency Native Excel Export**:
+  - Generates full `.xlsx` analytical spreadsheets directly from Node.js standard libraries for management reporting.
+- **Monthly Manual Grading**:
+  - Enables engineering managers to record structured qualitative monthly feedback alongside automated metrics.
 
-- **ردیف‌ها یکی‌یکی می‌آیند:** هر ردیف یک محاسبه‌ی کامل آنالیز است (روی cache miss، یک فراخوانی کامیت به ازای هر MR)، پس به‌جای انتظار برای کندترین نفر، هر کس آماده شد همان لحظه رسم می‌شود (سه‌تا سه‌تا، تا کش سرد ده‌ها درخواست هم‌زمان به گیت‌لب نزند). خطای گیت‌لب روی یک نفر، همان ردیف را خراب می‌کند نه کل جدول.
-- **ستون‌ها به ترتیب سؤال:** کی → الان روی چیست (در حال انجام، MR باز، MR راکد) → چه چیزی خراب است (عقب‌افتاده، بدون MR، بدون ثبت زمان) → چه چیزی تحویل شد (Done، MR merge‌شده، میانه‌ی merge) → و در آخر امتیاز. امتیاز عمداً آخر است: خلاصه‌ی گذشته است، نه دلیلِ اینکه امروز صبح سراغ چه کسی بروی.
-- **مرتب‌سازی پیش‌فرض روی «اولویت رسیدگی»**، که فقط از چیزهایی ساخته می‌شود که **همین حالا** اشکال دارند (تسک عقب‌افتاده و شدت تأخیرش، MR راکد، worklog جاافتاده، کار در جریانِ بدون MR) — نه از امتیاز کل. یک مهندس قوی که هفته‌ی بدی داشته باید اینجا بالا بیاید؛ یک نفر با امتیاز متوسط که هفته‌ی آرامی داشته نباید.
-- **جمع تیمی بالای جدول:** کل کار در جریان، MRهای باز و راکد، تسک‌های عقب‌افتاده، تسک‌های بدون MR، worklogهای جاافتاده و میانه‌ی امتیاز تیم.
-- کلیک روی هر ردیف، صفحه‌ی کامل همان فرد را باز می‌کند. پنل کناری هم دیگر فقط فهرست اسم نیست: کنار هر اسم امتیازش و یک نقطه‌ی قرمز برای «چیزی برای رسیدگی دارد» می‌آید، پس قبل از باز کردن هر کسی می‌دانی سراغ چه کسی بروی.
+---
 
-#### 👤 صفحه‌ی یک نفر
-پنل کناری (سمت راست) اسم همه‌ی کسانی که تا حالا حداقل یک MR باز کرده‌اند را نشان می‌دهد (نه فقط کسانی که الان چیزی باز دارند)، مستقیم از تاریخچه‌ی گیت‌لب. صفحه از بالا به پایین سه سؤال را به ترتیب جواب می‌دهد:
+### 3. Sentry Crash Triage & Jira Task Generation
 
-1. **👀 همین حالا روی چه چیزی است** — شمارش زنده، نه میانگین تاریخی: MRهای باز (و سن قدیمی‌ترینشان)، تسک‌های در حال انجام، تسک‌های در جریانی که هیچ MRای برایشان باز نشده، و پیشرفت آخرین اسپرینت.
-2. **⚠ نیازمند رسیدگی** — یک فهرست اولویت‌دار از چیزهایی که واقعاً اشکال دارند، **هرکدام با لینک خودش**: تسک‌های گذشته از سررسید (با تعداد روز تأخیر)، MRهایی که بیش از ۷۲ ساعت باز مانده‌اند، و تسک‌های رسیده به Review/Done بدون ثبت زمان. عددی که نشود رویش کلیک کرد، عددی است که کسی رویش کاری نمی‌کند. عدد کنار عنوان، تعداد واقعی است نه تعداد ردیف‌های نمایش‌داده‌شده.
-3. **🚚 تحویل در این بازه** — تسک‌های به Done رسیده، MRهای merge‌شده، میانه‌ی باز بودن MR تا merge (با p90)، نمره‌ی تحویل به‌موقع و انحراف تخمین (با ذکر اینکه روی چند تسک حساب شده).
+- Seamless integration with self-hosted or cloud Sentry instances (`/api/0/`).
+- Prioritizes unresolved production errors by frequency, impact, and user reach.
+- **AI-Assisted Root Cause Diagnosis**: Generates immediate stack-trace interpretations.
+- **One-Click Jira Ticket Creation**: Instantly turns a Sentry crash into a structured Jira task with automatic priority assignment, effort estimation, and developer assignment based on current workload.
+- Marks issues resolved in Sentry directly from the dashboard.
 
-بعد از این سه بند: **روند** (نمودار امتیاز ماهانه در کنار ۵ اسپرینت اخیر)، **تفکیک کامل امتیاز خودکار**، و **تسک‌های جیرا** به‌صورت تب‌بندی‌شده — با تب‌هایی که به ترتیب جریان کار مرتب شده‌اند (In Review و در حال انجام اول، Done آخر)، نه به ترتیب تصادفی پاسخ جیرا.
+---
 
-و در انتها، تاشده:
-- **🔧 پوشش ابزار ریویو و کیفیت داده** — کل MRها، چندتایشان اصلاً گزارش ریویو دارند، چندتا «نامشخص» مانده، نمودار ماهانه‌ی MRها و جدول کامل معیارهای تحویل. این‌ها واقعی‌اند، ولی درباره‌ی **خودِ ابزار** حرف می‌زنند نه درباره‌ی آدم؛ قبلاً صفحه با همین‌ها شروع می‌شد و «۵ تا MR باز، قدیمی‌ترینش هشت روز» دو صفحه پایین‌تر دفن شده بود.
-- **✍ امتیازدهی دستی (ماه‌به‌ماه)** — بسته، چون قضاوت خودت یک ورودی است نه تیتر؛ باز بودنش هر بار دیتای واقعی را به زیر خط تا می‌فرستاد. عملکرد کسی در شهریور با مهر یک عدد نیست، و انتخابگر ماه هر ماهی که قبلاً امتیاز خورده را با ✓ نشان می‌دهد.
+### 4. Dynamic Team Knowledge Base
 
-#### زیرساخت مشترک
-- **کل Merge Requestها، از همه‌ی پروژه‌های تنظیم‌شده:** واقعاً از گیت‌لب شمرده می‌شود (`state=all`، نه فقط بازها) — و برخلاف تب MRها (که همیشه فقط پروژه‌ی فعال بالای صفحه را نشان می‌دهد)، این صفحه همیشه هر پروژه‌ای که در «⚙ تنظیمات → 📁 پروژه‌ها» تعریف شده را با هم جمع می‌زند، چون قضاوت درباره‌ی یک نفر معنی ندارد یک ریپو را نادیده بگیرد.
-- **تشخیص «برنچ چندنویسنده‌ای» — فقط برای MRهایی که واقعاً از این ابزار ریویو گرفته‌اند:** تنها مدرکی که این ابزار دارد وجود گزارش `review/MR-<iid>.md` روی همان چک‌اوت محلی است. برای MRای که این ابزار هیچ‌وقت ریویو نکرده، برچسب «بدون گزارش ریویو» می‌خورد و اصلاً هزینه‌ی فراخوانی گیت‌لب برای خواندن کامیت‌هایش هم پرداخت نمی‌شود. برای MRای که گزارش دارد: کامیت‌های خودِ همان MR خوانده می‌شود (`GET .../merge_requests/:iid/commits` — نه تاریخچه‌ی کامل برنچ، که کل کامیت‌های merge‌شده‌ی develop از همه‌ی تیم را هم می‌آورد و باعث می‌شد تقریباً هر MR غلط علامت بخورد). اگر کامیتی از فردی **غیر از صاحب MR** پیدا شود (تشخیص هویت با تطبیق username روی بخش قبل از `@` ایمیل، یا تطبیق دقیق نام نمایشی)، علامت می‌خورد. اگر از سقف بررسی (۶۰ تا در هر درخواست) رد شده باشد یا خواندن کامیت‌ها خطا بدهد، صادقانه «نامشخص» علامت می‌خورد — نه اینکه حدس زده شود «تمیز بوده».
-- **کش شدن دیتای هر توسعه‌دهنده:** چون این تحلیل ده‌ها فراخوانی گیت‌لب می‌طلبد، نتیجه‌ی هر فرد (به‌همراه roster) فایلی کش می‌شود (به‌ترتیب ۲۰ و ۱۵ دقیقه). نمای تیم از همان کش می‌خورد، پس باز کردن یک نفر از روی جدول معمولاً فوری است و دو نما هیچ‌وقت درباره‌ی یک عدد حرف متفاوت نمی‌زنند.
-- **هر فراخوانی گیت‌لب یک timeout واقعی دارد:** بدون آن، یک اتصال معلق در همین دهها فراخوانی موازی می‌توانست کل صفحه را تا ابد در حالت «در حال محاسبه…» نگه دارد — الان بعد از ۱۵ ثانیه با خطای روشن قطع می‌شود.
-- **فیلتر بازه‌ی تاریخ:** روی هر دو نما؛ با «اعمال فیلتر» همه‌ی آمار، نمودار و لیست تسک‌ها فقط برای همان بازه دوباره محاسبه می‌شود.
+- Define custom engineering standards, architectural decisions, and coding conventions via the dashboard.
+- Automatically injected into review prompts across every active AI engine.
+- Direct editing, deletion, and `.md`/`.txt` file uploads.
 
-### امتیاز خودکار: چه چیزی شمرده می‌شود و چرا
+---
 
-امتیاز کل، میانگین وزنی شش مؤلفه است. وزن هر مؤلفه در **ضریب اطمینانِ حجم نمونه‌اش** (`n/(n+5)`) ضرب می‌شود، و مؤلفه‌ای که داده ندارد **حذف می‌شود و وزنش بین بقیه پخش می‌شود** — نه اینکه صفر بگیرد. کسی که اصلاً زمان ثبت نمی‌کند نباید پایین‌تر از کسی رتبه بگیرد که بد ثبت می‌کند.
+### 5. Multi-Project Management
 
-| مؤلفه | وزن | از کجا می‌آید |
-|---|---|---|
-| تحویل به‌موقع | ۲۵ | Due date جیرا — به تناسب میزان تأخیر، نه رد/قبول |
-| دقت تخمین | ۲۵ | Original Estimate در برابر Time Spent، با جریمه‌ی متقارن `log2` |
-| کیفیت کد | ۲۰ | یافته‌های ریویوی خودِ این ابزار، نسبت به اندازه‌ی MR |
-| تکمیل تسک‌ها | ۱۵ | نسبت Done به کل تسک‌های بازه |
-| ثبت زمان | ۱۰ | چند درصد تسک‌های رسیده به Review/Done زمان ثبت‌شده دارند |
-| برنچ تک‌نویسنده | ۵ | MRهایی که فقط کامیت خودِ نویسنده را دارند |
+- Manage multiple GitLab repositories simultaneously under one dashboard.
+- Top toolbar selector controls the active repository for MR reviews and polling.
+- Developer Analytics seamlessly aggregates data across all configured repositories to accurately evaluate cross-project engineering output.
 
-سه تغییر مهم که از روی **داده‌ی واقعی همین تیم** (بررسی‌شده در ۱۴۰۵/۰۶/۱۸) گرفته شد:
+---
 
-- **کیفیت کد قبلاً برای همه دقیقاً صفر بود.** فرمول قدیمی به‌ازای هر امتیاز وزنیِ یافته ۱۶٫۶ نمره کم می‌کرد و حدود ۶ به صفر می‌رسید — در حالی که یک ریویوی معمولی در این ریپو ۱۰ تا ۱۴ برمی‌گرداند (پنج Medium و شش Low یک MR **عادی** است اینجا). یعنی یک‌پنجم امتیاز هر نفر یک عدد ثابت بود. حالا سه چیز عوض شده: (۱) **هر MR یک بار شمرده می‌شود، با آخرین ریویویش** — لاگ واقعی یک MR را دارد که در یک شب پنج بار ریویو شده، و میانگین‌گرفتن از آن پنج‌تا یعنی تعداد دفعاتی که کسی ▶ را زده روی امتیازش اثر می‌گذاشت؛ آخرین اجرا هم دقیقاً همان چیزی را توصیف می‌کند که الان در کد هست، پس رفع کردن یافته‌ها امتیاز را بالا می‌برد. (۲) **یافته‌ها بر جذر تعداد فایل تقسیم می‌شوند** — ۱۲ یافته روی ۴۹ فایل، MR تمیزتری است از ۶ یافته روی ۴ فایل. (۳) **نمره نصف می‌شود، به صفر نمی‌رسد** — روی همین لاگ ریویو، تیم را به ۴۷ / ۶۷ / ۹۱ تفکیک می‌کند به‌جای ۰ / ۰ / ۰.
-- **«رفت‌وبرگشت» از ۱۰ به ۵ آمد و اسمش عوض شد به «برنچ تک‌نویسنده».** از ۱۲ MRای که قابل بررسی بود، ۱۱ تا کامیت از فرد دیگری روی برنچ داشت. وقتی یک معیار برای تقریباً همه رد می‌شود، دارد **روش کار تیم** را توصیف می‌کند (pair کردن، push کردن یک fixup توسط لید) نه اینکه چه کسی بد کار می‌کند. روی صفحه می‌ماند چون *تغییرش* ارزش دیدن دارد، ولی سطحش نه.
-- **«فعالیت اخیر» کلاً از امتیاز حذف شد.** اینکه کسی امروز پشت میزش بوده یا نه، عملکرد نیست؛ یک هفته مرخصیِ تأییدشده نباید مثل افت کیفیت مهندسی خوانده شود. حالا فقط یک برچسب وضعیت کنار امتیاز است.
+## 🏗 Architecture & Design Philosophy
 
-همچنین **سرعت merge شدن MR** عمداً امتیاز نمی‌گیرد و فقط گزارش می‌شود: میانه‌ی این چهار نفر بین ۴٫۲ تا ۲۶٫۴ ساعت است، یعنی همه ۱۰۰ می‌گرفتند. معیاری که هیچ‌کس را از هم جدا نمی‌کند، فقط امتیاز کل را باد می‌کند.
+Business Analyzer is architected around three non-negotiable principles:
 
-تفکیک کامل هر مؤلفه — نمره، وزن مؤثر، حجم نمونه، ضریب اطمینان و دقیقاً «بر چه اساسی» — روی صفحه‌ی هر فرد باز است؛ هیچ‌کس مجبور نیست عدد را باور کند.
+1. **Zero External Dependencies (`package.json: dependencies: {}`)**:
+   - Zero vulnerability surfaces, zero npm install drift, and no external build steps.
+   - Built with standard Node.js modules: `http`, `https`, `crypto`, `fs`, `child_process`, `path`, and `os`.
+2. **Deterministic File-Based Persistence**:
+   - State and caches live in `data/*.json`.
+   - Write safety is guaranteed via `lib/atomicWrite.js`: writes to a unique temporary file followed by an atomic OS `renameSync`.
+   - Automated backups run every 24 hours into `backups/YYYY-MM-DD-HHmmss/` via `lib/backup.js`.
+3. **Dynamic Context Budgeting (`lib/contextBudget.js`)**:
+   - Computes token boundaries dynamically per engine: Claude (200K), OpenAI (128K), 9Router (32K), Gemini (1M).
+   - Accounts for language differences (Persian prompts at 1.2 chars/token; code at 3.6 chars/token).
+   - Truncates safely along line boundaries and explicitly logs omitted context in review summaries.
 
-### چند پروژه، یک داشبورد
-«⚙ تنظیمات → 📁 پروژه‌ها» هر تعداد ریپازیتوری گیت‌لب را (هرکدام با شناسه‌ی پروژه‌ی خودش و مسیر چک‌اوت محلی خودش) نگه می‌دارد؛ `GITLAB_PROJECT_ID`/`PROJECT_PATH` قدیمی در secrets.env همچنان کار می‌کند و خودش به‌عنوان اولین پروژه («پیش‌فرض (.env)») ظاهر می‌شود. سلکتور بالای تولبار **پروژه‌ی فعال** را تعیین می‌کند — تب MRها، اجرای ریویو، approve، و ریویوی خودکار/وب‌هوک همیشه روی یک پروژه در آن‌ِ واحد کار می‌کنند (ریویوی خودکار در واقع پشت‌صحنه هر پروژه‌ی تنظیم‌شده را جدا poll می‌کند، اما تب‌های داشبورد فقط پروژه‌ی فعال را نشان می‌دهند تا شلوغ نشود). آنالیز دولوپرها استثناست: همیشه همه‌ی پروژه‌های تنظیم‌شده را با هم می‌بیند، چون MRهای یک نفر می‌تواند در چند ریپو پخش باشد.
+---
 
-## 🛠 نصب
+## 🛠 Installation & Quick Start
 
-```bash
-npm install
-npm start
-```
+### Prerequisites
+- **Node.js**: Version `18.0.0` or higher.
+- **Git**: Installed and available in your system path.
+- **Local Git Clone**: An existing local clone of your target repository on the same machine (`PROJECT_PATH`).
 
-نیازی به ویرایش دستی فایل نیست — `secrets.env` را خود سرور اولین بار می‌سازد و همه‌ی مقادیر از **پنل تنظیمات** (⚙ در بالای داشبورد) قابل تنظیم‌اند. به `http://localhost:8078/admin` برو؛ چون `PROJECT_PATH` هنوز خالی است، پنل تنظیمات خودش باز می‌شود. مقادیر لازم:
+### Quick Setup
 
-1. **PROJECT_PATH** *(الزامی)* — مسیر کامل پوشه‌ی پروژه روی همین سیستم که از قبل با `git clone` گرفته شده (مثلاً `D:/Project/KMP/TaminHamrahCMP`). بدون این، دکمه‌ی «اجرای ریویو» غیرفعال می‌ماند.
-2. **GITLAB_URL** — آدرس گیت‌لب (پیش‌فرض `https://gitlab.com`؛ برای نسخه‌ی self-hosted آدرس خودت را بگذار).
-3. **GITLAB_TOKEN** — یک Access Token (Project یا Personal) با اسکوپ `api`.
-4. **GITLAB_PROJECT_ID** *(اختیاری)* — اگر پر شود، داشبورد و ریویوی خودکار فقط MRهای همان پروژه را می‌بینند؛ خالی یعنی همه‌ی MRهای بازی که توکن دسترسی دارد.
-5. **موتور هوش مصنوعی** — کدام موتور فعال باشد از دکمه‌ی «مدل» در نوار بالای داشبورد انتخاب می‌شود (نه از این پنل)، و تنظیمات هر کدام جدا از بقیه است: `CLAUDE_MODEL` برای Claude (بدون کلید — با `claude login`)، `AI_API_KEY`/`AI_BASE_URL`/`AI_MODEL` برای GapGPT، `NINEROUTER_*` برای 9Router، و `GEMINI_API_KEY`/`GEMINI_MODEL` برای Gemini. چون هیچ فیلدی بین موتورها مشترک نیست، جابه‌جایی بین‌شان تنظیمات بقیه را پاک نمی‌کند.
-6. **WEBHOOK_SECRET** *(فقط اگر از Webhook استفاده می‌کنی، نه حالت خودکار polling)* — یک رشته‌ی دلخواه و تصادفی؛ همین مقدار باید موقع ساخت Webhook در گیت‌لب هم به‌عنوان Secret Token وارد شود.
+1. **Clone & Launch**:
+   ```bash
+   git clone https://github.com/javiddeveloper/Business-Analyzer.git
+   cd Business-Analyzer
+   npm start
+   ```
 
-توی پنل، مقدار رمزها (توکن‌ها) فقط با چهار کاراکتر آخرشان نمایش داده می‌شود و ذخیره فقط فیلدهایی را می‌نویسد که واقعاً تغییرشان داده‌ای — چیزی که دست‌نخورده می‌ماند، حذف/جابه‌جا نمی‌شود.
+2. **Access Dashboard**:
+   Open your browser and navigate to:
+   ```
+   http://localhost:8078/admin
+   ```
 
-اگر ترجیح می‌دهی دستی ویرایش کنی، `secrets.env.example` را کپی کن:
+3. **Configure Settings**:
+   On your first visit, the **Settings (⚙)** modal opens automatically if required variables are missing:
+   - Provide `PROJECT_PATH` (absolute path to your local project clone).
+   - Enter your `GITLAB_URL` and `GITLAB_TOKEN` (Access Token with `api` scope).
+   - Select your preferred AI Provider.
+
+*Tip*: You can also initialize configurations by copying the template:
 ```bash
 cp secrets.env.example secrets.env
 ```
 
-## 🚀 اجرا
+---
 
-```bash
-npm start
-```
+## ⚙️ Configuration Reference
 
-سرور روی `http://localhost:8078` بالا می‌آید (با متغیر محیطی `PORT` قابل تغییر است).
+Key variables managed in `secrets.env` or through the **Settings (⚙)** UI:
 
-## 🔗 تنظیم Webhook در گیت‌لب
+| Variable | Required | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `PROJECT_PATH` | **Yes** | *None* | Absolute path to local git clone of target repository. |
+| `GITLAB_URL` | **Yes** | `https://gitlab.com` | Base URL of GitLab instance (cloud or self-hosted). |
+| `GITLAB_TOKEN` | **Yes** | *None* | GitLab Access Token with `api` permissions. |
+| `WEBHOOK_SECRET` | No | *None* | Shared secret token for verifying GitLab webhook requests. |
+| `GITLAB_PROJECT_ID`| No | *None* | Restricts monitoring to a specific project ID (or group/repo). |
+| `AI_PROVIDER` | **Yes** | `openai-compatible` | Active engine: `claude-cli`, `openai-compatible`, `9router`, `gemini`. |
+| `CLAUDE_MODEL` | No | *CLI Default* | Model override for Claude Code CLI. |
+| `AI_BASE_URL` | Conditional | `https://api.gapgpt.app/v1` | Base URL for OpenAI-compatible provider. |
+| `AI_API_KEY` | Conditional | *None* | API Key for OpenAI-compatible provider. |
+| `AI_MODEL` | Conditional | `gpt-4o-mini` | Model name for OpenAI-compatible provider. |
+| `JIRA_BASE_URL` | No | *None* | Self-hosted Jira Server/Data Center base URL. |
+| `JIRA_API_TOKEN` | No | *None* | Jira Personal Access Token (`Bearer`). |
+| `SENTRY_URL` | No | *None* | Base URL of Sentry instance. |
+| `SENTRY_AUTH_TOKEN`| No | *None* | Sentry API token with `event:read`, `event:write`, `project:read`. |
+| `ADMIN_TOKEN` | No | *None* | Administrative token for protecting `/api/*` when accessed outside localhost. |
+| `PORT` | No | `8078` | Server listening port. |
 
-در پروژه‌ی گیت‌لب: **Settings → Webhooks**
-- **URL:** `http://<آدرس-سرور-تو>:8078/webhook/gitlab`
-- **Secret Token:** همان مقدار `WEBHOOK_SECRET` در `secrets.env`
-- **Trigger:** فقط تیک **Merge request events** را بزن.
-- روی **Add webhook** کلیک کن.
+*For complete details, see [docs/CONFIGURATION.md](docs/CONFIGURATION.md).*
 
-> سرور باید از اینترنت (یا حداقل از شبکه‌ی گیت‌لب) قابل‌دسترسی باشد — اگر گیت‌لب self-hosted روی همان شبکه‌ی داخلی است، آدرس داخلی سرور کافی است؛ برای gitlab.com باید سرور را جایی با IP/دامنه‌ی عمومی اجرا کنی (یا از یک تانل مثل ngrok برای تست استفاده کنی).
+---
 
-## 🖥 داشبورد
+## 🔗 GitLab Integration (Webhook & Polling)
 
-به `http://localhost:8078/admin` برو:
-- **هدر:** وضعیت اتصال گیت‌لب (سبز/قرمز به‌همراه نام کاربر توکن)، مدل فعال، سوییچ **ریویوی خودکار**، دکمه‌ی **بروزرسانی**، و دکمه‌ی گرد ⚙ برای تنظیمات.
-- **پنل تنظیمات (⚙):** همان مقادیر `secrets.env` — گیت‌لب، مسیر پروژه‌ی محلی، مدل هوش مصنوعی، دسترسی — بدون نیاز به باز کردن فایل. اگر `PROJECT_PATH` خالی باشد، این پنل خودش موقع باز شدن داشبورد باز می‌شود.
-- **تنظیمات ریویو:** کامنت خطی روشن/خاموش، رد کردن Draftها در حالت خودکار، ثبت خودکار نتیجه در حالت خودکار، و Approve خودکار (طبق ترتیب merge).
-- **تب‌های عمودی MR:** هر Merge Request باز یک ردیف در ستون کناری دارد، **به ترتیب merge (قدیمی‌تر اول)** — همه با هم دیده می‌شوند، نه پشت اسکرول افقی. عدد بنفش کنار هر تب همان ترتیب merge است. زیر عنوان هر تب، نویسنده و (بعد از اجرا) نتیجه و تعداد یافته‌ها نشان داده می‌شود. با کلیک روی یک تب، جزئیات کامل (شاخه، نویسنده، کامیت فعلی، ترتیب merge) و دکمه‌ی «اجرای ریویو» را می‌بینی. اگر تیک «کامنت روی گیت‌لب ثبت شود» را برداری، نتیجه فقط در داشبورد نمایش داده می‌شود و بعداً با دکمه‌ی «💬 ثبت این نتیجه روی MR» می‌توانی آن را ارسال کنی.
-- **اجرای هم‌زمان:** می‌توانی روی چند تب پشت‌سرهم «اجرای ریویو» بزنی؛ همه با هم پیش می‌روند و چراغ هر تب وضعیت خودش را نشان می‌دهد (سیان چشمک‌زن = در حال اجرا، سبز = APPROVE، قرمز = REQUEST_CHANGES، نارنجی = خطا/متوقف‌شده).
-- **توقف:** وقتی تبی در حال اجراست، کنار دکمه‌ی اجرا یک دکمه‌ی «⏹ توقف» ظاهر می‌شود که همان لحظه فراخوانی مدل را لغو می‌کند.
-- **گزارش محلی:** هر ریویوی موفق، `review/MR-<iid>.md` را هم در همان `PROJECT_PATH` می‌نویسد؛ مسیرش زیر نتیجه‌ی هر تب نشان داده می‌شود.
+Business Analyzer supports two complementary modes of operation:
 
-## 📚 پایگاه دانش
+### Mode 1: Automated Background Polling (Zero Network Configuration)
+- Works out-of-the-box on local workstations, private VPNs, or behind NAT without public IPs.
+- Enable the **Auto-Review** toggle in the dashboard header.
+- The server automatically polls open MRs every $N$ seconds (default: 120s), reviewing any MR with new commits.
+- Toggle **Skip Draft MRs** to ignore work-in-progress code.
 
-توی پنل تنظیمات (⚙) است، تب «📚 پایگاه دانش» — عمداً از دید همیشگی داشبورد جمع شده چون یک تنظیم ادمین است، نه چیزی که قرار باشد هر بار جلوی چشم باشد. اگر `ADMIN_TOKEN` را در `secrets.env` خالی گذاشته‌ای، کل پنل تنظیمات فقط از همان دستگاه (localhost) بدون نیاز به توکن قابل دسترسی است — دقیقاً مثل محافظت شبکه‌ای business-generator. برای دسترسی از جای دیگر، یک `ADMIN_TOKEN` بگذار؛ داشبورد فیلد همیشگی برایش ندارد (روی localhost اصلاً لازم نیست و فقط شلوغی است) — همان اولین باری که درخواستی ۴۰۱ بگیرد، یک‌بار توکن را می‌پرسد و در همان مرورگر به‌خاطر می‌سپارد.
+### Mode 2: GitLab Webhook (Instant Event-Driven Reviews)
+1. Go to your repository in GitLab: **Settings → Webhooks**.
+2. **URL**: `http://<your-server-address>:8078/webhook/gitlab`
+3. **Secret Token**: Enter the value configured in `WEBHOOK_SECRET`.
+4. **Trigger**: Select **Merge request events** only.
+5. Click **Add Webhook**. Incoming MR events will be acknowledged immediately (`HTTP 200`) and reviewed in the background.
 
-## 🧪 تست
+---
+
+## 🖥 Dashboard Walkthrough
+
+The web interface (`http://localhost:8078/admin`) provides a unified command center:
+
+- **Header Bar**:
+  - Live status pills for GitLab connectivity, active AI engine, and token authentication.
+  - Active project dropdown selector.
+  - Auto-Review toggle and status indicator.
+  - Navigation buttons: **📊 Developer Analytics**, **🛡️ Sentry Issues**, and **⚙ Settings**.
+- **Merge Requests View**:
+  - Left sidebar listing open MRs ordered by **sequential merge sequence** (oldest first) with task keys (`EM-1234`) and target branch indicators.
+  - Real-time status indicators: Running (blinking cyan), Approved (green), Changes Requested (red), Error (orange).
+  - Main panel showing MR details, commit log, linked Jira status, and the one-click **Run Review** button.
+  - Real-time **⏹ Stop** button to immediately abort long-running or stalled reviews.
+  - Inline preview of local `review/MR-<iid>.md` reports with one-click GitLab publishing.
+- **Developer Analytics View**:
+  - **Team View**: Aggregated team matrix with actionable attention counters, delivery metrics, and overall scores.
+  - **Individual View**: Deep-dive profiles with live workloads, attention items, 5-sprint trajectory charts, detailed metric decompositions, and Excel export.
+- **Settings Modal (⚙)**:
+  - Tabbed interface to configure Environment variables, AI engines, Multi-projects, and Knowledge Base articles without restarting the server.
+
+---
+
+## 📊 Mathematical Scoring Model
+
+Developer performance scores ($S \in [0, 100]$) are calculated using a balanced, normalized multi-factor formula:
+
+$$S = \frac{\sum_{i=1}^{M} w_i \cdot c_i \cdot s_i}{\sum_{i=1}^{M} w_i \cdot c_i}$$
+
+### 1. The 6 Balanced Metrics
+
+| Metric | Weight ($w_i$) | Sample ($n$) | Confidence Factor ($c_i$) | Calculation Basis |
+| :--- | :---: | :--- | :---: | :--- |
+| **On-Time Delivery** | 25 | Total Jira tasks with due dates | $\frac{n}{n + 5}$ | On-time ratio penalized smoothly by days overdue. |
+| **Estimation Accuracy** | 25 | Tasks with estimate & time spent | $\frac{n}{n + 5}$ | Symmetric $\log_2$ penalty comparing estimated vs actual logged time. |
+| **Code Quality** | 20 | Total reviewed MRs | $\frac{n}{n + 5}$ | Review findings normalized by file count: $\frac{\text{findings}}{\sqrt{\text{files}}}$. |
+| **Task Completion** | 15 | Total assigned Jira tasks | $\frac{n}{n + 5}$ | Ratio of Resolved/Done tasks within the timeframe. |
+| **Worklog Logging** | 10 | Tasks in Review or Done | $\frac{n}{n + 5}$ | Percentage of finished tasks with logged work hours. |
+| **Single-Author Branch**| 5 | MRs with review reports | $\frac{n}{n + 5}$ | Ratio of branches containing commits solely by the author. |
+
+### 2. Ethical Guarantees Built Into Scoring
+- **No Penalty for Missing Signals**: If a developer has zero sample data for a metric ($n = 0$), the metric is omitted and its weight redistributed proportionally. Missing worklogs never default to a zero score.
+- **Sample Size Scaling**: Small sample sizes are discounted using $\frac{n}{n + 5}$, preventing an isolated MR or ticket from skewing ratings.
+- **Symmetric Estimation**: Padding estimates is penalized just as strictly as under-estimating, discouraging team members from inflating ticket estimates.
+- **Recency Neutrality**: Leaves of absence and approved holidays do not affect engineering performance ratings.
+
+---
+
+## 🧪 Testing & Quality Assurance
+
+Business Analyzer maintains an exhaustive regression test suite built on Node.js native test runner:
 
 ```bash
 npm test
 ```
 
-۱۷۱ تست رگرسیون بدون هیچ وابستگی: ساخت worktree ایجنت روی یک ریپوی واقعیِ throwaway (شامل این‌که چک‌اوت اصلی و کارهای کامیت‌نشده‌اش دست‌نخورده می‌مانند)، پرامپت و پارس خروجی ایجنت، حفظ یافته‌ای که خارج از دیف است (همان چیزی که فقط حالت ایجنتی پیدا می‌کند)، استخر همزمانی batchها، پارس دیف و ساخت موقعیت کامنت خطی، چک‌های قطعی، دسته‌بندی فایل‌ها، اجرای هم‌زمان چند MR، لغوشدن واقعی یک ریویوی در حال اجرا با دکمه‌ی توقف، گیت ترتیب merge روی Approve خودکار، ماژول تنظیمات env، فرمت فایل گزارش، استخراج شماره‌ی تسک، امتیاز خودکار/دستی توسعه‌دهنده، تشخیص «رفت‌وبرگشت» بر اساس هویت واقعی صاحب MR (نه صرفاً تعداد ایمیل‌های متفاوت)، سقف تعداد بررسی، گروه‌بندی ماهانه، فیلتر نقش Developer، timeout فراخوانی‌های گیت‌لب، کش TTL، و یک ریپازیتوری گیت واقعی و throwaway برای تست عملکرد `localRepo` — به‌همراه یک تست سرتاسری با گیت‌لب و مدل شبیه‌سازی‌شده.
+### Test Coverage Highlights (226 Tests)
+- ✅ Isolated git worktree creation, sandboxing, and cleanup on disposable repositories.
+- ✅ AI prompt construction and JSON response parsing.
+- ✅ High-volume diff chunking, batching, and context budget boundaries.
+- ✅ Exact diff parsing, hunk position mapping, and GitLab inline discussion generation.
+- ✅ Deterministic security and credential scanning.
+- ✅ Finding deduplication and fingerprint hashing.
+- ✅ Sequential merge-order auto-approval logic.
+- ✅ Developer scoring formulas, confidence scaling, and Excel export generation.
+- ✅ Sentry crash triage, stack parsing, and Jira task compilation.
+- ✅ Atomic file persistence and automated backup mechanics.
 
-## ⚠️ محدودیت‌ها و تصمیم‌های آگاهانه
-- **Approve بله، Merge هرگز:** سوییچ Approve خودکار فقط دکمه‌ی Approve گیت‌لب را می‌زند — همان کاری که یک انسان با خواندن نتیجه‌ی تمیز انجام می‌دهد، و آن‌هم فقط طبق ترتیب merge (بخش قبل). سرویس **هیچ‌وقت** خودش MR را Merge نمی‌کند: آن تصمیم (زمان‌بندی، هماهنگی با بقیه‌ی تیم، عبور از CI) همیشه دست انسان می‌ماند. اگر می‌خواهی حتی Approve خودکار هم رخ ندهد، سوییچش را خاموش بگذار (پیش‌فرض هم خاموش است) و فقط از دکمه‌ی «ثبت این نتیجه روی MR» استفاده کن.
-- **دسترسی به کل فایل، نه کل ریپازیتوری:** با `PROJECT_PATH`، مدل متن کامل هر فایل تغییریافته را می‌بیند، اما جستجوی معنایی در کل کدبیس ("این تابع کجاهای دیگر صدا زده می‌شود؟") در این نسخه نیست.
-- **فایل گزارش، بازنویسی می‌شود نه round-tracking:** برخلاف فرآیند دستی تیم (که وضعیت هر یافته را دور به دور آپدیت می‌کند)، `review/MR-<iid>.md` هر بار از صفر ساخته می‌شود — عمداً، چون نگه‌داشتن وضعیتِ دستی-ویرایش‌شده‌ی یک انسان بین اجراهای خودکار می‌توانست بی‌سروصدا آن را خراب کند. کامیت/پوش این فایل هم خودکار نیست، همیشه دستی می‌ماند.
-- آپلود پایگاه دانش فعلاً فقط `md`/`txt` را پشتیبانی می‌کند (نه PDF) تا این پروژه بدون هیچ وابستگی npm بماند.
-- سقف‌ها برای مهار هزینه: حداکثر ۲۴ دسته‌ی مدل در هر ریویو (حداکثر ۶ تا هم‌زمان) و حداکثر ۲۰ کامنت خطی؛ هر چیزی که به‌خاطر این سقف‌ها بررسی یا ثبت نشده، در خلاصه ذکر می‌شود.
-- صف «پیشنهاد خودکار دانش» (self-growing knowledge) که در business-generator از حافظه‌ی چند-turn چت PO استفاده می‌کرد اینجا نیست — چون این سرویس تک‌مرحله‌ای (فقط دیف → ریویو) است و معادل آن مکالمه‌ای وجود ندارد؛ افزودن استاندارد جدید همیشه دستی و از پنل تنظیمات است.
-- **امتیاز خودکار توسعه‌دهنده، یک شاخص است نه داوری:** فقط از داده‌ای ساخته می‌شود که خود این سرویس واقعاً جمع کرده (یافته‌های ریویوهای خودمان + زمان آخرین فعالیت از وب‌هوک) — هیچ ادعایی درباره‌ی مهارت واقعی، کیفیت کد در جاهایی که ریویو نشده، یا مسائل تیمی/غیرکدی ندارد. برای کسی که هنوز هیچ MRاش ریویو نشده، «بدون داده» نشان می‌دهد، نه یک عدد ساختگی.
-- **claude-cli روی همین ماشین اجرا می‌شود:** یعنی سرعت و پایداری‌اش به نصب/لاگین محلی `claude` بستگی دارد، نه یک API همیشه‌دردسترس؛ برای اجرای خودکار/وب‌هوکِ بی‌وقفه، یک اندپوینت API (openai-compatible یا gemini) قابل‌اعتمادتر است.
+---
 
-</div>
+## 📚 Documentation Index
+
+For deeper technical documentation, refer to the guides in the repository:
+
+- 🏛️ **[Technical Architecture](docs/ARCHITECTURE.md)**: Deep dive into the internal subsystems, execution pipelines, data flow, and security boundaries.
+- 📡 **[REST API Reference](docs/API.md)**: Exhaustive documentation of all endpoints, parameters, request schemas, and responses.
+- ⚙️ **[Configuration & Deployment](docs/CONFIGURATION.md)**: Production deployment instructions, reverse proxy setups, and environment variable tuning.
+- 💼 **[Business & CTO Review](BUSINESS-REVIEW.md)**: Comprehensive business analysis, ROI evaluation, governance insights, and architectural scorecard.
+
+---
+
+## ⚠️ Intentional Design Trade-offs
+
+1. **Auto-Approve Yes, Auto-Merge Never**:
+   - Business Analyzer will approve clean MRs sequentially when configured, but will **never** execute a merge. Final merges remain in human hands and CI gates.
+2. **Deterministic Markdown Overwrites**:
+   - `review/MR-<iid>.md` is regenerated cleanly on every run. It intentionally does not attempt to merge manual human edits into the file across review cycles.
+3. **Single-Node Focus**:
+   - Designed to run leanly on an internal team server or Tech Lead workstation. It deliberately avoids complex distributed databases or Kubernetes clusters in favor of native simplicity and zero operating overhead.
+
+---
+
+## 📄 License
+
+This project is proprietary and unlicensed. All rights reserved.
