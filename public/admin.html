@@ -67,7 +67,7 @@
     --radius-xl: 18px;
     --radius-full: 9999px;
 
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
     --shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 20px 40px -8px rgba(0, 0, 0, 0.7);
 
@@ -92,6 +92,12 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
   h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: -0.01em; }
   h2 { font-size: 16px; margin: 0; font-weight: 600; }
   h3 { font-size: 14.5px; margin: 0 0 10px; font-weight: 600; color: var(--foreground); }
@@ -109,8 +115,8 @@
 
   /* Sidebar */
   .side-nav {
-    width: 240px;
-    flex: 0 0 240px;
+    width: 250px;
+    flex: 0 0 250px;
     min-height: 100vh;
     background: #09090b;
     border-inline-end: 1px dashed var(--border-dashed);
@@ -122,19 +128,23 @@
     height: 100vh;
     overflow-y: auto;
     z-index: 40;
+    box-sizing: border-box;
   }
 
-  .sidebar-header {
-    padding: 4px 8px 16px;
-    border-bottom: 1px dashed var(--border-dashed);
-    margin-bottom: 14px;
-  }
-
-  .brand {
+  /* Workspace Switcher Card at Top of Sidebar */
+  .workspace-card {
     display: flex;
     align-items: center;
     gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    cursor: default;
+    transition: border-color 0.15s;
   }
+  .workspace-card:hover { border-color: var(--border-strong); }
 
   .brand-icon {
     width: 32px;
@@ -146,20 +156,16 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   }
+  .brand-icon svg { width: 17px; height: 17px; }
 
-  .brand-icon svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .brand-meta {
+  .workspace-meta {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    flex: 1;
   }
-
   .brand-title {
     font-size: 13.5px;
     font-weight: 700;
@@ -169,12 +175,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
   .brand-subtitle {
     font-family: var(--font-mono);
     font-size: 10px;
     color: var(--muted-foreground);
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
@@ -184,15 +189,15 @@
     text-transform: uppercase;
     letter-spacing: 0.16em;
     color: var(--muted-foreground);
-    padding: 12px 10px 6px;
+    padding: 14px 10px 6px;
     font-weight: 600;
   }
 
   .nav-group {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    margin-bottom: 8px;
+    gap: 3px;
+    margin-bottom: 6px;
   }
 
   .nav-item {
@@ -203,50 +208,89 @@
     padding: 8px 12px;
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
+    border-inline-start: 2px solid transparent;
     background: transparent;
     color: var(--muted-foreground);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     text-align: right;
-    transition: all 0.15s ease;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
   .nav-item:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.05);
     color: var(--foreground);
   }
-
   .nav-item.on {
     background: var(--accent);
     color: var(--foreground);
     font-weight: 600;
+    border-inline-start-color: var(--primary-accent);
   }
-
   .nav-item svg {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
-    opacity: 0.8;
+    opacity: 0.75;
+    transition: opacity 0.15s, color 0.15s;
   }
-
+  .nav-item:hover svg { opacity: 1; }
   .nav-item.on svg {
     opacity: 1;
     color: var(--primary-accent);
   }
-
   .nav-item span {
     flex: 1;
     white-space: nowrap;
   }
 
-  .nav-badge-pill {
-    font-family: var(--font-mono);
+  /* Sidebar Bottom User Profile Card */
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-dashed);
+  }
+  .user-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+  }
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    flex-shrink: 0;
+    border: 1px solid var(--border-strong);
+  }
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+  .user-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--foreground);
+    line-height: 1.3;
+  }
+  .user-status {
     font-size: 10px;
-    padding: 1px 6px;
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--muted-foreground);
+    color: var(--dim);
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
 
   /* Main Container */
@@ -260,7 +304,7 @@
 
   /* Top Navbar (header) */
   header {
-    height: 56px;
+    height: 54px;
     position: sticky;
     top: 0;
     z-index: 30;
@@ -282,18 +326,32 @@
     font-size: 12.5px;
     color: var(--muted-foreground);
   }
+  .bc-root { color: var(--muted-foreground); }
+  .bc-sep { opacity: 0.4; transform: rotate(180deg); }
+  .bc-current { color: var(--foreground); font-weight: 600; }
 
-  .bc-root {
+  /* Command Search Hint Box in Header */
+  .header-command-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    background: var(--card-subtle);
+    border: 1px dashed var(--border-dashed);
+    border-radius: var(--radius-sm);
     color: var(--muted-foreground);
+    font-size: 11.5px;
+    cursor: default;
+    margin-inline-start: 12px;
   }
-
-  .bc-sep {
-    opacity: 0.4;
-  }
-
-  .bc-current {
+  .kbd-chip {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border);
     color: var(--foreground);
-    font-weight: 600;
   }
 
   .badges {
@@ -323,15 +381,8 @@
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-
-  .project-picker:hover {
-    border-color: var(--border-strong);
-  }
-
-  .project-picker:focus {
-    border-color: var(--ring);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-  }
+  .project-picker:hover { border-color: var(--border-strong); }
+  .project-picker:focus { border-color: var(--ring); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
 
   /* Badges */
   .badge {
@@ -351,11 +402,7 @@
     white-space: nowrap;
     transition: all 0.15s ease;
   }
-
-  .badge.pick {
-    cursor: pointer;
-  }
-
+  .badge.pick { cursor: pointer; }
   .badge.pick:hover {
     background: var(--card-hover);
     border-color: var(--border-strong);
@@ -369,23 +416,19 @@
     background: var(--dim);
     flex-shrink: 0;
   }
-
   .dot.ok {
     background: var(--green);
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
   }
-
   .dot.err {
     background: var(--red);
     box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
   }
-
   .dot.run {
     background: var(--cyan);
     box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
     animation: pulse 1.2s infinite;
   }
-
   .dot.warn {
     background: var(--amber);
     box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
@@ -422,7 +465,6 @@
     flex-wrap: wrap;
     font-size: 13px;
   }
-
   .banner[hidden] { display: none !important; }
   .banner button { margin-inline-start: auto; }
 
@@ -433,9 +475,8 @@
     border-radius: var(--radius-xl);
     padding: 22px 24px;
     min-width: 0;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-subtle);
   }
-
   .card[hidden] { display: none !important; }
 
   .section-divider {
@@ -462,15 +503,9 @@
     outline: none;
     box-shadow: 0 1px 2px rgba(0,0,0,0.2);
   }
-
-  button:hover {
-    background: #e4e4e7;
-  }
-
-  button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
+  button:hover { background: #e4e4e7; }
+  button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
 
   button.ghost {
     background: transparent;
@@ -479,7 +514,6 @@
     box-shadow: none;
     font-weight: 500;
   }
-
   button.ghost:hover {
     background: var(--card-hover);
     border-color: var(--border-strong);
@@ -491,7 +525,6 @@
     color: #f87171;
     box-shadow: none;
   }
-
   button.danger:hover {
     background: rgba(239, 68, 68, 0.25);
     border-color: rgba(239, 68, 68, 0.5);
@@ -510,17 +543,11 @@
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-
   input[type=text]:focus, input[type=password]:focus, input[type=date]:focus, select:focus, textarea:focus {
     border-color: var(--ring);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
   }
-
-  textarea {
-    min-height: 110px;
-    resize: vertical;
-    line-height: 1.7;
-  }
+  textarea { min-height: 110px; resize: vertical; line-height: 1.7; }
 
   /* Checkboxes */
   label.check {
@@ -532,7 +559,6 @@
     cursor: pointer;
     user-select: none;
   }
-
   label.check input[type=checkbox] {
     accent-color: var(--primary-accent);
     width: 15px;
@@ -551,10 +577,7 @@
     cursor: pointer;
     color: var(--muted-foreground);
   }
-
-  .switch-badge.on {
-    color: var(--green);
-  }
+  .switch-badge.on { color: var(--green); }
 
   .switch {
     position: relative;
@@ -562,7 +585,6 @@
     height: 20px;
     flex-shrink: 0;
   }
-
   .switch input {
     position: absolute;
     opacity: 0;
@@ -571,7 +593,6 @@
     margin: 0;
     cursor: pointer;
   }
-
   .switch .track {
     position: absolute;
     inset: 0;
@@ -580,7 +601,6 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: background 0.2s, border-color 0.2s;
   }
-
   .switch .thumb {
     position: absolute;
     top: 2px;
@@ -591,25 +611,18 @@
     background: #ffffff;
     transition: inset-inline-start 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
   .switch input:checked ~ .track {
     background: var(--green);
     border-color: var(--green);
   }
-
   .switch input:checked ~ .thumb {
     inset-inline-start: calc(100% - 16px);
     background: #042412;
   }
 
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
-  /* Band & KPI Metric Cards (itsnyein/shadcn-admin Dashboard Stats) */
+  /* Band & KPI Metric Cards (itsnyein/shadcn-admin Signature Dashboard Stats) */
   .band {
     margin: 20px 0 10px;
     display: flex;
@@ -617,22 +630,12 @@
     gap: 10px;
     flex-wrap: wrap;
   }
-
-  .band h4 {
-    margin: 0;
-    font-size: 13.5px;
-    font-weight: 600;
-    color: var(--foreground);
-  }
-
-  .band .band-note {
-    font-size: 11px;
-    color: var(--muted-foreground);
-  }
+  .band h4 { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--foreground); }
+  .band .band-note { font-size: 11px; color: var(--muted-foreground); }
 
   .kpi-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
     margin-bottom: 20px;
   }
@@ -646,13 +649,31 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, transform 0.15s;
+    box-shadow: var(--shadow-subtle);
   }
-
   .kpi:hover {
     border-color: var(--border-strong);
+    transform: translateY(-1px);
   }
-
+  .kpi-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .kpi .l {
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted-foreground);
+    line-height: 1.4;
+  }
+  .kpi-icon-pill {
+    font-size: 12px;
+    opacity: 0.8;
+  }
   .kpi .n {
     font-size: 24px;
     font-weight: 700;
@@ -660,29 +681,46 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
     line-height: 1.2;
+    margin-bottom: 8px;
   }
-
   .kpi .n small {
     font-size: 13px;
     opacity: 0.6;
     font-weight: 600;
   }
-
-  .kpi .l {
-    font-size: 10.5px;
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--muted-foreground);
-    margin-top: 6px;
-    line-height: 1.5;
+  .kpi-footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
   }
-
   .kpi .sub {
     font-size: 10.5px;
     color: var(--dim);
-    margin-top: 4px;
+    line-height: 1.4;
+    flex: 1;
   }
+  .sub-placeholder { font-size: 10px; color: transparent; user-select: none; }
+
+  /* Sparkline mini bar chart in KPI cards */
+  .kpi-sparklines {
+    display: flex;
+    align-items: flex-end;
+    gap: 2.5px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .kpi-sparkbar {
+    width: 3.5px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .kpi-sparkbar.active {
+    background: var(--primary-accent);
+  }
+  .kpi.warn .kpi-sparkbar.active { background: var(--amber); }
+  .kpi.bad .kpi-sparkbar.active { background: var(--red); }
+  .kpi.good .kpi-sparkbar.active { background: var(--green); }
 
   .kpi.warn .n { color: var(--amber); }
   .kpi.bad .n { color: var(--red); }
@@ -701,24 +739,21 @@
     border: 1px dashed var(--border-dashed);
     border-radius: var(--radius);
   }
-
   .date-filter .field { min-width: 130px; }
   .date-filter input[type=date] { margin-bottom: 0; }
 
-  /* Team Table */
+  /* Team Table with Developer Avatars */
   .team-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 12.5px;
   }
-
   .team-table th, .team-table td {
     padding: 10px 12px;
     border-bottom: 1px solid var(--border);
     text-align: right;
     white-space: nowrap;
   }
-
   .team-table th {
     font-family: var(--font-mono);
     color: var(--muted-foreground);
@@ -730,7 +765,6 @@
     cursor: pointer;
     user-select: none;
   }
-
   .team-table th.on { color: var(--cyan); }
   .team-table td.num { font-variant-numeric: tabular-nums; }
   .team-table tbody tr { cursor: pointer; transition: background 0.15s; }
@@ -739,6 +773,45 @@
   .team-table .zero { color: var(--dim); }
   .team-table .hot { color: var(--red); font-weight: 700; }
   .team-table .warm { color: var(--amber); font-weight: 700; }
+
+  /* Avatar Cell in Table */
+  .dev-avatar-cell {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .avatar-sm {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    border: 1px solid var(--border-strong);
+  }
+  .dev-name-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .dev-display-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--foreground);
+    line-height: 1.3;
+  }
+  .dev-user-handle {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--dim);
+    direction: ltr;
+    text-align: right;
+  }
 
   .team-loading {
     display: inline-block;
@@ -761,7 +834,6 @@
     background: var(--card-subtle);
     color: var(--muted-foreground);
   }
-
   .score-badge .num { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
   .score-good { background: rgba(16, 185, 129, 0.12); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
   .score-mid  { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
@@ -778,7 +850,6 @@
     font-size: 11.5px;
     border: 1px solid transparent;
   }
-
   .mini-score { font-size: 10px; font-variant-numeric: tabular-nums; opacity: 0.85; }
 
   /* Attention List */
@@ -825,9 +896,9 @@
     border-radius: var(--radius);
     background: var(--card-subtle);
     font-size: 12.5px;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, transform 0.15s;
   }
-  .task-card:hover { border-color: var(--border-strong); }
+  .task-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
   .task-card.needs-worklog { border-color: rgba(245, 158, 11, 0.4); }
   .task-card.needs-worklog .task-title { font-weight: 600; }
   .task-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -1505,7 +1576,8 @@
   @media (max-width: 860px) {
     .app-layout { flex-direction: column; }
     .side-nav { width: 100%; height: auto; position: static; min-height: 0; border-inline-end: none; border-bottom: 1px dashed var(--border-dashed); flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 10px; }
-    .sidebar-header { width: 100%; padding-bottom: 8px; margin-bottom: 6px; }
+    .workspace-card { width: 100%; padding: 6px 10px; margin-bottom: 6px; }
+    .sidebar-footer { display: none; }
     .nav-section-title { display: none; }
     .nav-group { flex-direction: row; flex-wrap: wrap; width: 100%; }
     .nav-item { width: auto; }
@@ -1520,25 +1592,24 @@
 
   <!-- itsnyein/shadcn-admin Signature Sidebar -->
   <aside class="side-nav" id="sideNav">
-    <div class="sidebar-header">
-      <div class="brand">
-        <span class="brand-icon">
-          <!-- Command Icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"></path>
-          </svg>
-        </span>
-        <div class="brand-meta">
-          <span class="brand-title">Coder Review</span>
-          <span class="brand-subtitle">shadcn-admin · v2.0</span>
-        </div>
+    <!-- Workspace Card Header -->
+    <div class="workspace-card">
+      <span class="brand-icon">
+        <!-- Lucide Command Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"></path>
+        </svg>
+      </span>
+      <div class="workspace-meta">
+        <span class="brand-title">Coder Review</span>
+        <span class="brand-subtitle">shadcn-admin · v2.0</span>
       </div>
     </div>
 
     <div class="nav-section-title">فضای کاری</div>
     <div class="nav-group">
       <button class="nav-item on" data-page="home">
-        <!-- Dashboard Layout Icon -->
+        <!-- Lucide LayoutDashboard Icon -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect width="7" height="9" x="3" y="3" rx="1"></rect>
           <rect width="7" height="5" x="14" y="3" rx="1"></rect>
@@ -1549,7 +1620,7 @@
       </button>
 
       <button class="nav-item" data-page="review">
-        <!-- Git Pull Request Icon -->
+        <!-- Lucide GitPullRequest Icon -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="18" r="3"></circle>
           <circle cx="6" cy="6" r="3"></circle>
@@ -1560,7 +1631,7 @@
       </button>
 
       <button class="nav-item" data-page="devs">
-        <!-- Users Icon -->
+        <!-- Lucide Users Icon -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
           <circle cx="9" cy="7" r="4"></circle>
@@ -1571,7 +1642,7 @@
       </button>
 
       <button class="nav-item" data-page="sentry">
-        <!-- Alert Triangle / Bug Icon -->
+        <!-- Lucide AlertTriangle Icon -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
           <line x1="12" x2="12" y1="9" y2="13"></line>
@@ -1584,13 +1655,24 @@
     <div class="nav-section-title">سیستم</div>
     <div class="nav-group">
       <button class="nav-item" data-page="settings">
-        <!-- Settings Icon -->
+        <!-- Lucide Settings Icon -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
           <circle cx="12" cy="12" r="3"></circle>
         </svg>
         <span>تنظیمات</span>
       </button>
+    </div>
+
+    <!-- Sidebar Bottom User Profile Card -->
+    <div class="sidebar-footer">
+      <div class="user-profile-card">
+        <div class="user-avatar">AD</div>
+        <div class="user-info">
+          <span class="user-name">Local Admin</span>
+          <span class="user-status"><span class="dot ok"></span> 127.0.0.1 (Loopback)</span>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -1605,6 +1687,15 @@
           <path d="m15 18-6-6 6-6"></path>
         </svg>
         <span class="bc-current" id="crumbCurrent">مرور کلی تیم و پروژه‌ها</span>
+
+        <span class="header-command-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+          <span>دستورات سریع</span>
+          <kbd class="kbd-chip">⌘K</kbd>
+        </span>
       </div>
 
       <div class="badges">
@@ -3238,7 +3329,10 @@ const TEAM_COLUMNS = [
 function teamCell(row, col) {
   if (col.key === 'name') {
     const trend = row.trend && row.trend.delta != null ? trendChip(row.trend.delta) : '';
-    return '<td class="who">' + esc(row.name || row.username) + ' ' + trend + '</td>';
+    const rawName = row.name || row.username || '??';
+    const parts = rawName.trim().split(/\s+/);
+    const initials = parts.length > 1 ? (parts[0][0] + parts[1][0]) : rawName.slice(0, 2);
+    return '<td class="who"><div class="dev-avatar-cell"><span class="avatar-sm">' + esc(initials.toUpperCase()) + '</span><div class="dev-name-col"><span class="dev-display-name">' + esc(rawName) + '</span><span class="dev-user-handle">@' + esc(row.username || '') + '</span></div>' + trend + '</div></td>';
   }
   const v = row[col.key];
   if (v == null) return '<td class="num zero">—</td>';
@@ -3492,10 +3586,21 @@ function teamSummary(rows) {
 function kpi(value, label, sub, cls, outOf) {
   const main = typeof value === 'string' ? esc(value) : value;
   const suffix = outOf == null ? '' : '<small>/' + esc(outOf) + '</small>';
+  const sparkHeights = [30, 45, 38, 62, 55, 78, 70, 92];
+  const sparkHtml = '<span class="kpi-sparklines">' + sparkHeights.map((h, i) =>
+    '<span style="height:' + h + '%" class="kpi-sparkbar ' + (i === sparkHeights.length - 1 ? 'active' : '') + '"></span>'
+  ).join('') + '</span>';
+
   return '<div class="kpi ' + (cls || '') + '">' +
+    '<div class="kpi-header">' +
+      '<div class="l">' + esc(label) + '</div>' +
+      '<span class="kpi-icon-pill">' + (cls === 'bad' ? '🔴' : cls === 'warn' ? '⚠️' : cls === 'good' ? '🟢' : '📊') + '</span>' +
+    '</div>' +
     '<div class="n">' + main + suffix + '</div>' +
-    '<div class="l">' + esc(label) + '</div>' +
-    (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
+    '<div class="kpi-footer">' +
+      (sub ? '<div class="sub">' + esc(sub) + '</div>' : '<div class="sub-placeholder">آماده برای داده جدید</div>') +
+      sparkHtml +
+    '</div>' +
   '</div>';
 }
 
