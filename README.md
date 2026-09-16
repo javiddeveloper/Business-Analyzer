@@ -1,306 +1,224 @@
 # 🚀 Business Analyzer
 
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
+<div align="center">
+
+**Autonomous AI Code Review & Engineering Team Intelligence for GitLab, Jira, and Sentry.**  
+*Self-hosted. Zero external npm dependencies. 100% private to your infrastructure.*
+
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0%20npm%20packages-blue.svg)](package.json)
 [![Tests Passing](https://img.shields.io/badge/tests-226%20passing-success.svg)](tests/)
-[![Architecture](https://img.shields.io/badge/architecture-Vanilla%20JS%20%7C%20Pure%20Node.js-orange.svg)](docs/ARCHITECTURE.md)
+[![Architecture](https://img.shields.io/badge/architecture-Pure%20Node.js%20%7C%20Vanilla%20JS-orange.svg)](docs/ARCHITECTURE.md)
 [![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey.svg)](package.json)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
-**Business Analyzer** (formerly *Coder Review*) is a high-performance, zero-dependency engineering intelligence platform that unifies **Autonomous AI Code Review** on GitLab Merge Requests with **Engineering Team Performance Analytics** powered by Jira and Sentry.
+[**Explore Interactive Demo**](#-try-it-in-60-seconds-demo-mode) • [**Visual Tour**](docs/VISUAL_TOUR.md) • [**Architecture**](docs/ARCHITECTURE.md) • [**Product Strategy**](docs/PRODUCT_STRATEGY.md) • [**Commercial Advisory**](#-creator--commercial-advisory)
 
-Built with pure Node.js and vanilla browser technologies, it requires **zero npm packages**, runs on a single server or laptop, persists state atomically to local disk, and includes a modern, responsive Shadcn-style dark dashboard with dual-language (English/Persian) typography and bidirectional text isolation.
-
----
-
-## 📑 Table of Contents
-
-- [Key Capabilities](#-key-capabilities)
-  - [1. Autonomous AI Code Review](#1-autonomous-ai-code-review)
-  - [2. Engineering Performance Analytics](#2-engineering-performance-analytics)
-  - [3. Sentry Crash Triage & Jira Task Generation](#3-sentry-crash-triage--jira-task-generation)
-  - [4. Dynamic Team Knowledge Base](#4-dynamic-team-knowledge-base)
-  - [5. Multi-Project Management](#5-multi-project-management)
-- [Architecture & Design Philosophy](#-architecture--design-philosophy)
-- [Installation & Quick Start](#-installation--quick-start)
-- [Configuration Reference](#-configuration-reference)
-- [GitLab Integration (Webhook & Polling)](#-gitlab-integration-webhook--polling)
-- [Dashboard Walkthrough](#-dashboard-walkthrough)
-- [Mathematical Scoring Model](#-mathematical-scoring-model)
-- [Testing & Quality Assurance](#-testing--quality-assurance)
-- [Documentation Index](#-documentation-index)
-- [Intentional Design Trade-offs](#-intentional-design-trade-offs)
+</div>
 
 ---
 
-## ✨ Key Capabilities
+## ⚡ What is Business Analyzer?
 
-### 1. Autonomous AI Code Review
+Senior engineers and Tech Leads spend **15+ hours every week** manually reviewing code. Meanwhile, engineering managers struggle with fragmented data spread across GitLab, Jira, and Sentry.
 
-- **Agentic Repository-Wide Inspection (Claude CLI Mode)**:
-  - Spawns the native `claude` CLI inside an isolated, detached git worktree (`../.coder-review-worktrees/mr-<iid>`).
-  - Read-only execution with `--permission-mode plan` and strictly allowlisted tools (`Read`, `Grep`, `Glob`).
-  - The AI autonomously traverses callers, implementations, unit tests, and cross-file interfaces to catch bugs that diff-only reviews miss.
-  - Leaves the developer's working directory and uncommitted work completely untouched.
-- **Diff-Driven Batching (HTTP Engines)**:
-  - Supports OpenAI-compatible endpoints (GapGPT, OpenRouter, self-hosted LLMs), 9Router, and Google Gemini.
-  - Intelligently filters lockfiles, build artifacts (`node_modules`, `dist`, `vendor`), binaries, and generated files.
-  - Dynamically packages diffs into clean batches bounded by engine-specific context budgets with up to 6-way concurrency.
-- **Deterministic Machine Checks (Independent of LLM)**:
-  - Scans for leaked credentials (AWS, JWT, private keys, GitLab/GitHub access tokens).
-  - Detects leftover debugging statements (`console.log`, `debugger`, `print()`, `var_dump`).
-  - Catches unmerged git conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
-  - Flags missing tests on non-trivial source code changes.
-- **Precision Line Anchor Positioning**:
-  - Diffs are parsed down to exact line coordinates. Comments are published directly onto the affected line as GitLab Discussions.
-  - If a model hallucinates a line number outside the diff, the finding is safely routed to the MR summary note rather than failing with an API error.
-- **Idempotent Finding Fingerprints**:
-  - Every finding has an invisible hash fingerprint. Re-reviewing updated branches never reposts duplicate comments.
-- **Sequential Merge-Order Auto-Approval**:
-  - When enabled, clean reviews (`APPROVE`) automatically approve the MR in GitLab.
-  - Enforces merge discipline: **Approvals are held until all earlier-created MRs in the same project have been approved**.
-  - **Safety First**: The tool *never* merges code automatically. Final merge execution remains in human hands and CI pipelines.
-- **Standardized Local Markdown Reports**:
-  - Generates comprehensive review reports at `review/MR-<iid>.md` matching senior human reviewer formatting.
+**Business Analyzer** solves both problems with a single, self-hosted Node.js engine:
+1. **Autonomous AI Code Review**: Spawns isolated git worktrees using Claude Code CLI to inspect entire repositories, catches security vulnerabilities deterministically, and publishes line-accurate GitLab discussions.
+2. **Unified Engineering Intelligence**: Automatically correlates GitLab merge requests, Jira worklogs, and Sentry production crashes into an actionable management dashboard.
+
+> [!IMPORTANT]
+> **Zero Cloud Exfiltration**: Your source code and API tokens **never** leave your private servers. Designed specifically for regulated enterprises and teams using self-hosted GitLab.
 
 ---
 
-### 2. Engineering Performance Analytics
+## 📸 Interface & Visual Tour
 
-A dedicated analytics suite providing engineering leaders with data-driven team insights:
+| Workspace Overview | AI Code Review |
+| :---: | :---: |
+| [![Workspace Overview](docs/screenshots/02_workspace_overview.png)](docs/screenshots/02_workspace_overview.png) | [![AI Code Review](docs/screenshots/04_mr_review_findings.png)](docs/screenshots/04_mr_review_findings.png) |
+| *Actionable attention triage & team delivery velocity.* | *Line-accurate findings, positive feedback & APPROVE verdicts.* |
 
-- **Team Overview (Managerial Landing View)**:
-  - Real-time status of all engineers: active tasks, open MRs, stale MRs (>72h), overdue deadlines, unlogged work, merged velocity, and overall scores.
-  - **Attention Priority Sorting**: Automatically surfaces engineers who have blocking issues *today* (e.g., severe overdue tickets, stalled MRs), rather than sorting by historical average scores.
-  - Progressive streaming rendering: Each developer row renders as soon as its GitLab and Jira data loads, avoiding UI lockups.
-- **Individual Developer Dossiers**:
-  - **Live Workload**: Open MRs, in-progress tasks, tasks missing MR branches, current sprint completion.
-  - **Needs Attention**: Prioritized, clickable links to overdue tasks (with delay days) and stalled reviews.
-  - **Delivery History**: Completed tasks, merged MRs, p50 and p90 merge duration, on-time delivery rates, and estimation variance.
-  - **Sprint Trends**: Visual 5-sprint performance trend graphs and monthly rating history.
-- **Zero-Dependency Native Excel Export**:
-  - Generates full `.xlsx` analytical spreadsheets directly from Node.js standard libraries for management reporting.
-- **Monthly Manual Grading**:
-  - Enables engineering managers to record structured qualitative monthly feedback alongside automated metrics.
+| Developer Performance Scorecard | Sentry Crash Triage & Jira Task Gen |
+| :---: | :---: |
+| [![Developer Scorecard](docs/screenshots/06_dev_scorecard_detail.png)](docs/screenshots/06_dev_scorecard_detail.png) | [![Sentry Triage](docs/screenshots/08_sentry_stacktrace_analysis.png)](docs/screenshots/08_sentry_stacktrace_analysis.png) |
+| *Balanced 6-factor metrics with sample-size confidence.* | *Instant stacktrace root-cause diagnosis & 1-click Jira tasks.* |
+
+*(For a full breakdown of each interface, view the [**Visual Product Tour**](docs/VISUAL_TOUR.md).)*
 
 ---
+
+## 🎯 Who is This For?
+
+- **Engineering Managers & Tech Leads**: Reduce PR review turnaround from 72 hours to under 12 hours while gaining objective, fair developer growth metrics.
+- **CTOs & Technical Founders**: Eliminate senior engineer review burnout and prevent catastrophic production credential leaks without cloud SaaS subscription bloat.
+- **Self-Hosted GitLab & Jira Teams**: Teams locked out of cloud tools (CodeRabbit, GitHub Copilot Cloud) due to strict data sovereignty, banking compliance, or air-gapped VPCs.
+
+---
+
+## ⏱️ Try It in 60 Seconds (Demo Mode)
+
+You can explore the complete Business Analyzer platform immediately with rich, realistic synthetic enterprise data—**no GitLab or Jira credentials required**:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/javiddeveloper/Business-Analyzer.git
+cd Business-Analyzer
+
+# 2. Start the native server (Zero npm install needed!)
+npm start
+```
+
+Open your browser at:
+```
+http://localhost:8078/admin?mock=1
+```
+
+Explore active Merge Requests, inspect AI code reviews with diff line anchors, view developer scorecards, and triage Sentry crashes with zero setup.
+
+---
+
+## 🌟 Core Product Capabilities
+
+### 1. Deep AI Code Review (Not Just a Diff Matcher)
+- **Agentic Repository-Wide Inspection**: Uses detached git worktrees (`../.coder-review-worktrees/mr-<iid>`) with `--permission-mode plan` (`Read`, `Grep`, `Glob`) to search across callers, consumers, and unit tests.
+- **Deterministic Machine Checks**: Regular expression security scanners flag AWS secrets, JWT tokens, and private keys independent of probabilistic LLM inference.
+- **Sequential Merge-Order Auto-Approve**: Auto-approves clean reviews only when all earlier-created MRs in the same project have been approved. **Never auto-merges code**.
+
+### 2. Fair & Ethical Developer Analytics
+- **Balanced 6-Factor Model**: On-time delivery (25%), Estimation accuracy (25%), Code quality (20%), Task completion (15%), Worklog discipline (10%), Single-author branch (5%).
+- **Mathematical Confidence Discounting**: Uses sample size scaling factor $\frac{n}{n + 5}$. Single PRs never distort ratings.
+- **Symmetric $\log_2$ Estimation Penalty**: Over-estimation (padding) is penalized equally with under-estimation.
+- **Native Excel (.xlsx) Generation**: Export full team spreadsheets directly without npm dependencies.
 
 ### 3. Sentry Crash Triage & Jira Task Generation
-
-- Seamless integration with self-hosted or cloud Sentry instances (`/api/0/`).
-- Prioritizes unresolved production errors by frequency, impact, and user reach.
-- **AI-Assisted Root Cause Diagnosis**: Generates immediate stack-trace interpretations.
-- **One-Click Jira Ticket Creation**: Instantly turns a Sentry crash into a structured Jira task with automatic priority assignment, effort estimation, and developer assignment based on current workload.
-- Marks issues resolved in Sentry directly from the dashboard.
+- Prioritizes production exceptions by frequency and unique user impact.
+- AI generates instant stacktrace root-cause diagnosis.
+- One-click creates structured Jira tasks with automatic estimates and assignee recommendations.
 
 ---
 
-### 4. Dynamic Team Knowledge Base
+## 🥊 How Business Analyzer Compares
 
-- Define custom engineering standards, architectural decisions, and coding conventions via the dashboard.
-- Automatically injected into review prompts across every active AI engine.
-- Direct editing, deletion, and `.md`/`.txt` file uploads.
-
----
-
-### 5. Multi-Project Management
-
-- Manage multiple GitLab repositories simultaneously under one dashboard.
-- Top toolbar selector controls the active repository for MR reviews and polling.
-- Developer Analytics seamlessly aggregates data across all configured repositories to accurately evaluate cross-project engineering output.
+| Dimension | Cloud AI Bots (CodeRabbit, Qodo) | Enterprise Analytics (LinearB, Jellyfish) | **Business Analyzer** |
+| :--- | :---: | :---: | :---: |
+| **Hosting Model** | US Cloud Multi-Tenant | US Cloud Multi-Tenant | **100% Self-Hosted (On-Premise)** |
+| **Code Privacy** | Source code sent to cloud | Metadata sent to cloud | **Code never leaves your VPC** |
+| **npm Dependencies** | Hundreds of packages | Complex agents | **0 npm dependencies (Pure Node)** |
+| **Code Review Depth** | Isolated diff context only | None (Metrics only) | **Full repository worktree exploration** |
+| **Sentry + Jira Loop** | No | Basic webhooks | **AI diagnosis & 1-click Jira creation** |
+| **Pricing** | $20–$40/user/mo | $30k–$80k/year | **Open Source Core + Custom Advisory** |
 
 ---
 
-## 🏗 Architecture & Design Philosophy
+## 🏛️ Technical Architecture
 
-Business Analyzer is architected around three non-negotiable principles:
+```mermaid
+flowchart TB
+    subgraph Enterprise["Private Infrastructure"]
+        GL["GitLab Server (v4 REST & Webhook)"]
+        JR["Jira Data Center (REST v2)"]
+        SN["Sentry Self-Hosted (REST v0)"]
+    end
 
-1. **Zero External Dependencies (`package.json: dependencies: {}`)**:
-   - Zero vulnerability surfaces, zero npm install drift, and no external build steps.
-   - Built with standard Node.js modules: `http`, `https`, `crypto`, `fs`, `child_process`, `path`, and `os`.
-2. **Deterministic File-Based Persistence**:
-   - State and caches live in `data/*.json`.
-   - Write safety is guaranteed via `lib/atomicWrite.js`: writes to a unique temporary file followed by an atomic OS `renameSync`.
-   - Automated backups run every 24 hours into `backups/YYYY-MM-DD-HHmmss/` via `lib/backup.js`.
-3. **Dynamic Context Budgeting (`lib/contextBudget.js`)**:
-   - Computes token boundaries dynamically per engine: Claude (200K), OpenAI (128K), 9Router (32K), Gemini (1M).
-   - Accounts for language differences (Persian prompts at 1.2 chars/token; code at 3.6 chars/token).
-   - Truncates safely along line boundaries and explicitly logs omitted context in review summaries.
+    subgraph BusinessAnalyzer["Business Analyzer Core (Node.js >= 18)"]
+        HTTP["Native HTTP Server (server.js)"]
+        JOBS["jobs.js (Orchestration)"]
+        WORKTREE["agentReview.js (Isolated Git Worktree)"]
+        CHECKS["checks.js (Deterministic Scanner)"]
+        BUDGET["contextBudget.js (Token Allocation)"]
+        METRICS["devScore.js (6-Factor Analytics)"]
+        STORE["atomicWrite.js (Safe File Persistence)"]
+    end
+
+    subgraph LLM["AI Inference Engine"]
+        CLI["Claude Code CLI (Local Subscription)"]
+        API["OpenAI / 9Router / Gemini"]
+    end
+
+    GL <--> HTTP
+    JR <--> HTTP
+    SN <--> HTTP
+    HTTP --> JOBS
+    JOBS --> WORKTREE <--> CLI
+    JOBS --> BUDGET <--> API
+    JOBS --> CHECKS
+    HTTP --> METRICS
+    METRICS --> STORE
+```
+
+*For complete architectural specifications, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).*
 
 ---
 
-## 🛠 Installation & Quick Start
+## 🛠️ Production Setup
 
-### Prerequisites
-- **Node.js**: Version `18.0.0` or higher.
-- **Git**: Installed and available in your system path.
-- **Local Git Clone**: An existing local clone of your target repository on the same machine (`PROJECT_PATH`).
-
-### Quick Setup
-
-1. **Clone & Launch**:
-   ```bash
-   git clone https://github.com/javiddeveloper/Business-Analyzer.git
-   cd Business-Analyzer
-   npm start
-   ```
-
-2. **Access Dashboard**:
-   Open your browser and navigate to:
-   ```
-   http://localhost:8078/admin
-   ```
-
-3. **Configure Settings**:
-   On your first visit, the **Settings (⚙)** modal opens automatically if required variables are missing:
-   - Provide `PROJECT_PATH` (absolute path to your local project clone).
-   - Enter your `GITLAB_URL` and `GITLAB_TOKEN` (Access Token with `api` scope).
-   - Select your preferred AI Provider.
-
-*Tip*: You can also initialize configurations by copying the template:
+### Step 1: Clone & Configure
 ```bash
+git clone https://github.com/javiddeveloper/Business-Analyzer.git
+cd Business-Analyzer
 cp secrets.env.example secrets.env
 ```
 
----
+### Step 2: Configure Environment
+Edit `secrets.env` or configure via the **Settings (⚙)** modal at `http://localhost:8078/admin`:
+```ini
+PROJECT_PATH=/absolute/path/to/local/git/clone
+GITLAB_URL=https://gitlab.company.local
+GITLAB_TOKEN=your_gitlab_api_token
+AI_PROVIDER=claude-cli # or openai-compatible | 9router | gemini
+```
 
-## ⚙️ Configuration Reference
+### Step 3: Launch
+```bash
+npm start
+```
 
-Key variables managed in `secrets.env` or through the **Settings (⚙)** UI:
-
-| Variable | Required | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `PROJECT_PATH` | **Yes** | *None* | Absolute path to local git clone of target repository. |
-| `GITLAB_URL` | **Yes** | `https://gitlab.com` | Base URL of GitLab instance (cloud or self-hosted). |
-| `GITLAB_TOKEN` | **Yes** | *None* | GitLab Access Token with `api` permissions. |
-| `WEBHOOK_SECRET` | No | *None* | Shared secret token for verifying GitLab webhook requests. |
-| `GITLAB_PROJECT_ID`| No | *None* | Restricts monitoring to a specific project ID (or group/repo). |
-| `AI_PROVIDER` | **Yes** | `openai-compatible` | Active engine: `claude-cli`, `openai-compatible`, `9router`, `gemini`. |
-| `CLAUDE_MODEL` | No | *CLI Default* | Model override for Claude Code CLI. |
-| `AI_BASE_URL` | Conditional | `https://api.gapgpt.app/v1` | Base URL for OpenAI-compatible provider. |
-| `AI_API_KEY` | Conditional | *None* | API Key for OpenAI-compatible provider. |
-| `AI_MODEL` | Conditional | `gpt-4o-mini` | Model name for OpenAI-compatible provider. |
-| `JIRA_BASE_URL` | No | *None* | Self-hosted Jira Server/Data Center base URL. |
-| `JIRA_API_TOKEN` | No | *None* | Jira Personal Access Token (`Bearer`). |
-| `SENTRY_URL` | No | *None* | Base URL of Sentry instance. |
-| `SENTRY_AUTH_TOKEN`| No | *None* | Sentry API token with `event:read`, `event:write`, `project:read`. |
-| `ADMIN_TOKEN` | No | *None* | Administrative token for protecting `/api/*` when accessed outside localhost. |
-| `PORT` | No | `8078` | Server listening port. |
-
-*For complete details, see [docs/CONFIGURATION.md](docs/CONFIGURATION.md).*
+*For production deployment behind Nginx with TLS, see [docs/CONFIGURATION.md](docs/CONFIGURATION.md).*
 
 ---
 
-## 🔗 GitLab Integration (Webhook & Polling)
+## 🧪 Comprehensive Test Suite
 
-Business Analyzer supports two complementary modes of operation:
-
-### Mode 1: Automated Background Polling (Zero Network Configuration)
-- Works out-of-the-box on local workstations, private VPNs, or behind NAT without public IPs.
-- Enable the **Auto-Review** toggle in the dashboard header.
-- The server automatically polls open MRs every $N$ seconds (default: 120s), reviewing any MR with new commits.
-- Toggle **Skip Draft MRs** to ignore work-in-progress code.
-
-### Mode 2: GitLab Webhook (Instant Event-Driven Reviews)
-1. Go to your repository in GitLab: **Settings → Webhooks**.
-2. **URL**: `http://<your-server-address>:8078/webhook/gitlab`
-3. **Secret Token**: Enter the value configured in `WEBHOOK_SECRET`.
-4. **Trigger**: Select **Merge request events** only.
-5. Click **Add Webhook**. Incoming MR events will be acknowledged immediately (`HTTP 200`) and reviewed in the background.
-
----
-
-## 🖥 Dashboard Walkthrough
-
-The web interface (`http://localhost:8078/admin`) provides a unified command center:
-
-- **Header Bar**:
-  - Live status pills for GitLab connectivity, active AI engine, and token authentication.
-  - Active project dropdown selector.
-  - Auto-Review toggle and status indicator.
-  - Navigation buttons: **📊 Developer Analytics**, **🛡️ Sentry Issues**, and **⚙ Settings**.
-- **Merge Requests View**:
-  - Left sidebar listing open MRs ordered by **sequential merge sequence** (oldest first) with task keys (`EM-1234`) and target branch indicators.
-  - Real-time status indicators: Running (blinking cyan), Approved (green), Changes Requested (red), Error (orange).
-  - Main panel showing MR details, commit log, linked Jira status, and the one-click **Run Review** button.
-  - Real-time **⏹ Stop** button to immediately abort long-running or stalled reviews.
-  - Inline preview of local `review/MR-<iid>.md` reports with one-click GitLab publishing.
-- **Developer Analytics View**:
-  - **Team View**: Aggregated team matrix with actionable attention counters, delivery metrics, and overall scores.
-  - **Individual View**: Deep-dive profiles with live workloads, attention items, 5-sprint trajectory charts, detailed metric decompositions, and Excel export.
-- **Settings Modal (⚙)**:
-  - Tabbed interface to configure Environment variables, AI engines, Multi-projects, and Knowledge Base articles without restarting the server.
-
----
-
-## 📊 Mathematical Scoring Model
-
-Developer performance scores ($S \in [0, 100]$) are calculated using a balanced, normalized multi-factor formula:
-
-$$S = \frac{\sum_{i=1}^{M} w_i \cdot c_i \cdot s_i}{\sum_{i=1}^{M} w_i \cdot c_i}$$
-
-### 1. The 6 Balanced Metrics
-
-| Metric | Weight ($w_i$) | Sample ($n$) | Confidence Factor ($c_i$) | Calculation Basis |
-| :--- | :---: | :--- | :---: | :--- |
-| **On-Time Delivery** | 25 | Total Jira tasks with due dates | $\frac{n}{n + 5}$ | On-time ratio penalized smoothly by days overdue. |
-| **Estimation Accuracy** | 25 | Tasks with estimate & time spent | $\frac{n}{n + 5}$ | Symmetric $\log_2$ penalty comparing estimated vs actual logged time. |
-| **Code Quality** | 20 | Total reviewed MRs | $\frac{n}{n + 5}$ | Review findings normalized by file count: $\frac{\text{findings}}{\sqrt{\text{files}}}$. |
-| **Task Completion** | 15 | Total assigned Jira tasks | $\frac{n}{n + 5}$ | Ratio of Resolved/Done tasks within the timeframe. |
-| **Worklog Logging** | 10 | Tasks in Review or Done | $\frac{n}{n + 5}$ | Percentage of finished tasks with logged work hours. |
-| **Single-Author Branch**| 5 | MRs with review reports | $\frac{n}{n + 5}$ | Ratio of branches containing commits solely by the author. |
-
-### 2. Ethical Guarantees Built Into Scoring
-- **No Penalty for Missing Signals**: If a developer has zero sample data for a metric ($n = 0$), the metric is omitted and its weight redistributed proportionally. Missing worklogs never default to a zero score.
-- **Sample Size Scaling**: Small sample sizes are discounted using $\frac{n}{n + 5}$, preventing an isolated MR or ticket from skewing ratings.
-- **Symmetric Estimation**: Padding estimates is penalized just as strictly as under-estimating, discouraging team members from inflating ticket estimates.
-- **Recency Neutrality**: Leaves of absence and approved holidays do not affect engineering performance ratings.
-
----
-
-## 🧪 Testing & Quality Assurance
-
-Business Analyzer maintains an exhaustive regression test suite built on Node.js native test runner:
+Business Analyzer maintains a rigorous, deterministic test suite running natively:
 
 ```bash
 npm test
 ```
 
-### Test Coverage Highlights (226 Tests)
-- ✅ Isolated git worktree creation, sandboxing, and cleanup on disposable repositories.
-- ✅ AI prompt construction and JSON response parsing.
-- ✅ High-volume diff chunking, batching, and context budget boundaries.
-- ✅ Exact diff parsing, hunk position mapping, and GitLab inline discussion generation.
-- ✅ Deterministic security and credential scanning.
-- ✅ Finding deduplication and fingerprint hashing.
-- ✅ Sequential merge-order auto-approval logic.
-- ✅ Developer scoring formulas, confidence scaling, and Excel export generation.
-- ✅ Sentry crash triage, stack parsing, and Jira task compilation.
-- ✅ Atomic file persistence and automated backup mechanics.
+```
+ℹ tests 226
+ℹ pass 226
+ℹ fail 0
+ℹ duration_ms 2356ms
+```
 
 ---
 
-## 📚 Documentation Index
+## 📚 Complete Documentation Suite
 
-For deeper technical documentation, refer to the guides in the repository:
-
-- 🏛️ **[Technical Architecture](docs/ARCHITECTURE.md)**: Deep dive into the internal subsystems, execution pipelines, data flow, and security boundaries.
-- 📡 **[REST API Reference](docs/API.md)**: Exhaustive documentation of all endpoints, parameters, request schemas, and responses.
-- ⚙️ **[Configuration & Deployment](docs/CONFIGURATION.md)**: Production deployment instructions, reverse proxy setups, and environment variable tuning.
-- 💼 **[Business & CTO Review](BUSINESS-REVIEW.md)**: Comprehensive business analysis, ROI evaluation, governance insights, and architectural scorecard.
-
----
-
-## ⚠️ Intentional Design Trade-offs
-
-1. **Auto-Approve Yes, Auto-Merge Never**:
-   - Business Analyzer will approve clean MRs sequentially when configured, but will **never** execute a merge. Final merges remain in human hands and CI gates.
-2. **Deterministic Markdown Overwrites**:
-   - `review/MR-<iid>.md` is regenerated cleanly on every run. It intentionally does not attempt to merge manual human edits into the file across review cycles.
-3. **Single-Node Focus**:
-   - Designed to run leanly on an internal team server or Tech Lead workstation. It deliberately avoids complex distributed databases or Kubernetes clusters in favor of native simplicity and zero operating overhead.
+- 🏛️ **[Technical Architecture](docs/ARCHITECTURE.md)**: Deep dive into internal pipelines, diff parsers, token budgets, and security boundaries.
+- 📡 **[REST API Specification](docs/API.md)**: Complete guide to all HTTP endpoints, schemas, and headers.
+- ⚙️ **[Configuration & Deployment Guide](docs/CONFIGURATION.md)**: Environment variables, webhooks, and reverse proxy guidelines.
+- 💼 **[Product & Business Model](docs/BUSINESS_MODEL.md)**: Monetization tiers, pricing hypotheses, and unit economics.
+- 🎯 **[Product Strategy & ICPs](docs/PRODUCT_STRATEGY.md)**: Problem analysis, ICP profiles, and competitive landscape.
+- 🛡️ **[Security Threat Model](docs/SECURITY.md)**: Security audits, credential masking, and worktree sandboxing.
+- 🗺️ **[Product Roadmap](docs/PRODUCT_ROADMAP.md)**: Prioritized features across Now, Next, and Later milestones.
+- 💼 **[LinkedIn Content Strategy](docs/LINKEDIN_CONTENT_PLAN.md)**: 30-day technical content and distribution blueprints.
+- 🧪 **[Customer Validation](docs/CUSTOMER_VALIDATION.md)**: Experimental hypotheses and validation metrics.
 
 ---
 
-## 📄 License
+## 👨‍💻 Creator & Commercial Advisory
 
-This project is proprietary and unlicensed. All rights reserved.
+Business Analyzer is designed and built by **Javid Sattar**, a senior software engineer and independent product builder.
+
+### Custom Deployment & Enterprise Engagements
+If your organization requires:
+- Dedicated on-premise installation inside air-gapped VPCs
+- Custom integration with internal corporate SSO, LDAP, or private LLMs (vLLM, Ollama)
+- Tailored code review rules and custom Jira automation workflows
+- Architectural consulting and technical leadership
+
+**Contact**:
+- **GitHub**: [@javiddeveloper](https://github.com/javiddeveloper)
+- **Repository**: [Business-Analyzer](https://github.com/javiddeveloper/Business-Analyzer)
+- **LinkedIn**: [Javid Sattar](https://www.linkedin.com) *(reach out via GitHub issue or LinkedIn message for enterprise licensing and consulting)*

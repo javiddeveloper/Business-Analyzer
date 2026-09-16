@@ -2352,7 +2352,377 @@ function headers() {
   if (token) h['X-Admin-Token'] = token;
   return h;
 }
+
+// ---- Mock Data Engine for Demonstration & Screenshots --------------------
+function isMockMode() {
+  return window.location.search.includes('mock=1') || window.location.search.includes('demo=1');
+}
+
+const MOCK_DB = {
+  status: {
+    ok: true,
+    user: { id: 101, username: 'alex.morgan', name: 'Alex Morgan' },
+    activeProject: { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
+    projects: [
+      { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
+      { id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine' },
+      { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
+    ],
+    projectPath: { set: true, value: '/repos/nexus-core-platform' },
+    gitlab: { url: 'https://gitlab.example.com', ok: true, user: 'alex.lead', name: 'Alex Morgan (Tech Lead)', bot: false, error: null },
+    ai: { provider: 'claude-cli', model: 'claude-3-7-sonnet', state: 'ready' },
+    settings: {
+      autoReview: true,
+      autoApprove: true,
+      skipDrafts: true,
+      inlineComments: true,
+      autoPost: true,
+      pollSeconds: 120
+    }
+  },
+  usage: {
+    days: 30,
+    reviewsCount: 142,
+    promptTokens: 4850200,
+    completionTokens: 612400,
+    totalTokens: 5462600,
+    byProvider: {
+      'claude-cli': { reviews: 98, promptTokens: 3820000, completionTokens: 490000 },
+      'openai-compatible': { reviews: 44, promptTokens: 1030200, completionTokens: 122400 }
+    }
+  },
+  accuracy: {
+    total: 86,
+    helpful: 79,
+    accuracyRate: 91.8
+  },
+  projects: [
+    { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
+    { id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine' },
+    { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
+  ],
+  engines: [
+    { id: 'claude-cli', label: 'Claude Code CLI', icon: '🤖', state: 'ready', isCurrent: true, model: 'claude-3-7-sonnet' },
+    { id: 'openai-compatible', label: 'OpenAI / GapGPT', icon: '⚡', state: 'ready', isCurrent: false, model: 'gpt-4o-mini' },
+    { id: '9router', label: '9Router Gateway', icon: '🔀', state: 'ready', isCurrent: false, model: 'combo' },
+    { id: 'gemini', label: 'Google Gemini', icon: '✨', state: 'ready', isCurrent: false, model: 'gemini-2.0-flash' }
+  ],
+  mergeRequests: [
+    {
+      id: 1054,
+      iid: 104,
+      project_id: 'nexus/core-platform',
+      title: 'feat(auth): implement OAuth2 PKCE token exchange with refresh rotation',
+      state: 'opened',
+      author: { id: 101, username: 'alex.morgan', name: 'Alex Morgan', avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=128&fit=crop&crop=faces' },
+      source_branch: 'feature/AUTH-1042-oauth-pkce',
+      target_branch: 'develop',
+      created_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+      hasReviewReport: true,
+      lastDecision: 'APPROVE',
+      findingsCount: 3,
+      taskKey: 'AUTH-1042',
+      mergeOrder: 1,
+      draft: false
+    },
+    {
+      id: 1053,
+      iid: 103,
+      project_id: 'nexus/core-platform',
+      title: 'fix(billing): ensure idempotent stripe webhook retries without duplicate charges',
+      state: 'opened',
+      author: { id: 102, username: 'sarah.chen', name: 'Sarah Chen', avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=128&fit=crop&crop=faces' },
+      source_branch: 'fix/BILL-890-webhook-idempotency',
+      target_branch: 'develop',
+      created_at: new Date(Date.now() - 18 * 3600 * 1000).toISOString(),
+      hasReviewReport: true,
+      lastDecision: 'APPROVE',
+      findingsCount: 1,
+      taskKey: 'BILL-890',
+      mergeOrder: 2,
+      draft: false
+    },
+    {
+      id: 1052,
+      iid: 102,
+      project_id: 'nexus/core-platform',
+      title: 'perf(cache): tiered Redis multi-region cluster caching & connection pooling',
+      state: 'opened',
+      author: { id: 103, username: 'marcus.vance', name: 'Marcus Vance', avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=128&fit=crop&crop=faces' },
+      source_branch: 'perf/PERF-401-redis-cluster',
+      target_branch: 'develop',
+      created_at: new Date(Date.now() - 28 * 3600 * 1000).toISOString(),
+      hasReviewReport: true,
+      lastDecision: 'REQUEST_CHANGES',
+      findingsCount: 4,
+      taskKey: 'PERF-401',
+      mergeOrder: 3,
+      draft: false
+    },
+    {
+      id: 1051,
+      iid: 101,
+      project_id: 'nexus/core-platform',
+      title: 'refactor(orders): migrate checkout pipeline to event-driven saga orchestration',
+      state: 'opened',
+      author: { id: 104, username: 'elena.rostova', name: 'Elena Rostova', avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=128&fit=crop&crop=faces' },
+      source_branch: 'refactor/ORD-230-saga-pattern',
+      target_branch: 'main',
+      created_at: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+      hasReviewReport: false,
+      lastDecision: null,
+      findingsCount: 0,
+      taskKey: 'ORD-230',
+      mergeOrder: 4,
+      draft: false
+    }
+  ],
+  jobs: [
+    {
+      key: 'nexus/core-platform!101',
+      projectId: 'nexus/core-platform',
+      mrIid: 101,
+      status: 'running',
+      trigger: 'auto',
+      startedAt: Date.now() - 35000,
+      progress: { step: 'agent_exploration', message: 'Analyzing saga compensation boundaries across 14 files...' }
+    }
+  ],
+  roster: [
+    { id: 101, username: 'alex.morgan', name: 'Alex Morgan', role: 'Developer', access_level: 30 },
+    { id: 102, username: 'sarah.chen', name: 'Sarah Chen', role: 'Developer', access_level: 30 },
+    { id: 103, username: 'marcus.vance', name: 'Marcus Vance', role: 'Developer', access_level: 30 },
+    { id: 104, username: 'elena.rostova', name: 'Elena Rostova', role: 'Developer', access_level: 30 },
+    { id: 105, username: 'david.kim', name: 'David Kim', role: 'Developer', access_level: 30 }
+  ],
+  teamRows: {
+    'sarah.chen': { author: 'sarah.chen', name: 'Sarah Chen', wipTasks: 2, openMrs: 1, staleMrs: 0, overdueTasks: 0, tasksWithoutMr: 0, unloggedTasks: 0, doneTasks: 8, mergedMrs: 6, medianHoursToMerge: 6.4, overallScore: 94, attentionFlags: [] },
+    'alex.morgan': { author: 'alex.morgan', name: 'Alex Morgan', wipTasks: 3, openMrs: 1, staleMrs: 0, overdueTasks: 0, tasksWithoutMr: 1, unloggedTasks: 0, doneTasks: 7, mergedMrs: 5, medianHoursToMerge: 8.2, overallScore: 89, attentionFlags: [] },
+    'elena.rostova': { author: 'elena.rostova', name: 'Elena Rostova', wipTasks: 2, openMrs: 1, staleMrs: 0, overdueTasks: 1, tasksWithoutMr: 0, unloggedTasks: 0, doneTasks: 6, mergedMrs: 4, medianHoursToMerge: 12.5, overallScore: 88, attentionFlags: ['OVERDUE_TASK'] },
+    'david.kim': { author: 'david.kim', name: 'David Kim', wipTasks: 2, openMrs: 0, staleMrs: 0, overdueTasks: 0, tasksWithoutMr: 0, unloggedTasks: 1, doneTasks: 5, mergedMrs: 3, medianHoursToMerge: 14.1, overallScore: 82, attentionFlags: ['UNLOGGED_TASK'] },
+    'marcus.vance': { author: 'marcus.vance', name: 'Marcus Vance', wipTasks: 3, openMrs: 1, staleMrs: 1, overdueTasks: 2, tasksWithoutMr: 1, unloggedTasks: 1, doneTasks: 3, mergedMrs: 2, medianHoursToMerge: 28.6, overallScore: 74, attentionFlags: ['OVERDUE_TASK', 'STALE_MR'] }
+  },
+  knowledge: [
+    { id: 'kb-1', title: 'Security: Zero-Trust Parameterized Queries & ORM Sanitation', content: 'Never concatenate raw client inputs into SQL or NoSQL database queries. Always utilize parameterized queries or strongly-typed ORM query builders.', updated_at: '2026-09-14' },
+    { id: 'kb-2', title: 'Architecture: Distributed Idempotency Keys for Payment Handlers', content: 'All financial webhooks and charging operations must verify incoming idempotency headers in Redis before processing transactions.', updated_at: '2026-09-15' },
+    { id: 'kb-3', title: 'Code Quality: Mandatory Test Assertions on Non-Happy-Path Branches', content: 'Every pull request modifying domain business logic must include automated test coverage for failure modes and error rejections.', updated_at: '2026-09-16' }
+  ],
+  sentryIssues: [
+    {
+      id: '14920',
+      title: 'NullPointerException in StripeWebhookHandler.processEvent',
+      culprit: 'StripeWebhookHandler.processEvent',
+      level: 'error',
+      count: 3420,
+      userCount: 840,
+      firstSeen: new Date(Date.now() - 5 * 86400 * 1000).toISOString(),
+      lastSeen: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+      hasJiraTask: true,
+      jiraTask: { key: 'BILL-890', summary: 'Handle missing webhook customer metadata safely' }
+    },
+    {
+      id: '14918',
+      title: 'RedisConnectionTimeout: Sentinel cluster failover in region eu-west-1',
+      culprit: 'RedisClusterConnectionPool.acquire',
+      level: 'fatal',
+      count: 1290,
+      userCount: 310,
+      firstSeen: new Date(Date.now() - 2 * 86400 * 1000).toISOString(),
+      lastSeen: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      hasJiraTask: false
+    },
+    {
+      id: '14915',
+      title: 'TokenExpiredException: Refresh token rotation replay window exceeded',
+      culprit: 'OAuthTokenService.rotateRefreshToken',
+      level: 'warning',
+      count: 420,
+      userCount: 95,
+      firstSeen: new Date(Date.now() - 8 * 86400 * 1000).toISOString(),
+      lastSeen: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+      hasJiraTask: false
+    },
+    {
+      id: '14910',
+      title: 'DatabaseDeadlockDetected: Concurrent updates on inventory_reservations',
+      culprit: 'InventoryReservationService.lockStockBatch',
+      level: 'error',
+      count: 215,
+      userCount: 42,
+      firstSeen: new Date(Date.now() - 12 * 86400 * 1000).toISOString(),
+      lastSeen: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
+      hasJiraTask: false
+    }
+  ]
+};
+
+async function handleMockApi(path, options = {}) {
+  // Simulate minimal async tick
+  await new Promise(r => setTimeout(r, 60));
+
+  if (path === '/api/status') return MOCK_DB.status;
+  if (path.startsWith('/api/usage')) return MOCK_DB.usage;
+  if (path.startsWith('/api/feedback/accuracy')) return MOCK_DB.accuracy;
+  if (path === '/api/projects') return MOCK_DB.projects;
+  if (path === '/api/engines') return MOCK_DB.engines;
+  if (path === '/api/maintainers') return [{ id: 101, username: 'alex.morgan', name: 'Alex Morgan' }];
+  if (path.startsWith('/api/audit')) return [];
+  if (path === '/api/backups') return [{ path: 'backups/2026-09-16-120000', date: '2026-09-16 12:00:00', sizeBytes: 412000 }];
+  if (path === '/api/merge-requests') return MOCK_DB.mergeRequests;
+  if (path === '/api/jobs') return MOCK_DB.jobs;
+  if (path === '/api/developers/roster') return MOCK_DB.roster;
+  if (path === '/api/knowledge') return MOCK_DB.knowledge;
+  if (path.startsWith('/api/sentry/issues')) {
+    return {
+      configured: true,
+      stale: false,
+      projects: ['nexus-core'],
+      errors: [],
+      canCreateTask: true,
+      projectKey: 'AUTH',
+      issues: MOCK_DB.sentryIssues
+    };
+  }
+
+  // Team row
+  const teamMatch = path.match(/^\/api\/team\/([^\/]+)\/row/);
+  if (teamMatch) {
+    const author = decodeURIComponent(teamMatch[1]);
+    return MOCK_DB.teamRows[author] || {
+      author, name: author, wipTasks: 1, openMrs: 1, staleMrs: 0, overdueTasks: 0, tasksWithoutMr: 0, unloggedTasks: 0, doneTasks: 4, mergedMrs: 3, medianHoursToMerge: 12.0, overallScore: 85, attentionFlags: []
+    };
+  }
+
+  // MR Context
+  const mrContextMatch = path.match(/^\/api\/merge-requests\/([^\/]+)\/(\d+)\/context/);
+  if (mrContextMatch) {
+    const iid = parseInt(mrContextMatch[2], 10);
+    const reportMd = "# Review for MR !" + iid + "\\n\\n" +
+      "## Summary & Decision\\n" +
+      "**Decision**: APPROVE ✅ (Score: 88/100)\\n" +
+      "- **High Severity**: 0\\n" +
+      "- **Medium Severity**: 1\\n" +
+      "- **Low Severity**: 2\\n" +
+      "- **Blocking Items**: None\\n\\n" +
+      "---\\n\\n" +
+      "## Positive Observations ✨\\n" +
+      "1. **Clean Architectural Isolation**: Excellent abstraction of the OAuth2 PKCE challenge generator from the core HTTP transport layer.\\n" +
+      "2. **Defensive Cryptography**: High-entropy cryptographically random state generator protects against CSRF replay vectors.\\n" +
+      "3. **Comprehensive Unit Tests**: Complete coverage of edge cases, token expiration boundaries, and invalid PKCE code verifiers.\\n\\n" +
+      "---\\n\\n" +
+      "## Findings & Recommendations 🔍\\n\\n" +
+      "### [Medium] Implement token refresh expiry jitter\\n" +
+      "- **File**: `src/auth/tokenService.ts:142`\\n" +
+      "- **Details**: When a fleet of client workers renews credentials simultaneously at exact 3600-second windows, auth servers experience thundering herd traffic spikes. Adding a random jitter of ±180 seconds prevents synchronized contention.\\n\\n" +
+      "### [Low] Use constant-time comparison for secret hash validation\\n" +
+      "- **File**: `src/auth/crypto.ts:58`\\n" +
+      "- **Details**: Direct string comparison === is susceptible to sub-millisecond timing attacks. Prefer crypto.timingSafeEqual for client secret hashes.\\n\\n" +
+      "---\\n\\n" +
+      "## Process & Operational Metrics\\n" +
+      "- **Files Inspected**: 18 files (1,240 added lines, 210 deleted lines)\\n" +
+      "- **Deterministic Checks**: Secret scan clean, No debug statements, Tests verified.\\n" +
+      "- **Model Engine**: Claude 3.7 Sonnet (Agentic Worktree Mode)";
+
+    return {
+      mr: {
+        id: 1054,
+        iid: 104,
+        title: 'feat(auth): implement OAuth2 PKCE token exchange with refresh rotation',
+        source_branch: 'feature/AUTH-1042-oauth-pkce',
+        target_branch: 'develop',
+        author: { name: 'Alex Morgan', username: 'alex.morgan' }
+      },
+      commits: [
+        { id: 'c4a89d1', short_id: 'c4a89d1', title: 'feat(auth): implement PKCE verifier generation', author_name: 'Alex Morgan', created_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString() },
+        { id: 'b7e21f0', short_id: 'b7e21f0', title: 'test(auth): add unit tests for PKCE challenge validation', author_name: 'Alex Morgan', created_at: new Date(Date.now() - 3 * 3600 * 1000).toISOString() },
+        { id: 'a1d94c2', short_id: 'a1d94c2', title: 'refactor(auth): inject token jitter window', author_name: 'Alex Morgan', created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString() }
+      ],
+      jira: {
+        key: 'AUTH-1042',
+        summary: 'Implement OAuth2 Authorization Code Flow with PKCE for mobile and SPA clients',
+        status: 'In Review',
+        assignee: 'Alex Morgan',
+        dueDate: '2026-09-18',
+        originalEstimateHours: 8,
+        timeSpentHours: 6
+      },
+      report: reportMd,
+      reportExists: true
+    };
+  }
+
+  // Developer analytics
+  const devAnalyticsMatch = path.match(/^\/api\/developers\/([^\/]+)\/analytics/);
+  if (devAnalyticsMatch) {
+    const author = decodeURIComponent(devAnalyticsMatch[1]);
+    const isAlex = author === 'alex.morgan';
+    return {
+      author,
+      name: isAlex ? 'Alex Morgan' : 'Sarah Chen',
+      overallScore: isAlex ? 89 : 94,
+      metrics: {
+        onTime: { score: isAlex ? 88 : 96, weight: 25, sampleSize: 8, confidence: 0.615, description: '8/8 Jira tasks delivered on or before due date' },
+        estimation: { score: isAlex ? 92 : 94, weight: 25, sampleSize: 6, confidence: 0.545, description: 'Average estimation variance within 12%' },
+        codeQuality: { score: isAlex ? 84 : 92, weight: 20, sampleSize: 5, confidence: 0.500, description: 'Zero high severity findings across last 5 MRs' },
+        completion: { score: isAlex ? 90 : 95, weight: 15, sampleSize: 10, confidence: 0.667, description: '9/10 sprint commitments resolved' },
+        worklogs: { score: isAlex ? 100 : 100, weight: 10, sampleSize: 8, confidence: 0.615, description: '100% of reviewed tasks have logged work hours' },
+        singleAuthor: { score: isAlex ? 80 : 85, weight: 5, sampleSize: 5, confidence: 0.500, description: '4 of 5 MRs authored exclusively on branch' }
+      },
+      sprints: [
+        { name: 'Sprint 24', score: 84 },
+        { name: 'Sprint 25', score: 86 },
+        { name: 'Sprint 26', score: 88 },
+        { name: 'Sprint 27', score: 89 },
+        { name: 'Sprint 28', score: isAlex ? 89 : 94 }
+      ],
+      workItems: [
+        { key: 'AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange', status: 'In Review', estimateHours: 8, spentHours: 6, onTime: true },
+        { key: 'AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to KMS', status: 'Done', estimateHours: 16, spentHours: 14, onTime: true },
+        { key: 'AUTH-1035', summary: 'Implement session revocation blacklist in Redis', status: 'Done', estimateHours: 12, spentHours: 12, onTime: true },
+        { key: 'AUTH-1029', summary: 'Configure audit logging on administrative login endpoints', status: 'Done', estimateHours: 4, spentHours: 4, onTime: true }
+      ],
+      mergeRequests: [
+        { iid: 104, title: 'feat(auth): implement OAuth2 PKCE token exchange', filesCount: 18, findingsCount: 3, decision: 'APPROVE', merged: false },
+        { iid: 98, title: 'feat(auth): migrate JWT signature to KMS', filesCount: 12, findingsCount: 1, decision: 'APPROVE', merged: true },
+        { iid: 94, title: 'fix(session): Redis cluster blacklist replication', filesCount: 8, findingsCount: 2, decision: 'APPROVE', merged: true }
+      ]
+    };
+  }
+
+  // Sentry detail
+  const sentryDetailMatch = path.match(/^\/api\/sentry\/issues\/([^\/]+)/);
+  if (sentryDetailMatch) {
+    const issueId = sentryDetailMatch[1];
+    return {
+      issue: {
+        id: issueId,
+        title: 'NullPointerException in StripeWebhookHandler.processEvent',
+        culprit: 'StripeWebhookHandler.processEvent',
+        level: 'error',
+        count: 3420,
+        userCount: 840,
+        firstSeen: new Date(Date.now() - 5 * 86400 * 1000).toISOString(),
+        lastSeen: new Date(Date.now() - 15 * 60 * 1000).toISOString()
+      },
+      event: {
+        message: 'java.lang.NullPointerException: Cannot invoke "CustomerMetadata.getTenantId()" because "metadata" is null',
+        stacktrace: [
+          'at com.nexus.billing.webhook.StripeWebhookHandler.processEvent(StripeWebhookHandler.java:142)',
+          'at com.nexus.billing.webhook.StripeWebhookController.handleWebhook(StripeWebhookController.java:58)',
+          'at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)'
+        ]
+      },
+      analysis: 'The crash happens when incoming Stripe customer charge events omit the optional metadata payload. Adding a null-safe guard and defaulting to tenant-level resolution prevents the NullPointerException.',
+      suggestedPriority: 'High',
+      suggestedAssignee: 'sarah.chen'
+    };
+  }
+
+  return { ok: true };
+}
+
 async function api(path, options = {}, retried = false) {
+  if (isMockMode()) return await handleMockApi(path, options);
   const res = await fetch(path, { ...options, headers: headers() });
   const text = await res.text();
   let data;
