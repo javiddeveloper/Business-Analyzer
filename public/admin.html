@@ -1,1077 +1,1820 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" class="dark">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Coder Review — داشبورد</title>
-<!-- The mark is what this tool does, in its own palette: code brackets with a
-     review's verdict inside. Inline as a data URI rather than a file in
-     public/ for the same reason the rest of this project has no build step —
-     it costs no request, no asset pipeline and nothing to keep in sync. SVG
-     only: an .ico would be the one binary in a repo that has none. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1426'/%3E%3Cpath d='M11 9 5.5 16 11 23' fill='none' stroke='%2334e3e3' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M21 9 26.5 16 21 23' fill='none' stroke='%2334e3e3' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M13.5 17.4 15.9 19.9 19.2 13.4' fill='none' stroke='%2341e08a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-<meta name="theme-color" content="#0d1426" />
+<title>Coder Review — Shadcn Admin Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fafafa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3'/%3E%3C/svg%3E" />
+<meta name="theme-color" content="#09090b" />
+
+<!-- Google Fonts: Inter + Vazirmatn + JetBrains Mono -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
-
   :root {
-    --font-primary: 'Vazirmatn', system-ui, sans-serif;
-    --bg: #0d1426;
-    --bg-2: #0a0f1e;
-    --panel: rgba(22, 30, 52, 0.72);
-    --panel-solid: #141b30;
-    --panel-2: #1a2340;
-    --border: rgba(120, 140, 200, 0.16);
-    --border-strong: rgba(120, 140, 200, 0.32);
-    --text: #e7ecf6;
-    --muted: #8b96b3;
-    --dim: #5b647e;
-    --cyan: #34e3e3;
-    --violet: #9b8cff;
-    --amber: #ffb347;
-    --green: #41e08a;
-    --red: #ff6b81;
-    --radius: 16px;
-    /* "Never reviewed by this tool" needs its own colour: it used to share a
-       grey with "نامشخص", and a whole chart of unreviewed MRs was being read
-       as "we checked and could not tell" rather than "we never looked". */
-    --noreport: #3b4666;
-    --shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.8);
+    --font-sans: 'Inter', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', Consolas, monospace;
+    --font-primary: var(--font-sans);
+
+    /* Shadcn UI Dark Zinc Color Palette (itsnyein/shadcn-admin style) */
+    --background: #09090b;
+    --foreground: #fafafa;
+
+    --card: #0c0c0e;
+    --card-foreground: #fafafa;
+    --card-subtle: #121215;
+    --card-hover: #18181b;
+
+    --popover: #0c0c0e;
+    --popover-foreground: #fafafa;
+
+    --primary: #fafafa;
+    --primary-foreground: #09090b;
+    --primary-accent: #3b82f6;
+
+    --secondary: #18181b;
+    --secondary-foreground: #fafafa;
+
+    --muted: #18181b;
+    --muted-foreground: #a1a1aa;
+    --dim: #71717a;
+
+    --accent: #27272a;
+    --accent-foreground: #fafafa;
+
+    --destructive: #ef4444;
+    --destructive-foreground: #fafafa;
+
+    --border: rgba(255, 255, 255, 0.09);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --border-dashed: rgba(255, 255, 255, 0.13);
+    --input: rgba(255, 255, 255, 0.12);
+    --ring: #3b82f6;
+
+    --cyan: #38bdf8;
+    --violet: #a855f7;
+    --amber: #f59e0b;
+    --green: #10b981;
+    --red: #f43f5e;
+    --noreport: #27272a;
+
+    --radius-sm: 6px;
+    --radius: 10px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+    --radius-full: 9999px;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 20px 40px -8px rgba(0, 0, 0, 0.7);
+
+    /* legacy aliases */
+    --bg: var(--background);
+    --bg-2: #050507;
+    --panel: var(--card);
+    --panel-solid: #0c0c0e;
+    --panel-2: var(--card-subtle);
   }
-  * { box-sizing: border-box; }
+
+  *, *::before, *::after { box-sizing: border-box; }
   input, textarea, button, select { font-family: inherit; }
-  html, body { margin: 0; }
-  body {
-    background: linear-gradient(180deg, #111a30 0%, var(--bg) 45%, var(--bg-2) 100%) fixed;
-    color: var(--text); font-family: var(--font-primary);
-    padding: 16px; font-size: 14px; line-height: 1.7;
+  html, body {
+    margin: 0; padding: 0; min-height: 100vh;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-primary);
+    font-size: 13.5px;
+    line-height: 1.6;
+    direction: rtl;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 18px; margin: 0; font-weight: 800; }
-  h3 { font-size: 15px; margin: 0 0 10px; }
-  a { color: var(--cyan); }
-  code, .mono { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; direction: ltr; unicode-bidi: embed; }
 
-  /* ---- header ---- */
+  h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 16px; margin: 0; font-weight: 600; }
+  h3 { font-size: 14.5px; margin: 0 0 10px; font-weight: 600; color: var(--foreground); }
+  h4 { font-size: 13px; margin: 0 0 8px; font-weight: 600; }
+  a { color: var(--primary-accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: var(--font-mono); font-size: 12px; direction: ltr; unicode-bidi: embed; }
+
+  /* App Layout: itsnyein/shadcn-admin Shell */
+  .app-layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+  }
+
+  /* Sidebar */
+  .side-nav {
+    width: 240px;
+    flex: 0 0 240px;
+    min-height: 100vh;
+    background: #09090b;
+    border-inline-end: 1px dashed var(--border-dashed);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 12px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 40;
+  }
+
+  .sidebar-header {
+    padding: 4px 8px 16px;
+    border-bottom: 1px dashed var(--border-dashed);
+    margin-bottom: 14px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  .brand-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .brand-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .brand-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .brand-subtitle {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .nav-section-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--muted-foreground);
+    padding: 12px 10px 6px;
+    font-weight: 600;
+  }
+
+  .nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted-foreground);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: right;
+    transition: all 0.15s ease;
+  }
+
+  .nav-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--foreground);
+  }
+
+  .nav-item.on {
+    background: var(--accent);
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  .nav-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.8;
+  }
+
+  .nav-item.on svg {
+    opacity: 1;
+    color: var(--primary-accent);
+  }
+
+  .nav-item span {
+    flex: 1;
+    white-space: nowrap;
+  }
+
+  .nav-badge-pill {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--muted-foreground);
+  }
+
+  /* Main Container */
+  .app-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--background);
+  }
+
+  /* Top Navbar (header) */
   header {
-    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-    justify-content: space-between; margin-bottom: 16px;
-    padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--radius);
-    background: var(--panel); backdrop-filter: blur(14px);
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 24px;
+    background: rgba(9, 9, 11, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px dashed var(--border-dashed);
   }
-  .brand { display: flex; align-items: center; gap: 10px; }
-  .logo { flex: 0 0 auto; filter: drop-shadow(0 0 8px var(--cyan)); }
-  .badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-width: 100%; min-width: 0; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 999px; padding: 5px 12px; font-size: 12px; color: var(--muted);
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--muted-foreground);
   }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dim); flex: 0 0 auto; }
-  .dot.ok { background: var(--green); box-shadow: 0 0 10px var(--green); }
-  .dot.err { background: var(--red); box-shadow: 0 0 10px var(--red); }
-  .dot.run { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); animation: pulse 1s infinite; }
-  .dot.warn { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
+  .bc-root {
+    color: var(--muted-foreground);
+  }
 
-  /* ---- toolbar project switcher ---- */
+  .bc-sep {
+    opacity: 0.4;
+  }
+
+  .bc-current {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* Project Picker Select */
   .project-picker {
-    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
-    border-radius: 999px; padding: 5px 30px 5px 12px; font-size: 12px; cursor: pointer;
-    max-width: 220px; appearance: none; -webkit-appearance: none;
-    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-    background-position: calc(100% - 16px) center, calc(100% - 11px) center;
-    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+    background: var(--card-subtle);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 28px 5px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    max-width: 220px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: calc(100% - 8px) center;
+    background-size: 14px;
+    background-repeat: no-repeat;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .project-picker:hover { border-color: var(--border-strong); }
 
-  /* ---- toggle switch: for settings that deserve more visual weight than a
-     plain checkbox — a bare checkbox reads as decoration in a busy toolbar,
-     easy to leave on/off by accident; a switch reads as a real state. ---- */
-  .switch-badge { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
-  .switch-badge.on { color: var(--green); }
-  .switch { position: relative; width: 38px; height: 22px; flex: 0 0 auto; }
-  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .project-picker:hover {
+    border-color: var(--border-strong);
+  }
+
+  .project-picker:focus {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+
+  .badge.pick {
+    cursor: pointer;
+  }
+
+  .badge.pick:hover {
+    background: var(--card-hover);
+    border-color: var(--border-strong);
+    color: var(--foreground);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--dim);
+    flex-shrink: 0;
+  }
+
+  .dot.ok {
+    background: var(--green);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  }
+
+  .dot.err {
+    background: var(--red);
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+  }
+
+  .dot.run {
+    background: var(--cyan);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    animation: pulse 1.2s infinite;
+  }
+
+  .dot.warn {
+    background: var(--amber);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  /* Content area */
+  .content-wrapper {
+    padding: 24px;
+    max-width: 1540px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Banner */
+  .banner {
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: rgba(245, 158, 11, 0.08);
+    color: #fde68a;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin: 16px 24px 0;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+
+  .banner[hidden] { display: none !important; }
+  .banner button { margin-inline-start: auto; }
+
+  /* Cards (Shadcn Card) */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 22px 24px;
+    min-width: 0;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card[hidden] { display: none !important; }
+
+  .section-divider {
+    border: none;
+    border-top: 1px dashed var(--border-dashed);
+    margin: 20px 0;
+  }
+
+  /* Controls: Shadcn Buttons */
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 7px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    outline: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  button:hover {
+    background: #e4e4e7;
+  }
+
+  button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  button.ghost {
+    background: transparent;
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    box-shadow: none;
+    font-weight: 500;
+  }
+
+  button.ghost:hover {
+    background: var(--card-hover);
+    border-color: var(--border-strong);
+  }
+
+  button.danger {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+    box-shadow: none;
+  }
+
+  button.danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+
+  /* Form Inputs */
+  input[type=text], input[type=password], input[type=date], select, textarea {
+    width: 100%;
+    background: #09090b;
+    color: var(--foreground);
+    border: 1px solid var(--input);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 13px;
+    margin-bottom: 8px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  input[type=text]:focus, input[type=password]:focus, input[type=date]:focus, select:focus, textarea:focus {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  textarea {
+    min-height: 110px;
+    resize: vertical;
+    line-height: 1.7;
+  }
+
+  /* Checkboxes */
+  label.check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  label.check input[type=checkbox] {
+    accent-color: var(--primary-accent);
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  /* Switch (Radix UI Style) */
+  .switch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted-foreground);
+  }
+
+  .switch-badge.on {
+    color: var(--green);
+  }
+
+  .switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .switch input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+  }
+
   .switch .track {
-    position: absolute; inset: 0; border-radius: 999px; background: rgba(120,140,200,.25);
-    border: 1px solid var(--border-strong); transition: background .2s, border-color .2s;
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-full);
+    background: #27272a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.2s, border-color 0.2s;
   }
+
   .switch .thumb {
-    position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 50%;
-    background: var(--text); transition: inset-inline-start .2s;
+    position: absolute;
+    top: 2px;
+    inset-inline-start: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: inset-inline-start 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .switch input:checked ~ .track { background: var(--green); border-color: var(--green); }
-  .switch input:checked ~ .thumb { inset-inline-start: calc(100% - 18px); background: #06210f; }
 
-  /* ---- toolbar model picker ---- */
-  .badge.pick { cursor: pointer; border: 1px solid var(--border); }
-  .badge.pick:hover { border-color: var(--border-strong); background: var(--panel); }
-  .engine-list { display: flex; flex-direction: column; gap: 8px; }
-  .engine-card {
-    display: flex; flex-direction: column; gap: 0; text-align: start;
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px 12px; color: var(--text);
+  .switch input:checked ~ .track {
+    background: var(--green);
+    border-color: var(--green);
   }
-  .engine-card .row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-  .engine-card:hover { border-color: var(--border-strong); }
-  .engine-card.active { border-color: var(--cyan); background: rgba(52,227,227,.1); }
-  .engine-card .icon { font-size: 20px; flex: 0 0 auto; }
-  .engine-card .body { min-width: 0; flex: 1; }
-  .engine-card .name { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-  .engine-card .hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .engine-card .status { font-size: 11px; flex: 0 0 auto; }
-  .engine-card .status.ok { color: var(--green); }
-  .engine-card .status.warn { color: var(--amber); }
-  .engine-card .status.unknown { color: var(--muted); }
-  .engine-card .test-btn {
-    flex: 0 0 auto; font-size: 11px; padding: 4px 10px;
-    background: transparent; border: 1px solid var(--border); color: var(--muted);
-  }
-  .engine-card .test-btn:hover { border-color: var(--border-strong); color: var(--text); background: var(--panel); }
-  .engine-card .test-btn:disabled { opacity: .6; cursor: wait; }
-  .engine-test-result { font-size: 11px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
-  .engine-test-result.ok { color: var(--green); }
-  .engine-test-result.err { color: var(--red); }
 
-  /* ---- developer analytics page ---- */
-  .dev-page-body { display: flex; gap: 20px; align-items: flex-start; min-width: 0; }
+  .switch input:checked ~ .thumb {
+    inset-inline-start: calc(100% - 16px);
+    background: #042412;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* Band & KPI Metric Cards (itsnyein/shadcn-admin Dashboard Stats) */
+  .band {
+    margin: 20px 0 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .band h4 {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .band .band-note {
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .kpi {
+    background: var(--card-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: border-color 0.15s;
+  }
+
+  .kpi:hover {
+    border-color: var(--border-strong);
+  }
+
+  .kpi .n {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--foreground);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .kpi .n small {
+    font-size: 13px;
+    opacity: 0.6;
+    font-weight: 600;
+  }
+
+  .kpi .l {
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted-foreground);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .kpi .sub {
+    font-size: 10.5px;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  .kpi.warn .n { color: var(--amber); }
+  .kpi.bad .n { color: var(--red); }
+  .kpi.good .n { color: var(--green); }
+  .kpi.quiet .n { color: var(--dim); }
+
+  /* Date Filter */
+  .date-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    background: var(--card-subtle);
+    border: 1px dashed var(--border-dashed);
+    border-radius: var(--radius);
+  }
+
+  .date-filter .field { min-width: 130px; }
+  .date-filter input[type=date] { margin-bottom: 0; }
+
+  /* Team Table */
+  .team-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+
+  .team-table th, .team-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .team-table th {
+    font-family: var(--font-mono);
+    color: var(--muted-foreground);
+    font-weight: 600;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px dashed var(--border-dashed);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .team-table th.on { color: var(--cyan); }
+  .team-table td.num { font-variant-numeric: tabular-nums; }
+  .team-table tbody tr { cursor: pointer; transition: background 0.15s; }
+  .team-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+  .team-table .who { font-weight: 600; white-space: normal; color: var(--foreground); }
+  .team-table .zero { color: var(--dim); }
+  .team-table .hot { color: var(--red); font-weight: 700; }
+  .team-table .warm { color: var(--amber); font-weight: 700; }
+
+  .team-loading {
+    display: inline-block;
+    width: 32px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    animation: pulse 1.1s ease-in-out infinite;
+  }
+
+  /* Score Badges & Pills */
+  .score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: var(--radius-full);
+    padding: 2px 10px;
+    font-size: 11.5px;
+    border: 1px solid transparent;
+    background: var(--card-subtle);
+    color: var(--muted-foreground);
+  }
+
+  .score-badge .num { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .score-good { background: rgba(16, 185, 129, 0.12); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+  .score-mid  { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+  .score-bad  { background: rgba(244, 63, 94, 0.12);  color: #fb7185; border-color: rgba(244, 63, 94, 0.3); }
+
+  .score-pill {
+    display: inline-block;
+    min-width: 34px;
+    text-align: center;
+    border-radius: var(--radius-full);
+    padding: 2px 8px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-size: 11.5px;
+    border: 1px solid transparent;
+  }
+
+  .mini-score { font-size: 10px; font-variant-numeric: tabular-nums; opacity: 0.85; }
+
+  /* Attention List */
+  .attn { display: flex; flex-direction: column; gap: 6px; }
+  .attn-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    border: 1px solid var(--border);
+    border-inline-start-width: 3px;
+    border-radius: var(--radius-sm);
+    background: var(--card-subtle);
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .attn-item.high { border-inline-start-color: var(--red); }
+  .attn-item.mid  { border-inline-start-color: var(--amber); }
+  .attn-item .why { color: var(--muted-foreground); font-size: 11px; }
+  .attn-item .grow { flex: 1 1 auto; min-width: 0; }
+  .attn-empty {
+    border: 1px dashed var(--border-dashed);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--green);
+  }
+
+  /* Task Cards */
+  .task-cards { display: flex; flex-direction: column; gap: 10px; }
+  .task-cards.two-col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (max-width: 900px) { .task-cards.two-col { grid-template-columns: 1fr; } }
+
+  .task-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card-subtle);
+    font-size: 12.5px;
+    transition: border-color 0.15s;
+  }
+  .task-card:hover { border-color: var(--border-strong); }
+  .task-card.needs-worklog { border-color: rgba(245, 158, 11, 0.4); }
+  .task-card.needs-worklog .task-title { font-weight: 600; }
+  .task-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .task-card .task-title { flex: 1; min-width: 0; color: var(--foreground); font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-card .task-project { font-size: 10.5px; color: var(--dim); }
+  .task-desc { font-size: 12px; line-height: 1.8; color: var(--foreground); white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
+  .task-desc.muted-desc { color: var(--dim); font-style: italic; }
+  .task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  .task-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 11px; color: var(--dim); }
+
+  /* Chips */
+  .status-chip { border-radius: var(--radius-full); padding: 2px 8px; font-size: 11px; font-weight: 600; }
+  .status-chip.st-done  { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  .status-chip.st-doing { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+  .status-chip.st-todo  { background: rgba(255, 255, 255, 0.08); color: var(--dim); }
+
+  .mr-link {
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    font-size: 11px;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--foreground);
+    font-variant-numeric: tabular-nums;
+  }
+  .mr-link.merged { background: rgba(16, 185, 129, 0.14); color: #34d399; }
+  .mr-link:hover { background: rgba(255, 255, 255, 0.12); text-decoration: none; }
+
+  .rt-badge { border-radius: var(--radius-full); padding: 2px 8px; font-size: 10.5px; }
+  .rt-badge.yes { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+  .rt-badge.no  { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  .rt-badge.unk { background: rgba(255, 255, 255, 0.06); color: var(--dim); }
+  .rt-badge.na  { background: rgba(255, 255, 255, 0.04); color: var(--dim); }
+
+  .jira-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    font-size: 11px;
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    text-decoration: none;
+  }
+  a.jira-badge:hover { background: rgba(168, 85, 247, 0.25); text-decoration: none; }
+
+  .branch-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: var(--radius-sm);
+    padding: 1px 7px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    direction: ltr;
+  }
+  .branch-pill.develop { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  .branch-pill.other   { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  .task-pill {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border-radius: var(--radius-sm);
+    padding: 1px 7px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+
+  /* Merge Requests View */
+  .settings-group {
+    border: 1px dashed var(--border-dashed);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    background: var(--card-subtle);
+  }
+  .settings-group .settings-group-title {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted-foreground);
+    margin: 0 0 10px;
+  }
+  .settings-row { display: flex; flex-wrap: wrap; gap: 14px 20px; }
+
+  .mr-body { display: flex; gap: 16px; align-items: flex-start; min-width: 0; }
+  .tabs {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 72vh;
+    overflow-y: auto;
+    padding-inline-start: 4px;
+    padding-inline-end: 2px;
+    border-inline-start: 1px dashed var(--border-dashed);
+  }
+  @media (max-width: 760px) {
+    .mr-body { flex-direction: column; }
+    .tabs { flex: 0 0 auto; width: 100%; max-height: 35vh; border-inline-start: none; border-bottom: 1px dashed var(--border-dashed); padding-bottom: 8px; }
+  }
+
+  .tab {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: start;
+    background: var(--card-subtle);
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .tab:hover { border-color: var(--border-strong); color: var(--foreground); }
+  .tab.active { background: var(--accent); border-color: var(--primary-accent); color: var(--foreground); }
+  .tab .tab-top { display: flex; align-items: center; gap: 6px; }
+  .tab .order-badge {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-sm);
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--foreground); font-size: 12.5px; font-weight: 500; flex: 1; min-width: 0; }
+  .tab .tab-meta { color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .mr-content { flex: 1; min-width: 0; }
+  .meta { color: var(--muted-foreground); font-size: 12px; }
+  .meta-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 14px 0; }
+  @media (min-width: 620px) { .meta-grid { grid-template-columns: 1fr 1fr; } }
+
+  .verdict { display: inline-block; border-radius: var(--radius-full); padding: 2px 10px; font-size: 11.5px; font-weight: 600; }
+  .verdict.approve { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+  .verdict.changes { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+
+  .note {
+    background: #060910;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.8;
+    margin-top: 12px;
+    max-height: 60vh;
+    overflow: auto;
+    font-size: 12.5px;
+  }
+
+  /* Findings */
+  .finding {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-top: 12px;
+    background: var(--card-subtle);
+    border-inline-start-width: 3px;
+  }
+  .finding.sev-High   { border-inline-start-color: var(--red); }
+  .finding.sev-Medium { border-inline-start-color: var(--amber); }
+  .finding.sev-Low    { border-inline-start-color: var(--cyan); }
+  .finding-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .sev { border-radius: var(--radius-full); padding: 1px 7px; font-size: 10.5px; font-weight: 600; flex-shrink: 0; }
+  .sev.High   { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+  .sev.Medium { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  .sev.Low    { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+  .finding-loc { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted-foreground); word-break: break-all; direction: ltr; text-align: start; }
+  .finding-note { white-space: pre-wrap; word-break: break-word; font-size: 12.5px; }
+  .finding pre { background: #060910; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; direction: ltr; text-align: left; }
+  .tag { font-size: 11px; color: var(--dim); }
+  .finding-feedback { display: inline-flex; gap: 4px; margin-inline-start: auto; }
+  .fb-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px 7px;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.6;
+    line-height: 1.5;
+  }
+  .fb-btn:hover { opacity: 1; border-color: var(--border-strong); }
+  .fb-btn.active { opacity: 1; border-color: var(--cyan); background: rgba(56, 189, 248, 0.15); }
+  .fb-btn.fb-down.active { border-color: var(--red); background: rgba(244, 63, 94, 0.15); }
+
+  /* Developers View */
+  .dev-page-body { display: flex; gap: 18px; align-items: flex-start; min-width: 0; }
   .dev-roster {
-    flex: 0 0 240px; display: flex; flex-direction: column; gap: 6px;
-    max-height: 75vh; overflow-y: auto; padding-inline-start: 6px; padding-inline-end: 2px; border-inline-start: 1px solid var(--border);
+    flex: 0 0 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 75vh;
+    overflow-y: auto;
+    padding-inline-start: 4px;
+    padding-inline-end: 2px;
+    border-inline-start: 1px dashed var(--border-dashed);
   }
   .dev-roster-item {
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 10px 12px; cursor: pointer; font-size: 13px; color: var(--text);
+    background: var(--card-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 12px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--foreground);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
   }
   .dev-roster-item:hover { border-color: var(--border-strong); transform: translateX(-2px); }
-  .dev-roster-item { transition: border-color .15s ease, background .15s ease, transform .15s ease; }
-  .dev-roster-item.active { border-color: var(--cyan); background: rgba(52,227,227,.1); }
+  .dev-roster-item.active { border-color: var(--primary-accent); background: var(--accent); }
+  .dev-roster-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .dev-roster-item .flag { font-size: 10px; color: var(--red); }
   .dev-main { flex: 1; min-width: 0; }
-  @media (max-width: 720px) {
+
+  @media (max-width: 760px) {
     .dev-page-body { flex-direction: column; }
-    .dev-roster { flex: 0 0 auto; width: 100%; max-height: 30vh; border-inline-start: none; border-bottom: 1px solid var(--border); padding-bottom: 8px; flex-direction: row; flex-wrap: wrap; }
+    .dev-roster { flex: 0 0 auto; width: 100%; max-height: 30vh; border-inline-start: none; border-bottom: 1px dashed var(--border-dashed); padding-bottom: 8px; flex-direction: row; flex-wrap: wrap; }
   }
 
-  /* ---- the person page's hero: who, and the one number, together ----------
-     The score used to be a small pill in a row of five other pills, two
-     screens above the table that explains it. It is the thing every other
-     band on this page is evidence for, so it gets the size that says so —
-     and its caveat travels with it instead of living only next to the
-     breakdown nobody scrolled to. */
+  /* Dev Hero Card */
   .dev-hero {
-    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-    background: linear-gradient(135deg, rgba(52,227,227,.05), rgba(155,140,255,.05));
-    border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 16px 18px; margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    background: var(--card-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 16px;
   }
   .hero-id { flex: 1 1 260px; min-width: 0; }
-  .hero-name { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .hero-meta { font-size: 11px; color: var(--dim); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .hero-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-  /* Pinned to the top-left corner of the card rather than vertically centred
-     beside the name: these are controls, not part of the identity, and
-     centring them made the block read as a third column of content. */
-  .hero-actions {
-    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-    align-self: flex-start; margin-inline-start: auto;
+  .hero-name { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hero-meta { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .hero-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .hero-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-inline-start: auto; }
+  .hero-caveat {
+    flex: 1 1 100%;
+    font-size: 11px;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+    border-top: 1px dashed var(--border-dashed);
+    padding-top: 10px;
+    margin-top: 4px;
   }
+  .hero-caveat b { color: #fde68a; font-weight: 600; }
+  .hero-caveat a { cursor: pointer; text-decoration: none; border-bottom: 1px dotted currentColor; }
 
-  /* The ring. A number in a coloured ring reads as a measurement; the same
-     number in a coloured box reads as a verdict — which is the wrong tone
-     for a figure this page spends the rest of its length qualifying. */
-  .score-ring { flex: 0 0 auto; width: 96px; height: 96px; }
-  .score-ring .ring-track { fill: none; stroke: rgba(120,140,200,.14); stroke-width: 7; }
+  /* Score Ring */
+  .score-ring { flex-shrink: 0; width: 90px; height: 90px; }
+  .score-ring .ring-track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 7; }
   .score-ring .ring-fill {
-    fill: none; stroke-width: 7; stroke-linecap: round;
-    transform: rotate(-90deg); transform-origin: 50% 50%;
-    transition: stroke-dasharray .6s cubic-bezier(.22,1,.36,1);
+    fill: none;
+    stroke-width: 7;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dasharray 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .score-ring .ring-num { font-size: 26px; font-weight: 800; fill: var(--text); font-family: var(--font-primary); }
-  .score-ring .ring-cap { font-size: 8.5px; fill: var(--dim); font-family: var(--font-primary); letter-spacing: .04em; }
+  .score-ring .ring-num { font-size: 24px; font-weight: 800; fill: var(--foreground); font-family: var(--font-primary); }
+  .score-ring .ring-cap { font-size: 8px; fill: var(--dim); font-family: var(--font-primary); letter-spacing: 0.04em; }
   .score-ring.score-good .ring-fill { stroke: var(--green); }
   .score-ring.score-mid  .ring-fill { stroke: var(--amber); }
   .score-ring.score-bad  .ring-fill { stroke: var(--red); }
   .score-ring.score-none .ring-fill { stroke: var(--dim); }
-  .score-ring.score-none .ring-num { fill: var(--dim); font-size: 20px; }
+  .score-ring.score-none .ring-num  { fill: var(--dim); font-size: 18px; }
 
-  /* Short form of the governance caveat, anchored to the number itself. The
-     full text still lives above the breakdown table; this is the version
-     that is impossible to scroll past, because the score is impossible to
-     scroll past. */
-  .hero-caveat {
-    flex: 1 1 100%; font-size: 11px; color: var(--muted); line-height: 1.6;
-    border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 2px;
+  /* Charts */
+  .charts-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
   }
-  .hero-caveat b { color: #ffd8a8; font-weight: 700; }
-  .hero-caveat a { cursor: pointer; text-decoration: none; border-bottom: 1px dotted currentColor; }
+  @media (max-width: 1300px) { .charts-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
 
-  /* A jump that lands mid-page leaves the reader hunting for what moved. */
-  @keyframes section-flash {
-    from { background: rgba(52,227,227,.18); box-shadow: 0 0 0 6px rgba(52,227,227,.12); }
-    to { background: transparent; box-shadow: 0 0 0 6px transparent; }
+  .chart-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card-subtle);
+    padding: 14px 16px;
+    min-width: 0;
   }
-  .flash { animation: section-flash 1.2s ease-out; border-radius: 8px; }
-  @media (prefers-reduced-motion: reduce) {
-    .flash { animation: none; }
-    .score-ring .ring-fill { transition: none; }
-    .dev-roster-item:hover { transform: none; }
-  }
-  .date-filter { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 18px; }
-  .date-filter .field { min-width: 130px; }
-  .date-filter input[type=date] { margin-bottom: 0; }
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
-  .stat-box { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-  .stat-box .n { font-size: 24px; font-weight: 800; }
-  .stat-box .l { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
-  .stat-box.rt .n { color: var(--red); }
-  .stat-box.unk .n { color: var(--dim); }
-  .chart-wrap { margin-bottom: 22px; overflow-x: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
-  .chart-legend { display: flex; gap: 16px; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
-  .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 4px; vertical-align: -1px; }
-  .month-group { margin-bottom: 22px; }
-  .month-group h4 { font-size: 13px; color: var(--cyan); margin: 0 0 10px; }
-  .task-cards { display: flex; flex-direction: column; gap: 10px; }
-  /* Two stacked rows — title, then the badges. Letting the title share a
-     wrapping row with a dozen badges left cards with a tall empty band
-     whenever it happened to wrap. */
-  .task-card {
-    display: flex; flex-direction: column; gap: 10px;
-    padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px;
-    background: var(--panel-2); font-size: 12px; transition: border-color .15s;
-  }
-  .task-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  /* Exactly two per row, not `auto-fill`: on a wide monitor auto-fill packs in
-     three or four, which squeezes the title into an ellipsis and is not what
-     was asked for. minmax(0,1fr) rather than 1fr so a long unbroken title
-     can't push a column wider than its share. Collapses to one column when
-     two would be too narrow to read. */
-  .task-cards.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  /* Tab strip on the right (RTL), pane on the left. `minmax(0,1fr)` on the
-     pane so a wide card grid can't push the strip off screen. */
-  /* Two charts side by side; each keeps its own title and legend so neither
-     is read against the other's key. Stacks on a narrow screen. */
-  .charts-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  @media (max-width: 1400px) { .charts-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
-  .chart-note { font-size: 10px; line-height: 1.8; color: var(--dim); margin-bottom: 8px; }
-  .chart-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); padding: 12px 14px; min-width: 0; }
-  .chart-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-  /* Inside a card the wrapper drops its own frame — the card already provides
-     one, and two nested borders read as a mistake. The SVG is sized to its
-     content, so a chart with many bars scrolls inside its card rather than
-     stretching the page. */
+  .chart-title { font-size: 12px; font-weight: 600; color: var(--foreground); margin-bottom: 6px; }
+  .chart-note { font-size: 10px; line-height: 1.6; color: var(--dim); margin-bottom: 8px; }
   .chart-card .chart-wrap { background: none; border: 0; padding: 0; margin-bottom: 0; overflow-x: auto; }
-  /* Horizontal tab strip across the top of a pane. Scrolls sideways rather
-     than wrapping to a second row, so the pane's height doesn't jump as the
-     number of months changes. */
-  .htabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
-  .htab {
-    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
-    padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border);
-    background: var(--panel-2); color: var(--text); font-size: 12px; cursor: pointer;
-    transition: border-color .15s, background .15s;
+  .chart-legend { display: flex; gap: 14px; font-size: 10.5px; color: var(--muted-foreground); margin-bottom: 10px; }
+  .chart-legend .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-inline-end: 4px; vertical-align: -1px; }
+
+  /* Horizontal Tabs (Months/Sprints) */
+  .htabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--border-dashed);
   }
-  .htab:hover { border-color: var(--border-strong); }
-  .htab.on { border-color: var(--cyan); background: rgba(52,227,227,.10); color: var(--cyan); }
-  .htab-count { font-variant-numeric: tabular-nums; opacity: .7; font-size: 11px; }
+  .htab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--card-subtle);
+    color: var(--muted-foreground);
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .htab:hover { border-color: var(--border-strong); color: var(--foreground); }
+  .htab.on { border-color: var(--border-strong); background: var(--accent); color: var(--foreground); font-weight: 600; }
+  .htab-count { font-variant-numeric: tabular-nums; opacity: 0.7; font-size: 10px; }
   .htab-flag { font-size: 10px; color: var(--red); }
-  /* Nav on the right, content on the left. `minmax(0,1fr)` on the content so
-     a wide table scrolls inside its own card instead of pushing the nav off
-     the screen. */
-  /* Settings as a page: panels grow with their content instead of scrolling
-     inside a fixed-height dialog. */
-  .settings-page { display: flex; flex-direction: column; gap: 12px; }
-  .settings-page-head { border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+
+  /* Settings Page */
+  .settings-page { display: flex; flex-direction: column; gap: 14px; }
+  .settings-page-head { border-bottom: 1px dashed var(--border-dashed); padding-bottom: 12px; }
+  .panel-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px dashed var(--border-dashed);
+    overflow-x: auto;
+  }
+  .panel-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted-foreground);
+    padding: 8px 12px;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .panel-tab:hover { color: var(--foreground); background: transparent; }
+  .panel-tab.active { color: var(--foreground); border-bottom-color: var(--foreground); font-weight: 600; }
+
   .settings-panel { display: flex; flex-direction: column; gap: 12px; }
   .settings-panel[hidden] { display: none !important; }
-  /* secrets.env is 20 single-line fields. Stacked one per row they each ran
-     the full width of the page — a 6-character port number in a 987px box —
-     and pushed the list to ~1800px of scrolling. auto-fit packs them into as
-     many columns as fit, so the panel is read rather than scrolled, and
-     collapses back to one column on a narrow screen without a breakpoint. */
-  #settingsBody { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px 18px; align-items: start; }
-  /* Headings, engine sections and the closing note are rows, not cells:
-     a group title sitting in column 2 would label the field beside it. */
-  #settingsBody > .group-title,
-  #settingsBody > .engine-group,
-  #settingsBody > .hint { grid-column: 1 / -1; }
-  #settingsBody > .group-title { margin-top: 4px; }
-  /* A filesystem path or a base URL is the one kind of value here that is
-     genuinely long, and reading it truncated in a 317px box is how the wrong
-     PROJECT_PATH goes unnoticed. Only once the panel is wide enough to hold
-     three columns: below that, spanning two would force a second column onto
-     a layout that had collapsed to one on purpose. */
+
+  #settingsBody {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 14px 18px;
+    align-items: start;
+  }
+  #settingsBody > .group-title, #settingsBody > .engine-group, #settingsBody > .hint { grid-column: 1 / -1; }
   @media (min-width: 1150px) {
     #settingsBody > .field.wide, .engine-group > .field.wide { grid-column: span 2; }
   }
-  .engine-group[open] { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px 18px; align-items: start; }
-  .engine-group > summary { grid-column: 1 / -1; }
-  .maint-row {
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    border: 1px solid var(--border); border-radius: 10px;
-    padding: 9px 12px; margin-bottom: 8px; background: rgba(0,0,0,.15);
-  }
-  .maint-who { flex: 1; min-width: 0; }
-  .maint-name { font-size: 13px; font-weight: 700; }
-  .maint-user { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr; }
-  .tag.ok { color: var(--green); }
-  .settings-foot {
-    display: flex; align-items: center; gap: 12px;
-    border-top: 1px solid var(--border); padding-top: 12px;
-    position: sticky; bottom: 0; background: var(--panel);
-  }
-  .settings-foot[hidden] { display: none !important; }
-  .app-body { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 14px; align-items: start; }
-  .app-main { min-width: 0; }
-  .side-nav { display: flex; flex-direction: column; gap: 6px; position: sticky; top: 12px; }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px; width: 100%;
-    padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border);
-    background: var(--panel); color: var(--text); font-size: 13px; cursor: pointer;
-    text-align: right; font-family: inherit; transition: border-color .15s, background .15s, color .15s;
-  }
-  .nav-item:hover { border-color: var(--border-strong); }
-  .nav-item.on { border-color: var(--cyan); background: rgba(52,227,227,.10); color: var(--cyan); font-weight: 600; }
-  .nav-item span { flex: 1 1 auto; }
-  @media (max-width: 860px) {
-    .app-body { grid-template-columns: 1fr; }
-    .side-nav { position: static; flex-direction: row; flex-wrap: wrap; }
-    .nav-item { width: auto; }
-  }
-  /* A task that reached Review/Done without a logged hour — bold, because it
-     is a hole in every other number on the page. */
-  .task-card.needs-worklog { border-color: rgba(255,179,71,.45); }
-  .task-card.needs-worklog .task-title { font-weight: 700; }
-  @media (max-width: 900px) { .task-cards.two-col { grid-template-columns: 1fr; } }
-  /* The quiet third line: filing details, present but not competing with the
-     signal chips above them. */
-  .task-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 11px; color: var(--dim); }
-  .task-foot span { white-space: nowrap; }
-  .chip-quiet { border-radius: 6px; padding: 2px 9px; font-size: 11px; background: rgba(120,140,200,.10); color: var(--dim); }
-  /* Status is the chip a reader scans for first, so it is the one that gets a
-     real colour — keyed off Jira's own statusCategory. */
-  /* Coverage, stated on the fold's own summary line. Colour is the warning:
-     a score built on a quarter of someone's work should not look the same as
-     one built on all of it. */
-  .cover-chip { border-radius: 6px; padding: 2px 9px; font-size: 11px; margin: 0 6px; white-space: nowrap; }
-  .cover-chip.ok { background: rgba(65,224,138,.15); color: var(--green); }
-  .cover-chip.warn { background: rgba(255,179,71,.15); color: var(--amber); }
-  .cover-chip.bad { background: rgba(255,107,129,.15); color: var(--red); }
-  /* Jalali date picker. A native <input type="date"> always renders the
-     browser's Gregorian calendar, so the control is built here instead. */
-  .jdp-field { position: relative; }
-  .jdp-btn {
-    width: 100%; text-align: right; padding: 9px 11px; border-radius: 8px;
-    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
-    font-family: inherit; font-size: 13px; cursor: pointer; font-variant-numeric: tabular-nums;
-  }
-  .jdp-btn:hover { border-color: var(--border-strong); }
-  .jdp-field:has(.jdp-pop:not([hidden])) .jdp-btn { border-color: var(--cyan); color: var(--cyan); }
-  .jdp-ph { color: var(--dim); }
-  /* --panel-solid, not --panel: the card background is 72% opaque, which is
-     right for a card sitting on the page and wrong for a popup floating over
-     a table — the rows showed straight through the calendar and nothing was
-     readable. Same solid token the modal already uses, plus its shadow, so
-     the thing reads as lifted off the page rather than printed onto it. */
-  .jdp-pop {
-    position: absolute; z-index: 80; top: calc(100% + 6px); right: 0; width: 286px;
-    background: var(--panel-solid); border: 1px solid var(--border-strong);
-    border-radius: 14px; padding: 12px; box-shadow: var(--shadow);
-  }
-  .jdp-pop[hidden] { display: none !important; }
-  .jdp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  .jdp-title { font-size: 13px; font-weight: 700; color: var(--text); }
-  .jdp-nav {
-    width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border);
-    background: var(--panel-2); color: var(--text); cursor: pointer; font-size: 17px; line-height: 1;
-  }
-  .jdp-nav:hover { border-color: var(--cyan); color: var(--cyan); }
-  .jdp-week, .jdp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-  /* Was --dim at 10px, which on this background is barely there. */
-  .jdp-week span {
-    text-align: center; font-size: 11px; font-weight: 600; color: var(--muted);
-    padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
-  }
-  .jdp-week span.off, .jdp-cell.off { color: var(--red); }
-  .jdp-cell {
-    aspect-ratio: 1; border: 1px solid transparent; border-radius: 8px;
-    background: rgba(120,140,200,.06); color: var(--text);
-    font-family: inherit; font-size: 13px; cursor: pointer; font-variant-numeric: tabular-nums;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .jdp-cell:hover { background: rgba(52,227,227,.18); color: var(--cyan); border-color: var(--cyan); }
-  /* Today is outlined, the selection is filled — so "where am I" and "what
-     did I pick" stay distinguishable when they are different days. */
-  .jdp-cell.today { border-color: var(--muted); font-weight: 700; }
-  .jdp-cell.on { background: var(--cyan); color: #04212a; font-weight: 700; border-color: var(--cyan); }
-  .jdp-cell.on.off { color: #04212a; }
-  .jdp-cell.empty { background: transparent; cursor: default; border-color: transparent; }
-  .jdp-cell.empty:hover { background: transparent; border-color: transparent; }
-  .jdp-foot { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-  .jdp-foot button { flex: 1; font-size: 12px; padding: 7px; }
-  .owner-chip {
-    border-radius: 6px; padding: 2px 10px; font-size: 11px; cursor: pointer;
-    border: 1px solid var(--border); background: var(--panel); color: var(--text);
-    font-family: inherit;
-  }
-  .owner-chip:hover { border-color: var(--cyan); color: var(--cyan); }
-  .status-chip { border-radius: 6px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
-  .status-chip.st-done  { background: rgba(65,224,138,.15); color: var(--green); }
-  .status-chip.st-doing { background: rgba(93,214,255,.15); color: var(--cyan); }
-  .status-chip.st-todo  { background: rgba(120,140,200,.14); color: var(--dim); }
-  .task-desc { font-size: 12px; line-height: 1.9; color: var(--text); white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
-  .task-desc.muted-desc { color: var(--dim); font-style: italic; }
-  .task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
-  .mr-link {
-    border-radius: 6px; padding: 3px 10px; font-size: 11px; text-decoration: none;
-    background: rgba(120,140,200,.14); color: var(--text); font-variant-numeric: tabular-nums;
-  }
-  .mr-link.merged { background: rgba(65,224,138,.15); color: var(--green); }
-  .mr-link:hover { background: rgba(120,140,200,.3); }
-  .task-card:hover { border-color: var(--border-strong); }
-  .task-card .task-title { flex: 1 1 auto; min-width: 0; color: var(--text); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .task-card .task-project { font-size: 10px; color: var(--dim); }
-  .rt-badge { border-radius: 6px; padding: 2px 9px; font-size: 11px; }
-  .rt-badge.yes { background: rgba(255,107,129,.15); color: var(--red); }
-  .rt-badge.no { background: rgba(65,224,138,.15); color: var(--green); }
-  .rt-badge.unk { background: rgba(120,140,200,.12); color: var(--dim); }
-  .rt-badge.na { background: rgba(120,140,200,.08); color: var(--dim); }
-  .jira-badge {
-    display: inline-flex; align-items: center; gap: 3px; border-radius: 6px; padding: 2px 9px;
-    font-size: 11px; background: rgba(155,140,255,.15); color: var(--violet); text-decoration: none;
-  }
-  a.jira-badge:hover { background: rgba(155,140,255,.28); }
-  /* ---- Sentry issues ---- */
-  .sentry-item {
-    border: 1px solid var(--border); border-inline-start-width: 3px; border-radius: 12px;
-    padding: 12px 14px; margin-bottom: 10px; background: rgba(0,0,0,.2);
-  }
-  /* Severity as a colour bar, same idea as the review findings: scanning a
-     page of errors for the fatal ones should not mean reading every badge. */
-  .sentry-item.lvl-fatal { border-inline-start-color: var(--red); }
-  .sentry-item.lvl-error { border-inline-start-color: #ff8a5c; }
-  .sentry-item.lvl-warning { border-inline-start-color: var(--amber); }
-  .sentry-item.lvl-info, .sentry-item.lvl-debug { border-inline-start-color: var(--dim); }
-  .sentry-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .sentry-title { flex: 1; min-width: 0; font-weight: 700; word-break: break-word; color: var(--text); text-decoration: none; }
-  .sentry-title:hover { color: var(--cyan); }
-  .sentry-level {
-    flex: 0 0 auto; border-radius: 5px; padding: 2px 8px; font-size: 11px;
-    text-transform: uppercase; letter-spacing: .04em;
-  }
-  .sentry-level.lvl-fatal { background: rgba(255,107,129,.2); color: #ffb3bf; }
-  .sentry-level.lvl-error { background: rgba(255,138,92,.18); color: #ffc0a8; }
-  .sentry-level.lvl-warning { background: rgba(255,179,71,.16); color: #ffd8a8; }
-  .sentry-level.lvl-info, .sentry-level.lvl-debug { background: rgba(120,140,200,.14); color: var(--muted); }
-  .sentry-culprit { font-size: 11px; color: var(--muted); margin-top: 4px; word-break: break-all; }
-  .sentry-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dim); margin-top: 6px; }
-  .sentry-form {
-    margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border);
-  }
-  .sentry-form-note { font-size: 11px; color: var(--muted); margin-bottom: 10px; line-height: 1.7; }
-  .sentry-label { display: block; font-size: 11px; color: var(--dim); margin-bottom: 3px; }
-  .sentry-form input[type=date] {
-    background: rgba(0,0,0,.3); color: var(--text); border: 1px solid var(--border);
-    border-radius: 10px; padding: 8px 10px; font-size: 13px;
-  }
-  .sentry-status { font-size: 12px; }
-  .sentry-item.is-resolved { opacity: .6; }
-  .sentry-detail { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
-  .sentry-stack-title { font-size: 11px; color: var(--muted); margin: 10px 0 4px; }
-  .sentry-stack {
-    background: #060a14; border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px; overflow-x: auto; font-size: 11.5px; line-height: 1.75;
-    margin: 0; direction: ltr; text-align: left; max-height: 340px;
-    font-family: 'JetBrains Mono', Consolas, monospace;
-  }
-  .sentry-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
-  /* Visibly a machine's reading, not a diagnosis — a violet edge, the same
-     colour this dashboard already uses for model-produced content. */
-  .sentry-analysis {
-    border: 1px solid rgba(155,140,255,.3); border-inline-start-width: 3px;
-    border-inline-start-color: var(--violet);
-    background: rgba(155,140,255,.06); border-radius: 10px;
-    padding: 10px 12px; margin: 8px 0; font-size: 12.5px; line-height: 1.8;
-  }
-  .sentry-analysis p { margin: 4px 0; }
-  .sentry-analysis-tag { font-size: 11px; color: var(--violet); margin-bottom: 6px; }
-  .sentry-form select {
-    background: rgba(0,0,0,.3); color: var(--text); border: 1px solid var(--border);
-    border-radius: 10px; padding: 8px 10px; font-size: 13px;
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); }
+  .field .hint { font-size: 10px; color: var(--dim); line-height: 1.5; }
+  .field-input { position: relative; display: flex; }
+  .field input { flex: 1; font-family: var(--font-mono); direction: ltr; text-align: left; margin-bottom: 0; }
+  .reveal {
+    position: absolute;
+    inset-inline-start: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--dim);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px;
+    box-shadow: none;
   }
 
-  /* ---- handoff report ---- */
-  .handoff-block {
-    border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 14px; margin-top: 12px; background: rgba(0,0,0,.18);
+  .engine-group {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0 14px;
+    background: var(--card-subtle);
   }
-  .handoff-head {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 10px; flex-wrap: wrap; margin-bottom: 8px;
+  .engine-group[open] {
+    border-color: var(--border-strong);
+    padding-bottom: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 14px 18px;
+    align-items: start;
   }
-  .handoff-head b { font-size: 13px; }
-  .handoff-head button { padding: 4px 10px; font-size: 12px; }
-  .handoff-group {
-    font-size: 11px; color: var(--muted); margin: 10px 0 2px;
-    padding-top: 8px; border-top: 1px dashed var(--border);
-  }
-  .handoff-group:first-of-type { border-top: none; padding-top: 0; margin-top: 4px; }
-
-  .score-governance-banner {
-    border: 1px solid rgba(255,179,71,.35); background: rgba(255,179,71,.08); color: #ffd8a8;
-    border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 12px; line-height: 1.6;
-  }
-  .score-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; }
-  .score-table th, .score-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  .score-table th { color: var(--dim); font-weight: 600; }
-  .score-table td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .score-table td.muted { color: var(--dim); }
-  .score-table tr.off td { opacity: .5; }
-
-  /* ---- Developer / team analytics layout -------------------------------
-     The page is read top-down as three questions in order: what is happening
-     right now, what is going wrong, and what actually got delivered. Each
-     gets a titled band so nobody has to work out which block answers which. */
-  .band { margin: 18px 0 6px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-  .band h4 { margin: 0; font-size: 14px; }
-  .band .band-note { font-size: 11px; color: var(--dim); }
-  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-  .kpi {
-    background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 14px; min-width: 0;
-  }
-  .kpi .n { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
-  .kpi .n small { font-size: 13px; opacity: .55; font-weight: 700; }
-  .kpi .l { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
-  .kpi .sub { font-size: 10px; color: var(--dim); margin-top: 3px; }
-  .kpi.warn { border-color: rgba(255,179,71,.45); } .kpi.warn .n { color: var(--amber); }
-  .kpi.bad  { border-color: rgba(255,107,107,.45); } .kpi.bad .n  { color: var(--red); }
-  .kpi.good .n { color: var(--green); }
-  .kpi.quiet .n { color: var(--dim); }
-
-  /* The attention list: one line per thing that is actually wrong, each one
-     a link to the ticket or merge request it is about. A number nobody can
-     click is a number nobody acts on. */
-  .attn { display: flex; flex-direction: column; gap: 6px; }
-  .attn-item {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    border: 1px solid var(--border); border-inline-start-width: 3px;
-    border-radius: 10px; background: var(--panel-2); padding: 8px 12px; font-size: 12px;
-  }
-  .attn-item.high { border-inline-start-color: var(--red); }
-  .attn-item.mid  { border-inline-start-color: var(--amber); }
-  .attn-item .why { color: var(--muted); font-size: 11px; }
-  .attn-item .grow { flex: 1 1 auto; min-width: 0; }
-  .attn-empty { border: 1px dashed var(--border); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--green); }
-
-  /* Team table */
-  .team-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .team-table th, .team-table td { padding: 8px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
-  .team-table th { color: var(--dim); font-weight: 600; font-size: 11px; cursor: pointer; user-select: none; }
-  .team-table th.on { color: var(--cyan); }
-  .team-table td.num { font-variant-numeric: tabular-nums; }
-  .team-table tbody tr { cursor: pointer; }
-  .team-table tbody tr:hover { background: rgba(255,255,255,.03); }
-  .team-table .who { font-weight: 700; white-space: normal; }
-  .team-table .zero { color: var(--dim); }
-  .team-table .hot { color: var(--red); font-weight: 700; }
-  .team-table .warm { color: var(--amber); font-weight: 700; }
-  .team-loading { display: inline-block; width: 34px; height: 8px; border-radius: 4px; background: var(--border); animation: pulse 1.1s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { opacity: .35 } 50% { opacity: .8 } }
-
-  .mini-score { font-size: 10px; font-variant-numeric: tabular-nums; opacity: .85; }
-  .dev-roster-item { display: flex; align-items: center; gap: 6px; }
-  .dev-roster-item .grow { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-  .dev-roster-item .flag { font-size: 10px; color: var(--red); }
-
-  .trend-chip { font-size: 11px; font-variant-numeric: tabular-nums; }
-  .trend-chip.up { color: var(--green); } .trend-chip.down { color: var(--red); } .trend-chip.flat { color: var(--dim); }
-
-  details.fold { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin: 18px 0; background: var(--panel-2); }
-  details.fold > summary { cursor: pointer; font-weight: 700; font-size: 13px; }
-  details.fold > summary .band-note { font-weight: 400; }
-  .score-bar { width: 90px; height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
-  .score-bar span { display: block; height: 100%; background: var(--cyan); }
-  .score-bar.off { background: repeating-linear-gradient(90deg, var(--border) 0 4px, transparent 4px 8px); }
-
-  /* ---- layout ---- */
-  .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
-  @media (min-width: 1024px) {
-    .layout { grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); align-items: start; }
-  }
-  .card {
-    background: var(--panel); border: 1px solid var(--border); backdrop-filter: blur(14px);
-    border-radius: var(--radius); padding: 20px; min-width: 0;
-  }
-
-  /* ---- a titled, bordered group for a cluster of related settings — a flat
-     row of checkboxes with no label reads as clutter; a boxed group with a
-     heading reads as "these go together, on purpose". ---- */
-  .settings-group { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
-  .settings-group .settings-group-title { font-size: 12px; font-weight: 700; color: var(--cyan); margin: 0 0 10px; }
-  .settings-row { display: flex; flex-wrap: wrap; gap: 14px 20px; margin-bottom: 0; }
-  .section-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-
-  .banner {
-    border: 1px solid rgba(255,179,71,.4); background: rgba(255,179,71,.1); color: #ffd8a8;
-    border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-  }
-  /* An author rule setting `display` on .banner otherwise beats the UA
-     stylesheet's `[hidden]{display:none}`, since author styles always win
-     over UA styles regardless of matching specificity — so hiding it via the
-     `hidden` property from JS silently did nothing without this. */
-  .banner[hidden] { display: none; }
-  .banner button { margin-inline-start: auto; }
-
-  /* ---- controls ---- */
-  button {
-    background: rgba(52,227,227,.14); color: var(--cyan); border: 1px solid var(--cyan);
-    border-radius: 8px; padding: 7px 13px; cursor: pointer; font-size: 13px; transition: background .15s;
-  }
-  button:hover { background: rgba(52,227,227,.24); }
-  button:disabled { opacity: .4; cursor: not-allowed; }
-  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
-  button.ghost:hover { border-color: var(--border-strong); background: var(--panel-2); }
-  button.danger { background: rgba(255,107,129,.12); border-color: var(--red); color: var(--red); }
-  button.danger:hover { background: rgba(255,107,129,.22); }
-  input[type=text], input[type=password], textarea {
-    width: 100%; background: rgba(0,0,0,.3); color: var(--text);
-    border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px;
-    font-size: 13px; margin-bottom: 8px; outline: none;
-  }
-  input[type=text]:focus, input[type=password]:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(52,227,227,.12); }
-  textarea { min-height: 110px; resize: vertical; line-height: 1.7; }
-
-  /* Keyboard focus. Only text inputs had any focus styling at all, so every
-     other control — every button, tab, nav item, table row, engine card —
-     was invisible to anyone navigating by keyboard: the focus existed, it
-     just couldn't be seen. :focus-visible rather than :focus so a mouse
-     click never leaves a ring behind. */
-  :focus-visible {
-    outline: 2px solid var(--cyan);
-    outline-offset: 2px;
-    border-radius: 6px;
-  }
-  button, .nav-item, .panel-tab, .htab, .tab, .badge.pick, .dev-roster-item, .engine-card, .fb-btn {
-    transition: background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;
-  }
-  label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-
-  /* ---- MR tabs: vertical so every open MR is visible at once ---- */
-  .mr-body { display: flex; gap: 18px; align-items: flex-start; min-width: 0; }
-  .tabs {
-    flex: 0 0 280px; display: flex; flex-direction: column; gap: 8px;
-    max-height: 72vh; overflow-y: auto; padding-inline-start: 6px; padding-inline-end: 2px;
-    border-inline-start: 1px solid var(--border);
-  }
-  @media (max-width: 720px) {
-    .mr-body { flex-direction: column; }
-    .tabs { flex: 0 0 auto; width: 100%; max-height: 40vh; border-inline-start: none; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-  }
-  .tab {
-    display: flex; flex-direction: column; gap: 4px; text-align: start;
-    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
-    border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 12px; position: relative;
-  }
-  .tab .tab-top { display: flex; align-items: center; gap: 6px; }
-  .tab .order-badge {
-    flex: 0 0 auto; width: 18px; height: 18px; border-radius: 6px; background: rgba(155,140,255,.15);
-    color: var(--violet); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-  }
-  .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: 13px; flex: 1; min-width: 0; }
-  .tab .tab-meta { color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tab.active { background: rgba(52,227,227,.1); border-color: var(--cyan); }
-  .tab:hover { border-color: var(--border-strong); }
-  .mr-content { flex: 1; min-width: 0; }
-
-  /* ---- MR panel ---- */
-  .meta { color: var(--muted); font-size: 12px; }
-  .meta-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 14px 0; }
-  @media (min-width: 620px) { .meta-grid { grid-template-columns: 1fr 1fr; } }
-  .note {
-    background: rgba(0,0,0,.25); border: 1px solid var(--border); border-radius: 10px;
-    padding: 12px; white-space: pre-wrap; word-break: break-word;
-    line-height: 1.9; margin-top: 12px; max-height: 60vh; overflow: auto;
-  }
-  .verdict { display: inline-block; border-radius: 6px; padding: 3px 10px; font-size: 12px; }
-  .verdict.approve { background: rgba(65,224,138,.15); color: var(--green); }
-  .verdict.changes { background: rgba(255,107,129,.15); color: var(--red); }
-  .empty { color: var(--dim); padding: 16px 0; text-align: center; }
-  .error-box { background: rgba(255,107,129,.1); border: 1px solid rgba(255,107,129,.35); color: #ffb3bf; border-radius: 10px; padding: 10px; font-size: 13px; }
-  .finding {
-    border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
-    margin-top: 14px; background: rgba(0,0,0,.2);
-    /* A severity stripe down the start edge. The severity was already on the
-       card as a small pill, but scanning twenty findings for the two High
-       ones meant reading twenty pills; a colour bar is readable at a glance
-       and at a distance, which is how a review list is actually used. */
-    border-inline-start-width: 3px;
-  }
-  .finding.sev-High { border-inline-start-color: var(--red); }
-  .finding.sev-Medium { border-inline-start-color: var(--amber); }
-  .finding.sev-Low { border-inline-start-color: var(--cyan); }
-  .finding-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .sev { border-radius: 5px; padding: 2px 8px; font-size: 11px; flex: 0 0 auto; }
-  .sev.High { background: rgba(255,107,129,.16); color: #ffb3bf; }
-  .sev.Medium { background: rgba(255,179,71,.16); color: #ffd8a8; }
-  .sev.Low { background: rgba(52,227,227,.16); color: #a8f0f0; }
-  .finding-loc { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; color: var(--muted); word-break: break-all; direction: ltr; text-align: start; }
-  .finding-note { white-space: pre-wrap; word-break: break-word; font-size: 13px; }
-  .finding pre { background: #060a14; border: 1px solid var(--border); border-radius: 8px; padding: 8px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; direction: ltr; text-align: left; }
-  .tag { font-size: 11px; color: var(--dim); }
-  .finding-feedback { display: inline-flex; gap: 2px; margin-inline-start: auto; }
-  .fb-btn {
-    background: transparent; border: 1px solid var(--border); border-radius: 6px;
-    padding: 1px 6px; font-size: 12px; cursor: pointer; opacity: .55; line-height: 1.6;
-  }
-  .fb-btn:hover { opacity: 1; }
-  .fb-btn.active { opacity: 1; border-color: var(--accent, #34e3e3); background: rgba(52,227,227,.12); }
-  .fb-btn.fb-down.active { border-color: var(--red, #ff6b81); background: rgba(255,107,129,.12); }
-  .branch-pill {
-    display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 1px 8px;
-    font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr;
-  }
-  .branch-pill.develop { background: rgba(65,224,138,.15); color: var(--green); }
-  .branch-pill.other { background: rgba(255,179,71,.15); color: var(--amber); }
-  .task-pill { background: rgba(155,140,255,.15); color: var(--violet); border-radius: 6px; padding: 1px 8px; font-size: 11px; font-family: 'JetBrains Mono', Consolas, monospace; }
-
-  /* ---- top-level panel tabs (Merge Requests / Developers) ---- */
-  .panel-tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-  .panel-tab {
-    background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted);
-    padding: 8px 4px; border-radius: 0; font-size: 14px; cursor: pointer;
-  }
-  .panel-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
-  .panel-tab:hover { color: var(--text); background: transparent; }
-
-  /* ---- developer score badges & manual rating form (used on the analytics page) ---- */
-  .score-badge {
-    display: inline-flex; align-items: center; gap: 6px; border-radius: 999px;
-    padding: 4px 12px; font-size: 12px; border: 1px solid transparent;
-    background: var(--panel-2); color: var(--muted);
-  }
-  .score-badge .num { font-weight: 800; font-size: 15px; }
-  .score-good { background: rgba(65,224,138,.14); color: var(--green); border-color: rgba(65,224,138,.3); }
-  .score-mid { background: rgba(255,179,71,.14); color: var(--amber); border-color: rgba(255,179,71,.3); }
-  .score-bad { background: rgba(255,107,129,.14); color: var(--red); border-color: rgba(255,107,129,.3); }
-  /* The team table's score column, as a pill rather than a bare figure: in a
-     row of a dozen raw counts, the one number that is a *judgement* should
-     not look identical to the number of open merge requests beside it. */
-  .score-pill {
-    display: inline-block; min-width: 34px; text-align: center;
-    border-radius: 999px; padding: 2px 8px; font-weight: 800;
-    font-variant-numeric: tabular-nums; border: 1px solid transparent;
-  }
-  .rating-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; margin-top: 10px; font-size: 12px; }
-  .rating-grid select { width: 70px; margin-bottom: 0; padding: 4px 6px; }
-  details.dev-rating summary { cursor: pointer; color: var(--muted); font-size: 12px; margin-top: 8px; }
-
-  /* ---- knowledge base ---- */
-  .kb-item { border-bottom: 1px solid var(--border); padding: 10px 0; }
-  .kb-item:last-child { border-bottom: none; }
-  .kb-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-  .kb-title { cursor: pointer; flex: 1; min-width: 0; }
-  .kb-title strong { display: block; word-break: break-word; }
-  .kb-body {
-    background: rgba(0,0,0,.25); border: 1px solid var(--border); border-radius: 10px;
-    padding: 12px; margin-top: 10px; white-space: pre-wrap; word-break: break-word;
-    line-height: 1.9; font-size: 13px; max-height: 45vh; overflow: auto;
-  }
-  .kb-actions { display: flex; gap: 6px; flex: 0 0 auto; }
-  .kb-actions button { padding: 4px 9px; font-size: 12px; }
-
-  /* ---- settings modal ---- */
-  .modal-overlay {
-    position: fixed; inset: 0; z-index: 50; background: rgba(5,8,16,.7); backdrop-filter: blur(6px);
-    display: flex; align-items: center; justify-content: center; padding: 24px;
-  }
-  .modal-overlay[hidden] { display: none; }
-  .modal {
-    width: 620px; max-width: 100%; max-height: 88vh; display: flex; flex-direction: column;
-    background: var(--panel-solid); border: 1px solid var(--border-strong); border-radius: 20px; box-shadow: var(--shadow);
-  }
-  .modal-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 20px 12px; border-bottom: 1px solid var(--border); }
-  .modal-head h2 { margin: 0; font-size: 16px; }
-  .modal-sub { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
-  .modal-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; }
-  .modal-close:hover { color: var(--text); }
-  .modal-body { overflow-y: auto; padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
-  /* Same author-style-beats-[hidden] gotcha as .banner above — explicit override needed. */
-  .modal-body[hidden] { display: none; }
-  .group-title { font-size: 12px; font-weight: 700; color: var(--cyan); margin: 8px 0 0; }
-
-  /* ---- per-engine settings groups ---- */
-  .engine-group { border: 1px solid var(--border); border-radius: 12px; padding: 0 12px; background: rgba(0,0,0,.15); }
-  .engine-group[open] { border-color: var(--border-strong); padding-bottom: 12px; }
   .engine-group > summary {
-    display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 0;
-    font-size: 13px; font-weight: 700; color: var(--text); list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--foreground);
+    list-style: none;
+    grid-column: 1 / -1;
   }
   .engine-group > summary::-webkit-details-marker { display: none; }
   .engine-group > summary::before { content: '▸'; color: var(--dim); font-size: 11px; }
   .engine-group[open] > summary::before { content: '▾'; }
   .engine-group > summary .status { margin-inline-start: auto; font-size: 11px; font-weight: 400; }
-  .engine-active-tag { background: rgba(52,227,227,.15); color: var(--cyan); border-radius: 6px; padding: 1px 8px; font-size: 11px; font-weight: 400; }
-  .engine-group .status.ok { color: var(--green); }
-  .engine-group .status.warn { color: var(--amber); }
-  .engine-group .status.unknown { color: var(--muted); }
-  .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label { font-size: 12px; color: var(--muted); }
-  .field .hint { font-size: 10px; color: var(--dim); line-height: 1.6; }
-  .field-input { position: relative; display: flex; }
-  .field input { flex: 1; font-family: 'JetBrains Mono', Consolas, monospace; direction: ltr; text-align: left; margin-bottom: 0; }
-  .reveal { position: absolute; inset-inline-start: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--dim); cursor: pointer; font-size: 13px; padding: 2px; }
-  .save-state { font-size: 12px; color: var(--muted); }
+  .engine-active-tag {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border-radius: var(--radius-sm);
+    padding: 1px 7px;
+    font-size: 10.5px;
+  }
+
+  .settings-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px dashed var(--border-dashed);
+    padding-top: 14px;
+    position: sticky;
+    bottom: 0;
+    background: var(--card);
+  }
+  .settings-foot[hidden] { display: none !important; }
+
+  /* Sentry Issues */
+  .sentry-item {
+    border: 1px solid var(--border);
+    border-inline-start-width: 3px;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    background: var(--card-subtle);
+  }
+  .sentry-item.lvl-fatal   { border-inline-start-color: var(--red); }
+  .sentry-item.lvl-error   { border-inline-start-color: #f97316; }
+  .sentry-item.lvl-warning { border-inline-start-color: var(--amber); }
+  .sentry-item.lvl-info, .sentry-item.lvl-debug { border-inline-start-color: var(--dim); }
+  .sentry-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sentry-title { flex: 1; min-width: 0; font-weight: 600; word-break: break-word; color: var(--foreground); text-decoration: none; font-size: 13px; }
+  .sentry-title:hover { color: var(--cyan); text-decoration: none; }
+  .sentry-level {
+    border-radius: var(--radius-full);
+    padding: 1px 7px;
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .sentry-level.lvl-fatal   { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+  .lvl-error.sentry-level   { background: rgba(249, 115, 22, 0.15); color: #fdba74; }
+  .sentry-level.lvl-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  .sentry-level.lvl-info, .sentry-level.lvl-debug { background: rgba(255, 255, 255, 0.08); color: var(--muted-foreground); }
+  .sentry-culprit { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; word-break: break-all; }
+  .sentry-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dim); margin-top: 6px; }
+  .sentry-stack {
+    background: #060910;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    overflow-x: auto;
+    font-size: 11.5px;
+    line-height: 1.7;
+    margin: 6px 0;
+    direction: ltr;
+    text-align: left;
+    max-height: 320px;
+    font-family: var(--font-mono);
+  }
+  .sentry-analysis {
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    border-inline-start-width: 3px;
+    border-inline-start-color: var(--violet);
+    background: rgba(168, 85, 247, 0.06);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin: 8px 0;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  /* Modals: Shadcn Dialog */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay[hidden] { display: none !important; }
+
+  .modal {
+    width: 620px;
+    max-width: 100%;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    background: #0c0c0e;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px dashed var(--border-dashed);
+  }
+  .modal-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+  .modal-sub { margin: 4px 0 0; font-size: 12px; color: var(--muted-foreground); line-height: 1.5; }
+  .modal-close {
+    background: transparent;
+    border: none;
+    color: var(--muted-foreground);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    box-shadow: none;
+  }
+  .modal-close:hover { color: var(--foreground); background: transparent; }
+  .modal-body {
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+  }
+  .modal-body[hidden] { display: none !important; }
+
+  /* Engine Cards */
+  .engine-list { display: flex; flex-direction: column; gap: 8px; }
+  .engine-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--card-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    color: var(--foreground);
+    transition: all 0.15s;
+  }
+  .engine-card .row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .engine-card:hover { border-color: var(--border-strong); }
+  .engine-card.active { border-color: var(--primary-accent); background: var(--accent); }
+  .engine-card .icon { font-size: 18px; flex-shrink: 0; }
+  .engine-card .body { min-width: 0; flex: 1; }
+  .engine-card .name { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .engine-card .hint { font-size: 11px; color: var(--muted-foreground); margin-top: 2px; }
+  .engine-card .status { font-size: 11px; flex-shrink: 0; }
+  .engine-card .status.ok   { color: var(--green); }
+  .engine-card .status.warn { color: var(--amber); }
+  .engine-card .status.unknown { color: var(--dim); }
+  .engine-card .test-btn {
+    flex-shrink: 0;
+    font-size: 11px;
+    padding: 3px 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
+    box-shadow: none;
+  }
+  .engine-card .test-btn:hover { border-color: var(--border-strong); color: var(--foreground); }
+
+  /* Jalali Date Picker */
+  .jdp-field { position: relative; }
+  .jdp-btn {
+    width: 100%;
+    text-align: right;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--card-subtle);
+    color: var(--foreground);
+    font-family: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  .jdp-btn:hover { border-color: var(--border-strong); }
+  .jdp-field:has(.jdp-pop:not([hidden])) .jdp-btn { border-color: var(--ring); color: var(--cyan); }
+  .jdp-ph { color: var(--dim); }
+  .jdp-pop {
+    position: absolute;
+    z-index: 80;
+    top: calc(100% + 6px);
+    right: 0;
+    width: 280px;
+    background: #0c0c0e;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    box-shadow: var(--shadow-lg);
+  }
+  .jdp-pop[hidden] { display: none !important; }
+  .jdp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .jdp-title { font-size: 12.5px; font-weight: 600; color: var(--foreground); }
+  .jdp-nav {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--card-subtle);
+    color: var(--foreground);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+  }
+  .jdp-nav:hover { border-color: var(--border-strong); }
+  .jdp-week, .jdp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .jdp-week span {
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--border-dashed);
+    margin-bottom: 4px;
+  }
+  .jdp-week span.off, .jdp-cell.off { color: var(--red); }
+  .jdp-cell {
+    aspect-ratio: 1;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--foreground);
+    font-size: 12px;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .jdp-cell:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--border-strong); }
+  .jdp-cell.today { border-color: var(--muted-foreground); font-weight: 700; }
+  .jdp-cell.on { background: var(--primary); color: var(--primary-foreground); font-weight: 700; border-color: var(--primary); }
+  .jdp-cell.empty { background: transparent; cursor: default; border-color: transparent; }
+  .jdp-cell.empty:hover { background: transparent; border-color: transparent; }
+  .jdp-foot { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-dashed); }
+  .jdp-foot button { flex: 1; font-size: 11.5px; padding: 6px; }
+
+  /* Misc helpers */
+  .empty { color: var(--dim); padding: 20px 0; text-align: center; font-size: 13px; }
+  .error-box { background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fecdd3; border-radius: var(--radius-sm); padding: 10px; font-size: 12.5px; }
+  .group-title { font-size: 12px; font-weight: 600; color: var(--foreground); margin: 10px 0 2px; }
+  .save-state { font-size: 11.5px; color: var(--muted-foreground); }
+
+  @media (max-width: 860px) {
+    .app-layout { flex-direction: column; }
+    .side-nav { width: 100%; height: auto; position: static; min-height: 0; border-inline-end: none; border-bottom: 1px dashed var(--border-dashed); flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 10px; }
+    .sidebar-header { width: 100%; padding-bottom: 8px; margin-bottom: 6px; }
+    .nav-section-title { display: none; }
+    .nav-group { flex-direction: row; flex-wrap: wrap; width: 100%; }
+    .nav-item { width: auto; }
+    header { padding: 0 14px; }
+    .content-wrapper { padding: 14px; }
+  }
 </style>
 </head>
 <body>
 
-<header>
-  <!-- Same mark as the favicon, so the tab and the page agree on what this
-       is. It used to be 🤖, which this UI already spends on agent mode
-       ("ریویوی کل پروژه با ایجنت") — one emoji meaning both "this product"
-       and "this particular review engine" made neither of them a signal. -->
-  <div class="brand">
-    <svg class="logo" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-      <path d="M11 9 5.5 16 11 23" fill="none" stroke="var(--cyan)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M21 9 26.5 16 21 23" fill="none" stroke="var(--cyan)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M13.5 17.4 15.9 19.9 19.2 13.4" fill="none" stroke="var(--green)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <h1>Coder Review</h1>
-  </div>
-  <div class="badges">
-    <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
-    <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
-    <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
-    <span class="badge" id="usageBadge" title="مصرف توکن مدل — برای جزئیات هر موتور، اینجا را نگه‌دار"></span>
-    <span class="badge" id="accuracyBadge" hidden title="از یافته‌هایی که کسی رویشان 👍/👎 زده — نه از کل یافته‌ها"></span>
-  </div>
-</header>
+<div class="app-layout">
 
-<div id="pathBanner" class="banner" hidden>
-  ⚠️ مسیر پروژه‌ی محلی تنظیم نشده — بدون آن هیچ ریویویی اجرا نمی‌شود (نه دیف کامل دیده می‌شود، نه گزارش در <code>review/</code> نوشته می‌شود).
-  <button id="bannerSettingsBtn">تنظیم مسیر پروژه</button>
-</div>
-
-<div class="app-body">
-
-<!-- Nav on the right, because the whole UI is RTL and the start edge is
-     where a reader's eye already is. Settings is a button rather than a
-     page: it opens the existing modal, which is where every setting already
-     lives. -->
-<nav class="side-nav" id="sideNav">
-  <button class="nav-item" data-page="home">&#127968; <span>خانه</span></button>
-  <button class="nav-item" data-page="review">&#128269; <span>کد ریویو</span></button>
-  <button class="nav-item" data-page="devs">&#128202; <span>دولوپرها</span></button>
-  <button class="nav-item" data-page="sentry">&#128680; <span>سنتری</span></button>
-  <button class="nav-item" data-page="settings">&#9881; <span>تنظیمات</span></button>
-</nav>
-
-<div class="app-main">
-
-<!-- ---- home: the team at a glance, then the work itself ---- -->
-<section class="card" id="homePage" hidden>
-  <div id="homeTeam"><div class="empty">در حال بارگذاری…</div></div>
-  <hr class="section-divider" />
-  <div id="homeTasks"></div>
-</section>
-
-<!-- ---- merge requests ---- -->
-<section class="card" id="mrPanelWrap" hidden>
-  <div class="row" style="justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px">
-    <label class="switch-badge" id="autoReviewLabel" title="با روشن بودن این، هر MR باز به‌صورت خودکار (بدون کلیک دستی) ریویو می‌شود">
-      <span class="switch"><input type="checkbox" id="autoReview" /><span class="track"></span><span class="thumb"></span></span>
-      🔁 ریویوی خودکار
-    </label>
-    <button class="ghost" id="refreshBtn">🔄 بروزرسانی لیست MRها</button>
-  </div>
-  <div class="settings-group">
-    <p class="settings-group-title">تنظیمات ریویو</p>
-    <div class="settings-row">
-      <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
-      <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
-      <label class="check"><input type="checkbox" id="setAutoPost" title="پیش‌فرض خاموش — بدون این، ریویوی خودکار/وب‌هوک فقط review/MR-<iid>.md را می‌نویسد و چیزی روی خود MR نمی‌گذارد" /> کامنت روی گیت‌لب در حالت خودکار/وب‌هوک هم ثبت شود</label>
-      <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
-      <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> 🤖 ریویوی کل پروژه با ایجنت (claude-cli)</label>
-      <label class="check"><input type="checkbox" id="setPushReport" title="بعد از هر ریویو، فایل review/MR-<iid>.md را با API گیت‌لب مستقیم روی شاخه‌ی خودِ همان MR کامیت می‌کند (نه روی چک‌اوت محلی). بدون این، فایل فقط در کپی محلی نوشته می‌شود و به MR نمی‌رسد مگر دستی کامیتش کنی." /> 📤 پوش گزارش روی شاخه‌ی MR</label>
-    </div>
-  </div>
-  <div id="mrError"></div>
-  <div class="mr-body">
-    <div class="tabs" id="tabs"></div>
-    <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
-  </div>
-</section>
-
-<!-- ---- Sentry: the unresolved errors, and one click from an error to a
-     Jira ticket. Read-only against Sentry on purpose — resolving and
-     assigning stay in Sentry's own UI, so issue state never lives in two
-     places that can disagree. ---- -->
-<section class="card" id="sentryPage" hidden>
-  <div class="row" style="justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px">
-    <h3 style="margin:0">🚨 خطاهای Sentry</h3>
-    <div class="row" style="gap:8px">
-      <select id="sentryPeriod" class="project-picker" title="بازه‌ی آماری">
-        <option value="24h">۲۴ ساعت اخیر</option>
-        <option value="14d" selected>۱۴ روز اخیر</option>
-        <option value="30d">۳۰ روز اخیر</option>
-        <option value="90d">۹۰ روز اخیر</option>
-      </select>
-      <button class="ghost" id="sentryRefreshBtn">🔄 بروزرسانی</button>
-    </div>
-  </div>
-  <div id="sentryBody"><div class="empty">در حال بارگذاری…</div></div>
-</section>
-
-<!-- ---- developer analytics: a full page, not a tab inside the MR card —
-     opened from the toolbar's "📊 آنالیز دولوپرها" button, replaces the MR
-     view while open. Roster on the right (RTL start side), selected
-     developer's chart/stats/task-list in the main area. ---- -->
-<section class="card" id="devPage" hidden>
-  <div class="row" style="justify-content:space-between; margin-bottom:12px">
-    <h3 style="margin:0">📊 آنالیز دولوپرها</h3>
-    <button class="ghost" id="devBackBtn">→ بازگشت به Merge Requestها</button>
-  </div>
-  <div class="dev-page-body">
-    <div>
-      <div class="row" style="justify-content:space-between; margin-bottom:6px">
-        <span class="tag" id="devRosterCacheNote"></span>
-        <button class="ghost" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب" style="padding:2px 8px; font-size:11px">🔄</button>
+  <!-- itsnyein/shadcn-admin Signature Sidebar -->
+  <aside class="side-nav" id="sideNav">
+    <div class="sidebar-header">
+      <div class="brand">
+        <span class="brand-icon">
+          <!-- Command Icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"></path>
+          </svg>
+        </span>
+        <div class="brand-meta">
+          <span class="brand-title">Coder Review</span>
+          <span class="brand-subtitle">shadcn-admin · v2.0</span>
+        </div>
       </div>
-      <!-- Beside the roster it controls, not buried in the settings page:
-           this changes who is on the list right here, and a switch two pages
-           away from its own effect is a switch nobody connects to it. -->
-      <label class="check" id="includeMaintainersLabel" style="font-size:11px; margin-bottom:8px"
-             title="پیش‌فرض فقط اعضای با نقش Developer در لیست می‌آیند، چون معمولاً maintainerها ریویوکننده‌اند نه ریویوشونده. اگر لید تیم خودش هم فیچر می‌زند، این را روشن کن تا Maintainer و Owner هم بیایند.">
-        <input type="checkbox" id="setIncludeMaintainers" /> maintainerها هم در لیست بیایند
-      </label>
-      <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
     </div>
-    <div class="dev-main" id="devMain">
-      <div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div>
-    </div>
-  </div>
-</section>
 
-<!-- ---- settings: a page, not a dialog. It holds three panels a reader
-     actually works in — editing secrets, writing knowledge-base notes,
-     managing projects — and a dialog fights all three: it traps scroll, has
-     nowhere to grow, and cannot be linked to or left open beside anything. ---->
-<section class="card" id="settingsPage" hidden>
-  <div class="settings-page">
-    <div class="settings-page-head">
-      <h3 style="margin:0">⚙ تنظیمات</h3>
-      <p class="modal-sub" style="margin:6px 0 0">مقادیر مستقیم در فایل <code>secrets.env</code> ذخیره می‌شوند — نیازی به ویرایش دستی فایل نیست. مقدار رمزها فقط با چهار کاراکتر آخر نمایش داده می‌شود.</p>
-    </div>
-    <div class="panel-tabs" style="margin-bottom:0">
-      <button class="panel-tab active" id="stEnv">secrets.env</button>
-      <button class="panel-tab" id="stKb">📚 پایگاه دانش</button>
-      <button class="panel-tab" id="stProjects">📁 پروژه‌ها</button>
-      <button class="panel-tab" id="stMaintainers">👤 Maintainerها</button>
-      <button class="panel-tab" id="stEpics">🗂 اپیک‌ها</button>
-      <button class="panel-tab" id="stAudit">🧾 لاگ تغییرات</button>
-    </div>
-    <div class="settings-panel" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
-    <div class="settings-panel" id="kbPanel" hidden>
-      <p class="meta">هر یادداشت اینجا، خودکار در ریویوی هر MR به مدل داده می‌شود.</p>
-      <input type="text" id="kbTitle" placeholder="عنوان" />
-      <textarea id="kbContent" placeholder="متن استاندارد یا قانون تیم…"></textarea>
-      <div class="row">
-        <button id="kbSaveBtn">افزودن یادداشت</button>
-        <button class="ghost" id="kbCancelBtn" style="display:none">انصراف از ویرایش</button>
-      </div>
-      <div class="row">
-        <input type="file" id="kbFile" accept=".md,.txt" style="flex:1; min-width:150px" />
-        <button class="ghost" id="kbUploadBtn">آپلود</button>
-      </div>
-      <div id="kbList" style="margin-top:14px"><div class="empty">در حال بارگذاری…</div></div>
-    </div>
-    <div class="settings-panel" id="projectsPanel" hidden>
-      <p class="meta">هر پروژه یک ریپازیتوری گیت‌لب است، با مسیر چک‌اوت محلی خودش. تب MRها همیشه فقط «پروژه‌ی فعال» بالای صفحه را نشان می‌دهد؛ آنالیز دولوپرها همیشه همه‌ی این پروژه‌ها را با هم می‌بیند.</p>
-      <div id="projectsList" style="margin-bottom:14px"><div class="empty">در حال بارگذاری…</div></div>
-      <div class="group-title">افزودن / ویرایش پروژه</div>
-      <input type="text" id="projNewId" placeholder="شناسه‌ی عددی پروژه در گیت‌لب (Project ID)" />
-      <input type="text" id="projNewName" placeholder="نام نمایشی (اختیاری)" />
-      <input type="text" id="projNewPath" placeholder="مسیر چک‌اوت محلی روی همین سرور (مثلاً D:\\Projects\\repo)" />
-      <input type="text" id="projNewSentry" placeholder="slug پروژه در Sentry (خالی = مقدار عمومی SENTRY_PROJECT)" />
-      <input type="text" id="projNewJira" placeholder="کلید پروژه در جیرا، مثلاً EM (خالی = مقدار عمومی JIRA_PROJECT_KEY)" />
-      <p class="hint" style="margin:2px 0 8px">
-        این دو برای هر ریپازیتوری جداست: کرش‌های یک اپ در پروژه‌ی Sentry خودش جمع می‌شوند و تسک‌هایش باید در پروژه‌ی جیرای خودش ثبت شوند.
-        آدرس و توکن Sentry و جیرا مشترک می‌مانند — یک نصب Sentry و یک جیرا بیشتر نداریم.
-      </p>
-      <button id="projSaveBtn">ذخیره پروژه</button>
-    </div>
-    <div class="settings-panel" id="maintainersPanel" hidden>
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <div class="group-title" style="margin:0">👤 maintainerهای گیت‌لب</div>
-        <button class="ghost" id="maintRefreshBtn" style="padding:2px 8px;font-size:11px" title="بروزرسانی از گیت‌لب">🔄</button>
-      </div>
-      <p class="meta">
-        این لیست از خود گیت‌لب خوانده می‌شود (نقش Maintainer یا Owner) و قابل ویرایش از اینجا نیست —
-        maintainer بودن یک نقش در گیت‌لب است، و اگر داشبورد می‌توانست خودش کسی را maintainer کند،
-        امتیاز افراد به اختیاری تکیه می‌کرد که گیت‌لب هرگز نداده. برای عوض کردنش، نقش فرد را در خود گیت‌لب تغییر بده.
-      </p>
-      <div id="maintList"><div class="empty">در حال بارگذاری…</div></div>
-      <hr class="section-divider" />
-      <div class="group-title">در گزارش‌ها چطور دیده شوند</div>
-      <label class="check" style="margin-top:4px">
-        <input type="checkbox" id="setIncludeMaintainersSettings" />
-        maintainerها هم دقیقاً مثل یک دولوپر در آنالیز بیایند
-      </label>
-      <p class="meta" style="margin-top:2px">
-        روشن که باشد، هر maintainer که حداقل یک MR باز کرده باشد در لیست آنالیز دولوپرها می‌آید و
-        <strong>همان صفحه و همان امتیاز کامل</strong> را می‌گیرد که یک دولوپر می‌گیرد — هیچ محاسبه‌ای برایش فرق نمی‌کند.
-        خاموش که باشد (پیش‌فرض)، فقط اعضای با نقش Developer در لیست می‌آیند، چون در حالت معمول maintainer ریویوکننده است نه ریویوشونده.
-      </p>
-      <p class="meta" style="margin-top:6px;color:var(--amber)">
-        ⚠ یک نکته که محاسبه‌اش واقعاً فرق دارد: امضای ریویو (sign-off). فایل <code>review/MR-&lt;iid&gt;.md</code> فقط وقتی
-        «تأییدشده» حساب می‌شود که یک maintainer آن را کامیت کرده باشد — پس یک maintainer می‌تواند ریویوی MR خودش را امضا کند،
-        کاری که یک دولوپر نمی‌تواند.
-      </p>
-      <span class="save-state" id="maintSaveState"></span>
-    </div>
-    <div class="settings-panel" id="epicsPanel" hidden>
-      <div class="group-title">🗂 اپیک‌های جیرا</div>
-      <p class="meta">
-        اپیک‌های پروژه‌ی جیرایی که این ریپازیتوری در آن تسک ثبت می‌کند. همین لیست در فرم «ساخت تسک از خطای Sentry» هم می‌آید.
-        فقط خواندنی است — ساخت و ویرایش اپیک در خود جیرا انجام می‌شود. یک ساعت کش می‌شود.
-      </p>
-      <div class="row" style="margin-bottom:10px">
-        <button class="ghost" id="epicsRefreshBtn">🔄 خواندن دوباره از جیرا</button>
-        <span class="meta" id="epicsNote"></span>
-      </div>
-      <div id="epicsList"><div class="empty">در حال بارگذاری…</div></div>
-    </div>
-    <div class="settings-panel" id="auditPanel" hidden>
-      <div class="group-title">💾 پشتیبان‌گیری از data/</div>
-      <p class="meta">
-        data/ تنها نسخه‌ی تاریخچه‌ی امتیاز، فعالیت، لاگ‌ها و secrets.env است — هر روز خودکار در <code>backups/</code> کپی می‌شود
-        (۱۴ نسخه‌ی آخر نگه داشته می‌شود). این کپی روی همین دیسک است، نه یک مکان جدا — برای محافظت واقعی در برابر خرابی دیسک،
-        خودت هم پوشه‌ی <code>backups/</code> را جای دیگری کپی کن.
-      </p>
-      <div class="row" style="align-items:center;gap:10px;margin-bottom:14px">
-        <button class="ghost" id="backupNowBtn">📦 پشتیبان‌گیری همین حالا</button>
-        <span class="meta" id="lastBackupNote"></span>
-      </div>
-      <hr class="section-divider" />
-      <div class="group-title" style="margin-top:14px">🧾 لاگ تغییرات</div>
-      <p class="meta">
-        چه کسی تنظیمات/secrets.env/پروژه‌ها را عوض کرده و هر approve خودکار — این پروژه حساب کاربری ندارد
-        (یک ADMIN_TOKEN مشترک، یا هیچ‌کدام روی localhost)، پس «چه کسی» یعنی آدرس IP درخواست، نه هویت یک فرد.
-      </p>
-      <div id="auditList"><div class="empty">در حال بارگذاری…</div></div>
-    </div>
-    <div class="settings-foot" id="settingsFoot">
-      <button id="settingsSaveBtn">ذخیره</button>
-      <span class="save-state" id="settingsSaveState"></span>
-    </div>
-  </div>
-</section>
+    <div class="nav-section-title">فضای کاری</div>
+    <div class="nav-group">
+      <button class="nav-item on" data-page="home">
+        <!-- Dashboard Layout Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+          <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+          <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+          <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+        </svg>
+        <span>خانه</span>
+      </button>
 
-</div><!-- /.app-main -->
-</div><!-- /.app-body -->
+      <button class="nav-item" data-page="review">
+        <!-- Git Pull Request Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="18" r="3"></circle>
+          <circle cx="6" cy="6" r="3"></circle>
+          <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+          <line x1="6" x2="6" y1="9" y2="21"></line>
+        </svg>
+        <span>کد ریویو</span>
+      </button>
+
+      <button class="nav-item" data-page="devs">
+        <!-- Users Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span>دولوپرها</span>
+      </button>
+
+      <button class="nav-item" data-page="sentry">
+        <!-- Alert Triangle / Bug Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+          <line x1="12" x2="12" y1="9" y2="13"></line>
+          <line x1="12" x2="12.01" y1="17" y2="17"></line>
+        </svg>
+        <span>سنتری</span>
+      </button>
+    </div>
+
+    <div class="nav-section-title">سیستم</div>
+    <div class="nav-group">
+      <button class="nav-item" data-page="settings">
+        <!-- Settings Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>تنظیمات</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="app-main">
+
+    <!-- Top Sticky Header Bar -->
+    <header>
+      <div class="breadcrumbs">
+        <span class="bc-root">داشبورد</span>
+        <svg class="bc-sep" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6"></path>
+        </svg>
+        <span class="bc-current" id="crumbCurrent">مرور کلی تیم و پروژه‌ها</span>
+      </div>
+
+      <div class="badges">
+        <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
+        <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
+        <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
+        <span class="badge" id="usageBadge" title="مصرف توکن مدل — برای جزئیات هر موتور، اینجا را نگه‌دار"></span>
+        <span class="badge" id="accuracyBadge" hidden title="از یافته‌هایی که کسی رویشان 👍/👎 زده — نه از کل یافته‌ها"></span>
+      </div>
+    </header>
+
+    <div id="pathBanner" class="banner" hidden>
+      ⚠️ مسیر پروژه‌ی محلی تنظیم نشده — بدون آن هیچ ریویویی اجرا نمی‌شود (نه دیف کامل دیده می‌شود، نه گزارش در <code>review/</code> نوشته می‌شود).
+      <button id="bannerSettingsBtn">تنظیم مسیر پروژه</button>
+    </div>
+
+    <div class="content-wrapper">
+
+      <!-- ---- home: the team at a glance, then the work itself ---- -->
+      <section class="card" id="homePage" hidden>
+        <div id="homeTeam"><div class="empty">در حال بارگذاری…</div></div>
+        <hr class="section-divider" />
+        <div id="homeTasks"></div>
+      </section>
+
+      <!-- ---- merge requests ---- -->
+      <section class="card" id="mrPanelWrap" hidden>
+        <div class="row" style="justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px">
+          <label class="switch-badge" id="autoReviewLabel" title="با روشن بودن این، هر MR باز به‌صورت خودکار (بدون کلیک دستی) ریویو می‌شود">
+            <span class="switch"><input type="checkbox" id="autoReview" /><span class="track"></span><span class="thumb"></span></span>
+            🔁 ریویوی خودکار
+          </label>
+          <button class="ghost" id="refreshBtn">🔄 بروزرسانی لیست MRها</button>
+        </div>
+        <div class="settings-group">
+          <p class="settings-group-title">تنظیمات ریویو</p>
+          <div class="settings-row">
+            <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
+            <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
+            <label class="check"><input type="checkbox" id="setAutoPost" title="پیش‌فرض خاموش — بدون این، ریویوی خودکار/وب‌هوک فقط review/MR-<iid>.md را می‌نویسد و چیزی روی خود MR نمی‌گذارد" /> کامنت روی گیت‌لب در حالت خودکار/وب‌هوک هم ثبت شود</label>
+            <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
+            <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> 🤖 ریویوی کل پروژه با ایجنت (claude-cli)</label>
+            <label class="check"><input type="checkbox" id="setPushReport" title="بعد از هر ریویو، فایل review/MR-<iid>.md را با API گیت‌لب مستقیم روی شاخه‌ی خودِ همان MR کامیت می‌کند (نه روی چک‌اوت محلی). بدون این، فایل فقط در کپی محلی نوشته می‌شود و به MR نمی‌رسد مگر دستی کامیتش کنی." /> 📤 پوش گزارش روی شاخه‌ی MR</label>
+          </div>
+        </div>
+        <div id="mrError"></div>
+        <div class="mr-body">
+          <div class="tabs" id="tabs"></div>
+          <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
+        </div>
+      </section>
+
+      <!-- ---- Sentry ---- -->
+      <section class="card" id="sentryPage" hidden>
+        <div class="row" style="justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px">
+          <h3 style="margin:0">🚨 خطاهای Sentry</h3>
+          <div class="row" style="gap:8px">
+            <select id="sentryPeriod" class="project-picker" title="بازه‌ی آماری">
+              <option value="24h">۲۴ ساعت اخیر</option>
+              <option value="14d" selected>۱۴ روز اخیر</option>
+              <option value="30d">۳۰ روز اخیر</option>
+              <option value="90d">۹۰ روز اخیر</option>
+            </select>
+            <button class="ghost" id="sentryRefreshBtn">🔄 بروزرسانی</button>
+          </div>
+        </div>
+        <div id="sentryBody"><div class="empty">در حال بارگذاری…</div></div>
+      </section>
+
+      <!-- ---- developer analytics ---- -->
+      <section class="card" id="devPage" hidden>
+        <div class="row" style="justify-content:space-between; margin-bottom:14px">
+          <h3 style="margin:0">📊 آنالیز دولوپرها</h3>
+          <button class="ghost" id="devBackBtn">→ بازگشت به خانه</button>
+        </div>
+        <div class="dev-page-body">
+          <div>
+            <div class="row" style="justify-content:space-between; margin-bottom:8px">
+              <span class="tag" id="devRosterCacheNote"></span>
+              <button class="ghost" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب" style="padding:2px 8px; font-size:11px">🔄</button>
+            </div>
+            <label class="check" id="includeMaintainersLabel" style="font-size:11px; margin-bottom:10px"
+                   title="پیش‌فرض فقط اعضای با نقش Developer در لیست می‌آیند، چون معمولاً maintainerها ریویوکننده‌اند نه ریویوشونده. اگر لید تیم خودش هم فیچر می‌زند، این را روشن کن تا Maintainer و Owner هم بیایند.">
+              <input type="checkbox" id="setIncludeMaintainers" /> maintainerها هم در لیست بیایند
+            </label>
+            <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
+          </div>
+          <div class="dev-main" id="devMain">
+            <div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- settings page ---- -->
+      <section class="card" id="settingsPage" hidden>
+        <div class="settings-page">
+          <div class="settings-page-head">
+            <h3 style="margin:0">⚙ تنظیمات</h3>
+            <p class="modal-sub" style="margin:6px 0 0">مقادیر مستقیم در فایل <code>secrets.env</code> ذخیره می‌شوند — نیازی به ویرایش دستی فایل نیست. مقدار رمزها فقط با چهار کاراکتر آخر نمایش داده می‌شود.</p>
+          </div>
+          <div class="panel-tabs" style="margin-bottom:0">
+            <button class="panel-tab active" id="stEnv">secrets.env</button>
+            <button class="panel-tab" id="stKb">📚 پایگاه دانش</button>
+            <button class="panel-tab" id="stProjects">📁 پروژه‌ها</button>
+            <button class="panel-tab" id="stMaintainers">👤 Maintainerها</button>
+            <button class="panel-tab" id="stEpics">🗂 اپیک‌ها</button>
+            <button class="panel-tab" id="stAudit">🧾 لاگ تغییرات</button>
+          </div>
+          <div class="settings-panel" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
+          <div class="settings-panel" id="kbPanel" hidden>
+            <p class="meta">هر یادداشت اینجا، خودکار در ریویوی هر MR به مدل داده می‌شود.</p>
+            <input type="text" id="kbTitle" placeholder="عنوان" />
+            <textarea id="kbContent" placeholder="متن استاندارد یا قانون تیم…"></textarea>
+            <div class="row">
+              <button id="kbSaveBtn">افزودن یادداشت</button>
+              <button class="ghost" id="kbCancelBtn" style="display:none">انصراف از ویرایش</button>
+            </div>
+            <div class="row">
+              <input type="file" id="kbFile" accept=".md,.txt" style="flex:1; min-width:150px" />
+              <button class="ghost" id="kbUploadBtn">آپلود</button>
+            </div>
+            <div id="kbList" style="margin-top:14px"><div class="empty">در حال بارگذاری…</div></div>
+          </div>
+          <div class="settings-panel" id="projectsPanel" hidden>
+            <p class="meta">هر پروژه یک ریپازیتوری گیت‌لب است، با مسیر چک‌اوت محلی خودش. تب MRها همیشه فقط «پروژه‌ی فعال» بالای صفحه را نشان می‌دهد؛ آنالیز دولوپرها همیشه همه‌ی این پروژه‌ها را با هم می‌بیند.</p>
+            <div id="projectsList" style="margin-bottom:14px"><div class="empty">در حال بارگذاری…</div></div>
+            <div class="group-title">افزودن / ویرایش پروژه</div>
+            <input type="text" id="projNewId" placeholder="شناسه‌ی عددی پروژه در گیت‌لب (Project ID)" />
+            <input type="text" id="projNewName" placeholder="نام نمایشی (اختیاری)" />
+            <input type="text" id="projNewPath" placeholder="مسیر چک‌اوت محلی روی همین سرور (مثلاً D:\Projects\repo)" />
+            <input type="text" id="projNewSentry" placeholder="slug پروژه در Sentry (خالی = مقدار عمومی SENTRY_PROJECT)" />
+            <input type="text" id="projNewJira" placeholder="کلید پروژه در جیرا، مثلاً EM (خالی = مقدار عمومی JIRA_PROJECT_KEY)" />
+            <p class="hint" style="margin:2px 0 8px">
+              این دو برای هر ریپازیتوری جداست: کرش‌های یک اپ در پروژه‌ی Sentry خودش جمع می‌شوند و تسک‌هایش باید در پروژه‌ی جیرای خودش ثبت شوند.
+              آدرس و توکن Sentry و جیرا مشترک می‌مانند — یک نصب Sentry و یک جیرا بیشتر نداریم.
+            </p>
+            <button id="projSaveBtn">ذخیره پروژه</button>
+          </div>
+          <div class="settings-panel" id="maintainersPanel" hidden>
+            <div class="row" style="justify-content:space-between;align-items:center">
+              <div class="group-title" style="margin:0">👤 maintainerهای گیت‌لب</div>
+              <button class="ghost" id="maintRefreshBtn" style="padding:2px 8px;font-size:11px" title="بروزرسانی از گیت‌لب">🔄</button>
+            </div>
+            <p class="meta">
+              این لیست از خود گیت‌لب خوانده می‌شود (نقش Maintainer یا Owner) و قابل ویرایش از اینجا نیست —
+              maintainer بودن یک نقش در گیت‌لب است، و اگر داشبورد می‌توانست خودش کسی را maintainer کند،
+              امتیاز افراد به اختیاری تکیه می‌کرد که گیت‌لب هرگز نداده. برای عوض کردنش، نقش فرد را در خود گیت‌لب تغییر بده.
+            </p>
+            <div id="maintList"><div class="empty">در حال بارگذاری…</div></div>
+            <hr class="section-divider" />
+            <div class="group-title">در گزارش‌ها چطور دیده شوند</div>
+            <label class="check" style="margin-top:4px">
+              <input type="checkbox" id="setIncludeMaintainersSettings" />
+              maintainerها هم دقیقاً مثل یک دولوپر در آنالیز بیایند
+            </label>
+            <p class="meta" style="margin-top:2px">
+              روشن که باشد، هر maintainer که حداقل یک MR باز کرده باشد در لیست آنالیز دولوپرها می‌آید و
+              <strong>همان صفحه و همان امتیاز کامل</strong> را می‌گیرد که یک دولوپر می‌گیرد — هیچ محاسبه‌ای برایش فرق نمی‌کند.
+              خاموش که باشد (پیش‌فرض)، فقط اعضای با نقش Developer در لیست می‌آیند، چون در حالت معمول maintainer ریویوکننده است نه ریویوشونده.
+            </p>
+            <p class="meta" style="margin-top:6px;color:var(--amber)">
+              ⚠ یک نکته که محاسبه‌اش واقعاً فرق دارد: امضای ریویو (sign-off). فایل <code>review/MR-&lt;iid&gt;.md</code> فقط وقتی
+              «تأییدشده» حساب می‌شود که یک maintainer آن را کامیت کرده باشد — پس یک maintainer می‌تواند ریویوی MR خودش را امضا کند،
+              کاری که یک دولوپر نمی‌تواند.
+            </p>
+            <span class="save-state" id="maintSaveState"></span>
+          </div>
+          <div class="settings-panel" id="epicsPanel" hidden>
+            <div class="group-title">🗂 اپیک‌های جیرا</div>
+            <p class="meta">
+              اپیک‌های پروژه‌ی جیرایی که این ریپازیتوری در آن تسک ثبت می‌کند. همین لیست در فرم «ساخت تسک از خطای Sentry» هم می‌آید.
+              فقط خواندنی است — ساخت و ویرایش اپیک در خود جیرا انجام می‌شود. یک ساعت کش می‌شود.
+            </p>
+            <div class="row" style="margin-bottom:10px">
+              <button class="ghost" id="epicsRefreshBtn">🔄 خواندن دوباره از جیرا</button>
+              <span class="meta" id="epicsNote"></span>
+            </div>
+            <div id="epicsList"><div class="empty">در حال بارگذاری…</div></div>
+          </div>
+          <div class="settings-panel" id="auditPanel" hidden>
+            <div class="group-title">💾 پشتیبان‌گیری از data/</div>
+            <p class="meta">
+              data/ تنها نسخه‌ی تاریخچه‌ی امتیاز، فعالیت، لاگ‌ها و secrets.env است — هر روز خودکار در <code>backups/</code> کپی می‌شود
+              (۱۴ نسخه‌ی آخر نگه داشته می‌شود). این کپی روی همین دیسک است، نه یک مکان جدا — برای محافظت واقعی در برابر خرابی دیسک،
+              خودت هم پوشه‌ی <code>backups/</code> را جای دیگری کپی کن.
+            </p>
+            <div class="row" style="align-items:center;gap:10px;margin-bottom:14px">
+              <button class="ghost" id="backupNowBtn">📦 پشتیبان‌گیری همین حالا</button>
+              <span class="meta" id="lastBackupNote"></span>
+            </div>
+            <hr class="section-divider" />
+            <div class="group-title" style="margin-top:14px">🧾 لاگ تغییرات</div>
+            <p class="meta">
+              چه کسی تنظیمات/secrets.env/پروژه‌ها را عوض کرده و هر approve خودکار — این پروژه حساب کاربری ندارد
+              (یک ADMIN_TOKEN مشترک، یا هیچ‌کدام روی localhost)، پس «چه کسی» یعنی آدرس IP درخواست، نه هویت یک فرد.
+            </p>
+            <div id="auditList"><div class="empty">در حال بارگذاری…</div></div>
+          </div>
+          <div class="settings-foot" id="settingsFoot">
+            <button id="settingsSaveBtn">ذخیره</button>
+            <span class="save-state" id="settingsSaveState"></span>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /.content-wrapper -->
+
+  </div><!-- /.app-main -->
+
+</div><!-- /.app-layout -->
 
 <!-- ---- model picker modal ---- -->
 <div class="modal-overlay" id="modelOverlay" hidden>
@@ -1089,7 +1832,6 @@
   </div>
 </div>
 
-<!-- ---- settings modal ---- -->
 <script>
 // ---- state ----------------------------------------------------------------
 const S = {
@@ -2303,6 +3045,15 @@ const PAGES = {
 let currentPage = null;
 
 function showPage(name) {
+  const CRUMB_NAMES = {
+    home: 'مرور کلی تیم و پروژه‌ها',
+    review: 'کد ریویو (Merge Requests)',
+    devs: 'آنالیز عملکرد دولوپرها',
+    sentry: 'خطاها و کرش‌های سنتری',
+    settings: 'تنظیمات و متغیرها'
+  };
+  const crumb = document.getElementById('crumbCurrent');
+  if (crumb && CRUMB_NAMES[name]) crumb.textContent = CRUMB_NAMES[name];
   const page = PAGES[name] ? name : 'home';
   currentPage = page;
   for (const [key, id] of Object.entries(PAGES)) {
