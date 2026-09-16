@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Coder Review — Shadcn Admin Dashboard</title>
+<title>Business Analyzer — Shadcn Admin Dashboard</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fafafa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3'/%3E%3C/svg%3E" />
-<meta name="theme-color" content="#09090b" />
+<meta name="theme-color" content="#1a1a1a" />
 
 <!-- Google Fonts: Inter + Vazirmatn + JetBrains Mono -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,53 +19,73 @@
     --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
     --font-primary: var(--font-sans);
 
-    /* Shadcn UI Dark Zinc Color Palette (itsnyein/shadcn-admin style) */
-    --background: #09090b;
-    --foreground: #fafafa;
+    /* Palette lifted from itsnyein/shadcn-admin `.dark` in app/globals.css
+       (oklch converted to hex). The important part is that --card and
+       --sidebar are LIGHTER than --background: in that theme the page is
+       near-black and every surface lifts off it. We had it the other way
+       round, which is why everything read as one flat sheet. */
+    --background: #0a0a0a;   /* oklch(0.145 0 0) */
+    --foreground: #fafafa;   /* oklch(0.985 0 0) */
 
-    --card: #0c0c0e;
+    --card: #1a1a1a;         /* oklch(0.205 0 0) */
     --card-foreground: #fafafa;
-    --card-subtle: #121215;
-    --card-hover: #18181b;
+    --card-subtle: #212121;
+    --card-hover: #262626;
 
-    --popover: #0c0c0e;
+    --popover: #1a1a1a;
     --popover-foreground: #fafafa;
 
-    --primary: #fafafa;
-    --primary-foreground: #09090b;
-    --primary-accent: #3b82f6;
+    --primary: #e5e5e5;      /* oklch(0.922 0 0) */
+    --primary-foreground: #1a1a1a;
+    --primary-accent: #6366f1;
 
-    --secondary: #18181b;
+    --secondary: #2e2e2e;    /* oklch(0.269 0 0) */
     --secondary-foreground: #fafafa;
 
-    --muted: #18181b;
-    --muted-foreground: #a1a1aa;
-    --dim: #71717a;
+    --muted: #2e2e2e;
+    --muted-foreground: #a1a1a1;  /* oklch(0.708 0 0) */
+    --dim: #737373;
 
-    --accent: #27272a;
+    --accent: #2e2e2e;
     --accent-foreground: #fafafa;
 
-    --destructive: #ef4444;
+    --destructive: #e7515a;  /* oklch(0.704 0.191 22.216) */
     --destructive-foreground: #fafafa;
 
-    --border: rgba(255, 255, 255, 0.09);
-    --border-strong: rgba(255, 255, 255, 0.18);
-    --border-dashed: rgba(255, 255, 255, 0.13);
-    --input: rgba(255, 255, 255, 0.12);
-    --ring: #3b82f6;
+    --border: rgba(255, 255, 255, 0.10);
+    --border-strong: rgba(255, 255, 255, 0.20);
+    --border-dashed: rgba(255, 255, 255, 0.10);
+    --input: rgba(255, 255, 255, 0.15);
+    --ring: #8a8a8a;         /* oklch(0.556 0 0) — neutral, not blue */
+
+    /* Sidebar surface: same tone as a card, so the inset main panel reads
+       as a sheet floating on it (sidebar variant="inset" in the sample). */
+    --sidebar: #1a1a1a;
+    --sidebar-accent: #2e2e2e;
+    --sidebar-primary: #4f46e5;
+    --sidebar-primary-foreground: #fafafa;
+    --sidebar-border: rgba(255, 255, 255, 0.10);
+
+    /* chart-1..5 from the same file */
+    --chart-1: #6366f1;
+    --chart-2: #2dd4a7;
+    --chart-3: #f0b429;
+    --chart-4: #a855f7;
+    --chart-5: #f43f5e;
 
     --cyan: #38bdf8;
     --violet: #a855f7;
-    --amber: #f59e0b;
-    --green: #10b981;
+    --amber: #f0b429;
+    --green: #2dd4a7;
     --red: #f43f5e;
-    --noreport: #27272a;
+    --noreport: #2e2e2e;
 
-    --radius-sm: 6px;
+    /* radius scale derived from --radius: 0.625rem, as the sample does */
     --radius: 10px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 18px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
+    --radius-xl: 14px;
     --radius-full: 9999px;
 
     --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
@@ -74,9 +94,9 @@
 
     /* legacy aliases */
     --bg: var(--background);
-    --bg-2: #050507;
+    --bg-2: #050505;
     --panel: var(--card);
-    --panel-solid: #0c0c0e;
+    --panel-solid: #1a1a1a;
     --panel-2: var(--card-subtle);
   }
 
@@ -114,22 +134,24 @@
   code, .mono { font-family: var(--font-mono); font-size: 12px; direction: ltr; unicode-bidi: embed; }
 
   /* App Layout: itsnyein/shadcn-admin Shell */
+  /* Sidebar variant="inset": the page itself is painted in the sidebar
+     tone, and the main content is a rounded panel inset into it. */
   .app-layout {
     display: flex;
     min-height: 100vh;
     width: 100%;
+    background: var(--sidebar);
   }
 
   /* Sidebar */
   .side-nav {
-    width: 250px;
-    flex: 0 0 250px;
-    min-height: 100vh;
-    background: #09090b;
-    border-inline-end: 1px dashed var(--border-dashed);
+    width: 256px;
+    flex: 0 0 256px;
+    background: transparent;
     display: flex;
     flex-direction: column;
-    padding: 16px 12px;
+    padding: 8px;
+    gap: 4px;
     position: sticky;
     top: 0;
     height: 100vh;
@@ -142,28 +164,27 @@
   .workspace-card {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: var(--radius);
-    margin-bottom: 14px;
+    gap: 8px;
+    padding: 8px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: transparent;
     cursor: default;
-    transition: border-color 0.15s;
+    transition: background 0.15s;
   }
-  .workspace-card:hover { border-color: var(--border-strong); }
+  .workspace-card:hover { background: var(--sidebar-accent); }
 
   .brand-icon {
     width: 32px;
     height: 32px;
-    border-radius: var(--radius-sm);
-    background: var(--primary);
-    color: var(--primary-foreground);
+    border-radius: var(--radius-lg);
+    background: var(--sidebar-primary);
+    color: var(--sidebar-primary-foreground);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: none;
   }
   .brand-icon svg { width: 17px; height: 17px; }
 
@@ -175,76 +196,62 @@
   }
   .brand-title {
     font-size: 13.5px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-weight: 500;
+    letter-spacing: 0;
     color: var(--foreground);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .brand-subtitle {
-    font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11px;
     color: var(--muted-foreground);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .nav-section-title {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
+    font-size: 11.5px;
     color: var(--muted-foreground);
-    padding: 14px 10px 6px;
-    font-weight: 600;
+    padding: 12px 8px 4px;
+    font-weight: 500;
+    line-height: 1.6;
   }
 
   .nav-group {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    margin-bottom: 6px;
+    gap: 2px;
+    margin-bottom: 2px;
   }
 
   .nav-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid transparent;
-    border-inline-start: 2px solid transparent;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: var(--radius-md);
+    border: 0;
     background: transparent;
-    color: var(--muted-foreground);
+    color: var(--foreground);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     cursor: pointer;
     text-align: right;
-    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background 0.15s, color 0.15s;
   }
-  .nav-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--foreground);
-  }
+  .nav-item:hover { background: var(--sidebar-accent); }
   .nav-item.on {
-    background: var(--accent);
-    color: var(--foreground);
-    font-weight: 600;
-    border-inline-start-color: var(--primary-accent);
+    background: var(--sidebar-accent);
+    font-weight: 500;
   }
   .nav-item svg {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
-    opacity: 0.75;
-    transition: opacity 0.15s, color 0.15s;
-  }
-  .nav-item:hover svg { opacity: 1; }
-  .nav-item.on svg {
-    opacity: 1;
-    color: var(--primary-accent);
   }
   .nav-item span {
     flex: 1;
@@ -254,47 +261,51 @@
   /* Sidebar Bottom User Profile Card */
   .sidebar-footer {
     margin-top: auto;
-    padding-top: 12px;
-    border-top: 1px dashed var(--border-dashed);
+    padding-top: 4px;
   }
   .user-profile-card {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 8px 10px;
-    border-radius: var(--radius-sm);
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--border);
+    gap: 8px;
+    padding: 8px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: transparent;
+    transition: background 0.15s;
   }
+  .user-profile-card:hover { background: var(--sidebar-accent); }
   .user-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--accent);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-lg);
+    background: var(--secondary);
     color: var(--foreground);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10.5px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 500;
     flex-shrink: 0;
-    border: 1px solid var(--border-strong);
   }
   .user-info {
     display: flex;
     flex-direction: column;
     min-width: 0;
     flex: 1;
+    overflow: hidden;
   }
   .user-name {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 500;
     color: var(--foreground);
     line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .user-status {
-    font-size: 10px;
-    color: var(--dim);
+    font-size: 11px;
+    color: var(--muted-foreground);
     display: flex;
     align-items: center;
     gap: 5px;
@@ -307,75 +318,113 @@
     display: flex;
     flex-direction: column;
     background: var(--background);
+    margin: 8px 0 8px 8px;          /* ml-0 on the sidebar side (RTL) */
+    border-radius: var(--radius-xl);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
+  }
+  @media (max-width: 860px) {
+    .app-main { margin: 0; border-radius: 0; }
   }
 
   /* Top Navbar (header) */
   header {
-    height: 54px;
+    height: 64px;
     position: sticky;
     top: 0;
     z-index: 30;
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 0 24px;
-    background: rgba(9, 9, 11, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px dashed var(--border-dashed);
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  /* the vertical rules the sample puts between header clusters */
+  .hdr-sep {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    flex-shrink: 0;
+    margin: 0 4px;
   }
 
   .breadcrumbs {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--muted-foreground);
+    min-width: 0;
+    flex-shrink: 1;
   }
+  .bc-root, .bc-sep { flex-shrink: 0; }
+  .bc-current { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 1400px) { .bc-current { display: none; } .bc-sep { display: none; } }
+  /* below this the project picker starts sliding under the crumb */
+  @media (max-width: 640px) { .breadcrumbs { display: none; } }
   .bc-root { color: var(--muted-foreground); }
   .bc-sep { opacity: 0.4; transform: rotate(180deg); }
-  .bc-current { color: var(--foreground); font-weight: 600; }
+  .bc-current { color: var(--foreground); font-weight: 400; }
 
   /* Command Search Hint Box in Header */
   .header-command-box {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 10px;
-    background: var(--card-subtle);
-    border: 1px dashed var(--border-dashed);
-    border-radius: var(--radius-sm);
+    height: 32px;
+    width: 200px;
+    padding: 0 10px;
+    background: rgba(46, 46, 46, 0.5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
     color: var(--muted-foreground);
-    font-size: 11.5px;
+    font-size: 12.5px;
+    font-weight: 400;
     cursor: default;
-    margin-inline-start: 12px;
   }
+  .header-command-box > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 1500px) { .header-command-box { width: auto; } .header-command-box > span { display: none; } }
+  @media (max-width: 900px) { .header-command-box, .hdr-sep { display: none; } }
   .kbd-chip {
     font-family: var(--font-mono);
-    font-size: 9.5px;
-    padding: 1px 5px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.08);
+    font-size: 10px;
+    line-height: 1.6;
+    padding: 0 5px;
+    border-radius: var(--radius-sm);
+    background: var(--muted);
     border: 1px solid var(--border);
-    color: var(--foreground);
+    color: var(--muted-foreground);
+    flex-shrink: 0;
   }
 
   .badges {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    flex-wrap: nowrap;
+    gap: 6px;
     align-items: center;
+    margin-inline-start: auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    padding-block: 4px;
   }
+  .badges::-webkit-scrollbar { display: none; }
+  .badges > * { flex-shrink: 0; }
 
   /* Project Picker Select */
   .project-picker {
-    background: var(--card-subtle);
+    background: transparent;
     color: var(--foreground);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 5px 28px 5px 10px;
-    font-size: 12px;
+    border: 1px solid var(--input);
+    border-radius: var(--radius-md);
+    padding: 6px 28px 6px 10px;
+    font-size: 12.5px;
     font-weight: 500;
     cursor: pointer;
     max-width: 220px;
@@ -389,17 +438,17 @@
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   .project-picker:hover { border-color: var(--border-strong); }
-  .project-picker:focus { border-color: var(--ring); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+  .project-picker:focus { border-color: var(--ring); box-shadow: 0 0 0 3px rgba(138, 138, 138, 0.25); }
 
   /* Badges */
   .badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: var(--card-subtle);
+    background: transparent;
     border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    padding: 4px 10px;
+    border-radius: var(--radius-md);
+    padding: 3px 9px;
     font-size: 11.5px;
     font-weight: 500;
     color: var(--muted-foreground);
@@ -411,7 +460,7 @@
   }
   .badge.pick { cursor: pointer; }
   .badge.pick:hover {
-    background: var(--card-hover);
+    background: var(--accent);
     border-color: var(--border-strong);
     color: var(--foreground);
   }
@@ -447,8 +496,9 @@
   }
 
   /* Content area */
+  /* `flex flex-1 flex-col gap-4 p-4 pt-0` on the SidebarInset child */
   .content-wrapper {
-    padding: 24px;
+    padding: 16px;
     max-width: 1540px;
     margin: 0 auto;
     width: 100%;
@@ -465,7 +515,7 @@
     color: #fde68a;
     border-radius: var(--radius);
     padding: 12px 16px;
-    margin: 16px 24px 0;
+    margin: 16px 16px 0;
     display: flex;
     gap: 12px;
     align-items: center;
@@ -480,17 +530,30 @@
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
-    padding: 22px 24px;
+    padding: 24px;
     min-width: 0;
-    box-shadow: var(--shadow-subtle);
   }
   .card[hidden] { display: none !important; }
 
+  /* A page is a stack of sections, not one giant card. The sample's
+     dashboard route renders a title block and then `space-y-6` sections
+     straight onto the background — cards nested in a card read as flat. */
+  .page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+  .page[hidden] { display: none !important; }
+  .page > * { min-width: 0; }
+  .page > .card { padding: 24px; }
+
   .section-divider {
     border: none;
-    border-top: 1px dashed var(--border-dashed);
+    border-top: 1px solid var(--border);
     margin: 20px 0;
   }
+  #homeTeam, #homeTasks { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 
   /* Controls: Shadcn Buttons */
   button {
@@ -501,16 +564,16 @@
     background: var(--primary);
     color: var(--primary-foreground);
     border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    padding: 7px 14px;
+    border-radius: var(--radius-md);
+    padding: 8px 14px;
     font-size: 12.5px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
     outline: none;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
-  button:hover { background: #e4e4e7; }
+  button:hover { background: #d4d4d4; }
   button:active { transform: scale(0.98); }
   button:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -522,37 +585,41 @@
     font-weight: 500;
   }
   button.ghost:hover {
-    background: var(--card-hover);
-    border-color: var(--border-strong);
+    background: var(--accent);
+    color: var(--accent-foreground);
   }
 
   button.danger {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    color: #f87171;
+    background: rgba(231, 81, 90, 0.15);
+    border: 1px solid rgba(231, 81, 90, 0.35);
+    color: #fb7185;
     box-shadow: none;
   }
   button.danger:hover {
-    background: rgba(239, 68, 68, 0.25);
-    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(231, 81, 90, 0.25);
+    border-color: rgba(231, 81, 90, 0.5);
   }
 
   /* Form Inputs */
   input[type=text], input[type=password], input[type=date], select, textarea {
     width: 100%;
-    background: #09090b;
+    background: transparent;
     color: var(--foreground);
     border: 1px solid var(--input);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     padding: 8px 12px;
     font-size: 13px;
     margin-bottom: 8px;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
+  input[type=text]:not([dir="rtl"]), input[type=password] {
+    direction: ltr;
+    text-align: left;
+  }
   input[type=text]:focus, input[type=password]:focus, input[type=date]:focus, select:focus, textarea:focus {
     border-color: var(--ring);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px rgba(138, 138, 138, 0.25);
   }
   textarea { min-height: 110px; resize: vertical; line-height: 1.7; }
 
@@ -567,7 +634,7 @@
     user-select: none;
   }
   label.check input[type=checkbox] {
-    accent-color: var(--primary-accent);
+    accent-color: var(--sidebar-primary);
     width: 15px;
     height: 15px;
     margin: 0;
@@ -604,7 +671,7 @@
     position: absolute;
     inset: 0;
     border-radius: var(--radius-full);
-    background: #27272a;
+    background: var(--muted);
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: background 0.2s, border-color 0.2s;
   }
@@ -631,55 +698,84 @@
 
   /* Band & KPI Metric Cards (itsnyein/shadcn-admin Signature Dashboard Stats) */
   .band {
-    margin: 20px 0 10px;
+    margin: 0 0 16px;
     display: flex;
-    align-items: baseline;
-    gap: 10px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 6px;
   }
-  .band h4 { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--foreground); }
-  .band .band-note { font-size: 11px; color: var(--muted-foreground); }
+  .band h4 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--foreground); }
+  .band .band-note { font-size: 12.5px; line-height: 1.6; color: var(--muted-foreground); }
 
+  /* Page title block — `text-2xl font-bold tracking-tight` + muted sub,
+     exactly the header the sample's dashboard page renders above its cards. */
+  .page-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+  .page-head-row { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .page-head-row .page-head { flex: 1; min-width: 0; }
+  /* selects inherit width:100% from the form-input rule, which pushed the
+     page actions onto their own line instead of sitting beside the title */
+  .page-head-row select, .page-head-row input { width: auto; margin-bottom: 0; }
+  .page-head-row > .row { flex-wrap: nowrap; }
+  .page-head h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+  .page-head p { margin: 0; font-size: 13.5px; color: var(--muted-foreground); line-height: 1.6; }
+
+  /* `grid gap-4 sm:grid-cols-2 lg:grid-cols-4` — a fixed column count, so
+     the row never resolves to the ragged 5-and-1 that auto-fit was giving. */
   .kpi-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
   }
+  @media (max-width: 1200px) { .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 620px)  { .kpi-row { grid-template-columns: 1fr; } }
 
+  /* SectionCards: Card > CardContent.space-y-4 — icon + state pill on one
+     row, then label / value / sub stacked underneath. */
   .kpi {
-    background: var(--card-subtle);
+    background: var(--card);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 18px;
+    border-radius: var(--radius-xl);
+    padding: 24px;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    transition: border-color 0.15s, transform 0.15s;
-    box-shadow: var(--shadow-subtle);
+    gap: 16px;
+    transition: border-color 0.15s;
   }
-  .kpi:hover {
-    border-color: var(--border-strong);
-    transform: translateY(-1px);
-  }
+  .kpi:hover { border-color: var(--border-strong); }
+
   .kpi-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    gap: 8px;
   }
-  .kpi .l {
-    font-size: 10.5px;
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+  .kpi-icon { width: 22px; height: 22px; color: var(--muted-foreground); flex-shrink: 0; }
+
+  /* `<Badge variant="outline">` with the green/red tint the sample applies
+     to its growth pill. The state lives here now, not in the number. */
+  .kpi-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 500;
     color: var(--muted-foreground);
-    line-height: 1.4;
+    white-space: nowrap;
   }
-  .kpi-icon-pill {
-    font-size: 12px;
-    opacity: 0.8;
+  .kpi-pill svg { width: 12px; height: 12px; }
+  .kpi-pill.good { border-color: rgba(45, 212, 167, 0.35); background: rgba(45, 212, 167, 0.10); color: #4ade9f; }
+  .kpi-pill.warn { border-color: rgba(240, 180, 41, 0.35); background: rgba(240, 180, 41, 0.10); color: #fbbf24; }
+  .kpi-pill.bad  { border-color: rgba(244, 63, 94, 0.35);  background: rgba(244, 63, 94, 0.10);  color: #fb7185; }
+
+  .kpi-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .kpi .l {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    line-height: 1.5;
   }
   .kpi .n {
     font-size: 24px;
@@ -687,64 +783,30 @@
     color: var(--foreground);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
-    line-height: 1.2;
-    margin-bottom: 8px;
+    line-height: 1.25;
   }
   .kpi .n small {
-    font-size: 13px;
-    opacity: 0.6;
+    font-size: 14px;
+    color: var(--muted-foreground);
     font-weight: 600;
   }
-  .kpi-footer {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 8px;
-  }
   .kpi .sub {
-    font-size: 10.5px;
-    color: var(--dim);
-    line-height: 1.4;
-    flex: 1;
+    font-size: 12.5px;
+    color: var(--muted-foreground);
+    line-height: 1.6;
   }
-  .sub-placeholder { font-size: 10px; color: transparent; user-select: none; }
-
-  /* Sparkline mini bar chart in KPI cards */
-  .kpi-sparklines {
-    display: flex;
-    align-items: flex-end;
-    gap: 2.5px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-  .kpi-sparkbar {
-    width: 3.5px;
-    border-radius: 1px;
-    background: rgba(255, 255, 255, 0.12);
-  }
-  .kpi-sparkbar.active {
-    background: var(--primary-accent);
-  }
-  .kpi.warn .kpi-sparkbar.active { background: var(--amber); }
-  .kpi.bad .kpi-sparkbar.active { background: var(--red); }
-  .kpi.good .kpi-sparkbar.active { background: var(--green); }
-
-  .kpi.warn .n { color: var(--amber); }
-  .kpi.bad .n { color: var(--red); }
-  .kpi.good .n { color: var(--green); }
   .kpi.quiet .n { color: var(--dim); }
 
   /* Date Filter */
+  /* Inside a card already — a second bordered box around it was a card in
+     a card, which is the nesting the sample never does. */
   .date-filter {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     align-items: flex-end;
-    margin-bottom: 18px;
-    padding: 12px 14px;
-    background: var(--card-subtle);
-    border: 1px dashed var(--border-dashed);
-    border-radius: var(--radius);
+    justify-content: flex-start;
+    margin-bottom: 0;
   }
   .date-filter .field { min-width: 130px; }
   .date-filter input[type=date] { margin-bottom: 0; }
@@ -768,7 +830,7 @@
     font-size: 10.5px;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    border-bottom: 1px dashed var(--border-dashed);
+    border-bottom: 1px solid var(--border);
     cursor: pointer;
     user-select: none;
   }
@@ -805,6 +867,7 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
+    margin-inline-end: 8px;
   }
   .dev-display-name {
     font-size: 12.5px;
@@ -857,7 +920,19 @@
     font-size: 11.5px;
     border: 1px solid transparent;
   }
-  .mini-score { font-size: 10px; font-variant-numeric: tabular-nums; opacity: 0.85; }
+  .mini-score {
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    min-width: 26px;
+    text-align: center;
+    padding: 1px 6px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--muted);
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+  }
 
   /* Attention List */
   .attn { display: flex; flex-direction: column; gap: 6px; }
@@ -878,7 +953,7 @@
   .attn-item .why { color: var(--muted-foreground); font-size: 11px; }
   .attn-item .grow { flex: 1 1 auto; min-width: 0; }
   .attn-empty {
-    border: 1px dashed var(--border-dashed);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 10px 14px;
     font-size: 12px;
@@ -892,7 +967,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
-  @media (max-width: 900px) { .task-cards.two-col { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .task-cards.two-col { grid-template-columns: minmax(0, 1fr); } }
 
   .task-card {
     display: flex;
@@ -909,7 +984,7 @@
   .task-card.needs-worklog { border-color: rgba(245, 158, 11, 0.4); }
   .task-card.needs-worklog .task-title { font-weight: 600; }
   .task-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .task-card .task-title { flex: 1; min-width: 0; color: var(--foreground); font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-card .task-title { flex: 1; min-width: 0; color: var(--foreground); font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; unicode-bidi: isolate; text-align: left; }
   .task-card .task-project { font-size: 10.5px; color: var(--dim); }
   .task-desc { font-size: 12px; line-height: 1.8; color: var(--foreground); white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; }
   .task-desc.muted-desc { color: var(--dim); font-style: italic; }
@@ -930,6 +1005,9 @@
     background: rgba(255, 255, 255, 0.06);
     color: var(--foreground);
     font-variant-numeric: tabular-nums;
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
   }
   .mr-link.merged { background: rgba(16, 185, 129, 0.14); color: #34d399; }
   .mr-link:hover { background: rgba(255, 255, 255, 0.12); text-decoration: none; }
@@ -972,14 +1050,20 @@
     padding: 1px 7px;
     font-size: 11px;
     font-family: var(--font-mono);
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
   }
 
   /* Merge Requests View */
   .settings-group {
-    border: 1px dashed var(--border-dashed);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 14px 16px;
     margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
     background: var(--card-subtle);
   }
   .settings-group .settings-group-title {
@@ -1003,11 +1087,11 @@
     overflow-y: auto;
     padding-inline-start: 4px;
     padding-inline-end: 2px;
-    border-inline-start: 1px dashed var(--border-dashed);
+    border-inline-start: 1px solid var(--border);
   }
   @media (max-width: 760px) {
     .mr-body { flex-direction: column; }
-    .tabs { flex: 0 0 auto; width: 100%; max-height: 35vh; border-inline-start: none; border-bottom: 1px dashed var(--border-dashed); padding-bottom: 8px; }
+    .tabs { flex: 0 0 auto; width: 100%; max-height: 35vh; border-inline-start: none; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
   }
 
   .tab {
@@ -1025,7 +1109,7 @@
     transition: all 0.15s;
   }
   .tab:hover { border-color: var(--border-strong); color: var(--foreground); }
-  .tab.active { background: var(--accent); border-color: var(--primary-accent); color: var(--foreground); }
+  .tab.active { background: var(--accent); border-color: var(--border-strong); color: var(--foreground); }
   .tab .tab-top { display: flex; align-items: center; gap: 6px; }
   .tab .order-badge {
     flex-shrink: 0;
@@ -1053,7 +1137,7 @@
   .verdict.changes { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
 
   .note {
-    background: #060910;
+    background: var(--background);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 14px;
@@ -1085,7 +1169,7 @@
   .sev.Low    { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
   .finding-loc { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted-foreground); word-break: break-all; direction: ltr; text-align: start; }
   .finding-note { white-space: pre-wrap; word-break: break-word; font-size: 12.5px; }
-  .finding pre { background: #060910; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; direction: ltr; text-align: left; }
+  .finding pre { background: var(--background); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; overflow-x: auto; font-size: 12px; margin: 8px 0 0; direction: ltr; text-align: left; }
   .tag { font-size: 11px; color: var(--dim); }
   .finding-feedback { display: inline-flex; gap: 4px; margin-inline-start: auto; }
   .fb-btn {
@@ -1103,73 +1187,109 @@
   .fb-btn.fb-down.active { border-color: var(--red); background: rgba(244, 63, 94, 0.15); }
 
   /* Developers View */
-  .dev-page-body { display: flex; gap: 18px; align-items: flex-start; min-width: 0; }
+  /* ---- Developer analytics ------------------------------------------------
+     Two columns: a sticky roster rail and a stack of cards. The page used to
+     be one card holding eleven sections in a single scroll; the rail stays
+     put so switching people never means scrolling back up. */
+  .dev-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    min-width: 0;
+  }
+  @media (max-width: 1000px) { .dev-layout { grid-template-columns: 1fr; } }
+
+  .dev-rail {
+    position: sticky;
+    top: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    max-height: calc(100vh - 100px);
+  }
+  @media (max-width: 1000px) { .dev-rail { position: static; max-height: none; } }
+
+  .dev-rail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .dev-rail-title { font-size: 13px; font-weight: 600; }
   .dev-roster {
-    flex: 0 0 240px;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    max-height: 75vh;
     overflow-y: auto;
-    padding-inline-start: 4px;
-    padding-inline-end: 2px;
-    border-inline-start: 1px dashed var(--border-dashed);
+    min-height: 0;
+    margin: 0 -4px;
+    padding: 0 4px;
   }
+
+  /* A roster row is a menu item, not a bordered box: name, handle, and the
+     two things that decide whether to open it — the score and how many
+     items need attention. */
   .dev-roster-item {
-    background: var(--card-subtle);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 9px 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 8px;
     cursor: pointer;
     font-size: 12.5px;
     color: var(--foreground);
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.15s;
+    gap: 8px;
+    transition: background 0.15s, border-color 0.15s;
   }
-  .dev-roster-item:hover { border-color: var(--border-strong); transform: translateX(-2px); }
-  .dev-roster-item.active { border-color: var(--primary-accent); background: var(--accent); }
-  .dev-roster-item .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-  .dev-roster-item .flag { font-size: 10px; color: var(--red); }
-  .dev-main { flex: 1; min-width: 0; }
-
-  @media (max-width: 760px) {
-    .dev-page-body { flex-direction: column; }
-    .dev-roster { flex: 0 0 auto; width: 100%; max-height: 30vh; border-inline-start: none; border-bottom: 1px dashed var(--border-dashed); padding-bottom: 8px; flex-direction: row; flex-wrap: wrap; }
+  .dev-roster-item:hover { background: var(--accent); }
+  .dev-roster-item.active { background: var(--accent); border-color: var(--border-strong); }
+  .dev-roster-item .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .dev-roster-item .rn {
+    font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dev-roster-item .rh {
+    font-size: 10.5px; color: var(--muted-foreground);
+    direction: ltr; text-align: start;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dev-roster-item .flag {
+    font-size: 10px; font-weight: 600;
+    color: #fb7185;
+    background: rgba(244, 63, 94, 0.12);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: var(--radius-full);
+    padding: 0 6px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Dev Hero Card */
+  .dev-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Dev hero — identity, the one number, and the caveat that number needs */
   .dev-hero {
     display: flex;
     align-items: center;
     gap: 18px;
     flex-wrap: wrap;
-    background: var(--card-subtle);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 18px 20px;
-    margin-bottom: 16px;
   }
   .hero-id { flex: 1 1 260px; min-width: 0; }
-  .hero-name { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .hero-meta { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .hero-name { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hero-meta { font-size: 12px; color: var(--muted-foreground); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
   .hero-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
   .hero-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-inline-start: auto; }
   .hero-caveat {
     flex: 1 1 100%;
-    font-size: 11px;
+    font-size: 11.5px;
     color: var(--muted-foreground);
-    line-height: 1.6;
-    border-top: 1px dashed var(--border-dashed);
-    padding-top: 10px;
-    margin-top: 4px;
+    line-height: 1.7;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 2px;
   }
-  .hero-caveat b { color: #fde68a; font-weight: 600; }
+  .hero-caveat b { color: #fbbf24; font-weight: 600; }
   .hero-caveat a { cursor: pointer; text-decoration: none; border-bottom: 1px dotted currentColor; }
 
   /* Score Ring */
-  .score-ring { flex-shrink: 0; width: 90px; height: 90px; }
+  .score-ring { flex-shrink: 0; width: 96px; height: 96px; }
   .score-ring .ring-track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 7; }
   .score-ring .ring-fill {
     fill: none;
@@ -1180,43 +1300,114 @@
     transition: stroke-dasharray 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .score-ring .ring-num { font-size: 24px; font-weight: 800; fill: var(--foreground); font-family: var(--font-primary); }
-  .score-ring .ring-cap { font-size: 8px; fill: var(--dim); font-family: var(--font-primary); letter-spacing: 0.04em; }
+  .score-ring .ring-cap { font-size: 8px; fill: var(--muted-foreground); font-family: var(--font-primary); letter-spacing: 0.04em; }
   .score-ring.score-good .ring-fill { stroke: var(--green); }
   .score-ring.score-mid  .ring-fill { stroke: var(--amber); }
   .score-ring.score-bad  .ring-fill { stroke: var(--red); }
   .score-ring.score-none .ring-fill { stroke: var(--dim); }
   .score-ring.score-none .ring-num  { fill: var(--dim); font-size: 18px; }
 
-  /* Charts */
+  /* ---- Tabs (shadcn Tabs): a muted track whose active trigger lifts to the
+     card surface. This is what replaced eleven stacked sections. */
+  .seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--muted);
+    border-radius: var(--radius-lg);
+    padding: 3px;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .seg::-webkit-scrollbar { display: none; }
+  .seg-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--muted-foreground);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  .seg-item:hover { background: transparent; color: var(--foreground); }
+  .seg-item.on {
+    background: var(--card);
+    color: var(--foreground);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+  .seg-count {
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-full);
+    padding: 0 6px;
+  }
+  .seg-item.on .seg-count { background: var(--muted); }
+  .seg-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+
+  .dev-tabbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  /* ---- Chart cards: CardHeader (title + description + action) over a plot.
+     Mirrors ChartAreaInteractive in the sample. */
   .charts-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
   }
-  @media (max-width: 1300px) { .charts-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
+  @media (max-width: 1280px) { .charts-row { grid-template-columns: 1fr; } }
+  .charts-row .chart-card.wide { grid-column: 1 / -1; }
 
   .chart-card {
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--card-subtle);
-    padding: 14px 16px;
+    border-radius: var(--radius-xl);
+    background: var(--card);
+    padding: 20px 22px;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
-  .chart-title { font-size: 12px; font-weight: 600; color: var(--foreground); margin-bottom: 6px; }
-  .chart-note { font-size: 10px; line-height: 1.6; color: var(--dim); margin-bottom: 8px; }
-  .chart-card .chart-wrap { background: none; border: 0; padding: 0; margin-bottom: 0; overflow-x: auto; }
-  .chart-legend { display: flex; gap: 14px; font-size: 10.5px; color: var(--muted-foreground); margin-bottom: 10px; }
-  .chart-legend .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-inline-end: 4px; vertical-align: -1px; }
+  .chart-head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .chart-heading { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .chart-title { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--foreground); }
+  .chart-desc { font-size: 12px; line-height: 1.6; color: var(--muted-foreground); }
+  .chart-action { flex-shrink: 0; }
+  .chart-note { font-size: 11.5px; line-height: 1.7; color: var(--muted-foreground); }
+  .chart-note.warn { color: #fbbf24; }
+  .chart-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted-foreground); }
+  .chart-legend .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-inline-end: 6px; vertical-align: -1px; }
+  /* The plot fills the card instead of scrolling inside a fixed pixel width */
+  .chart-svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart-svg .grid-line { stroke: var(--border); stroke-width: 1; }
+  .chart-svg .axis-label { font-size: 10px; fill: var(--muted-foreground); font-family: var(--font-primary); }
+  .chart-svg .value-label { font-size: 10.5px; font-weight: 700; fill: var(--foreground); font-family: var(--font-primary); }
+  .chart-svg .bar { transition: opacity 0.15s; }
+  .chart-svg .bar-group:hover .bar { opacity: 0.75; }
+  .chart-empty {
+    color: var(--muted-foreground);
+    font-size: 12.5px;
+    text-align: center;
+    padding: 36px 12px;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+  }
 
-  /* Horizontal Tabs (Months/Sprints) */
+  /* ---- Horizontal Tabs (Months/Sprints) — kept for the task panes */
   .htabs {
     display: flex;
     gap: 6px;
     overflow-x: auto;
-    padding-bottom: 6px;
-    margin-bottom: 12px;
-    border-bottom: 1px dashed var(--border-dashed);
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
   }
   .htab {
     display: inline-flex;
@@ -1224,27 +1415,185 @@
     gap: 6px;
     white-space: nowrap;
     padding: 6px 12px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     border: 1px solid var(--border);
-    background: var(--card-subtle);
+    background: transparent;
     color: var(--muted-foreground);
-    font-size: 11.5px;
+    font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    box-shadow: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
   }
-  .htab:hover { border-color: var(--border-strong); color: var(--foreground); }
-  .htab.on { border-color: var(--border-strong); background: var(--accent); color: var(--foreground); font-weight: 600; }
-  .htab-count { font-variant-numeric: tabular-nums; opacity: 0.7; font-size: 10px; }
-  .htab-flag { font-size: 10px; color: var(--red); }
+  .htab:hover { background: var(--accent); color: var(--foreground); }
+  .htab.on { border-color: var(--border-strong); background: var(--accent); color: var(--foreground); }
+  .htab-count { font-variant-numeric: tabular-nums; opacity: 0.7; font-size: 10.5px; }
+  .htab-flag { font-size: 10px; color: #fb7185; }
+
+  /* ---- Pieces the person page renders that had no styling at all: every
+     score table, chip and fold below was falling back to browser defaults. */
+  .score-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .score-table th, .score-table td {
+    padding: 10px 12px;
+    text-align: start;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .score-table thead th {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+  .score-table tbody tr:last-child td { border-bottom: 0; }
+  .score-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+  .score-table td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .score-table .muted { color: var(--muted-foreground); font-size: 11.5px; line-height: 1.6; }
+  .score-table tr.off td { opacity: 0.5; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  .table-wrap .score-table { min-width: 620px; }
+  .table-wrap .score-table td:last-child { min-width: 220px; }
+
+  .score-bar {
+    height: 6px;
+    min-width: 70px;
+    border-radius: var(--radius-full);
+    background: var(--muted);
+    overflow: hidden;
+  }
+  .score-bar span { display: block; height: 100%; border-radius: var(--radius-full); background: var(--chart-1); }
+  .score-bar.off { background: repeating-linear-gradient(135deg, var(--muted), var(--muted) 3px, transparent 3px, transparent 6px); }
+
+  .chip-quiet {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1px 8px;
+    font-size: 11px;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+
+  .cover-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+  .cover-chip.ok   { border-color: rgba(45, 212, 167, 0.35); background: rgba(45, 212, 167, 0.10); color: #4ade9f; }
+  .cover-chip.warn { border-color: rgba(240, 180, 41, 0.35); background: rgba(240, 180, 41, 0.10); color: #fbbf24; }
+  .cover-chip.bad  { border-color: rgba(244, 63, 94, 0.35);  background: rgba(244, 63, 94, 0.10);  color: #fb7185; }
+
+  .score-governance-banner {
+    border: 1px solid rgba(240, 180, 41, 0.3);
+    background: rgba(240, 180, 41, 0.08);
+    color: #fde68a;
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    font-size: 12px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+
+  /* details defaults to a browser triangle and no spacing; this makes it a
+     section header you can actually read. */
+  .fold {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--card);
+    padding: 16px 20px;
+  }
+  .fold > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    cursor: pointer;
+    list-style: none;
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+  }
+  .fold > summary::-webkit-details-marker { display: none; }
+  .fold > summary::before {
+    content: '';
+    width: 0; height: 0;
+    border-block: 4px solid transparent;
+    border-inline-end: 5px solid var(--muted-foreground);
+    flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .fold[open] > summary::before { transform: rotate(-90deg); }
+  .fold > summary .band-note { flex-basis: 100%; font-size: 12px; font-weight: 400; color: var(--muted-foreground); line-height: 1.6; }
+  .fold[open] > summary { margin-bottom: 14px; }
+
+  /* ---- Handoff report */
+  .handoff-block {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .handoff-block:last-child { margin-bottom: 0; }
+  .handoff-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .handoff-head b { font-size: 13px; font-weight: 600; }
+  .handoff-head button { margin-inline-start: auto; }
+  .handoff-group {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    margin: 12px 0 6px;
+  }
+  .handoff-group:first-of-type { margin-top: 0; }
+
+  /* ---- Manual rating form */
+  .rating-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 90px;
+    align-items: center;
+    gap: 8px 14px;
+    margin-top: 6px;
+  }
+  .rating-grid label { font-size: 12.5px; color: var(--foreground); }
+  .rating-grid select { margin-bottom: 0; }
+  @media (max-width: 620px) { .rating-grid { grid-template-columns: 1fr; } }
+  .dev-rating textarea { margin-bottom: 10px; }
+
+  .dev-rail .empty { padding: 12px 0; font-size: 12px; }
+
+  @keyframes flash-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.55); }
+    100% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+  }
+  .flash { animation: flash-ring 1s ease-out 2; border-radius: var(--radius-xl); }
 
   /* Settings Page */
   .settings-page { display: flex; flex-direction: column; gap: 14px; }
-  .settings-page-head { border-bottom: 1px dashed var(--border-dashed); padding-bottom: 12px; }
+  .settings-page-head { border-bottom: 1px solid var(--border); padding-bottom: 12px; }
   .panel-tabs {
     display: flex;
     gap: 4px;
     margin-bottom: 12px;
-    border-bottom: 1px dashed var(--border-dashed);
+    border-bottom: 1px solid var(--border);
     overflow-x: auto;
   }
   .panel-tab {
@@ -1338,7 +1687,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    border-top: 1px dashed var(--border-dashed);
+    border-top: 1px solid var(--border);
     padding-top: 14px;
     position: sticky;
     bottom: 0;
@@ -1377,7 +1726,7 @@
   .sentry-culprit { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; word-break: break-all; }
   .sentry-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dim); margin-top: 6px; }
   .sentry-stack {
-    background: #060910;
+    background: var(--background);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 10px;
@@ -1423,7 +1772,7 @@
     max-height: 88vh;
     display: flex;
     flex-direction: column;
-    background: #0c0c0e;
+    background: var(--popover);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
@@ -1434,7 +1783,7 @@
     align-items: flex-start;
     justify-content: space-between;
     padding: 18px 20px 14px;
-    border-bottom: 1px dashed var(--border-dashed);
+    border-bottom: 1px solid var(--border);
   }
   .modal-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
   .modal-sub { margin: 4px 0 0; font-size: 12px; color: var(--muted-foreground); line-height: 1.5; }
@@ -1473,7 +1822,7 @@
   }
   .engine-card .row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
   .engine-card:hover { border-color: var(--border-strong); }
-  .engine-card.active { border-color: var(--primary-accent); background: var(--accent); }
+  .engine-card.active { border-color: var(--border-strong); background: var(--accent); }
   .engine-card .icon { font-size: 18px; flex-shrink: 0; }
   .engine-card .body { min-width: 0; flex: 1; }
   .engine-card .name { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
@@ -1517,7 +1866,7 @@
     top: calc(100% + 6px);
     right: 0;
     width: 280px;
-    background: #0c0c0e;
+    background: var(--popover);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
     padding: 12px;
@@ -1549,7 +1898,7 @@
     font-weight: 600;
     color: var(--muted-foreground);
     padding-bottom: 6px;
-    border-bottom: 1px dashed var(--border-dashed);
+    border-bottom: 1px solid var(--border);
     margin-bottom: 4px;
   }
   .jdp-week span.off, .jdp-cell.off { color: var(--red); }
@@ -1571,7 +1920,7 @@
   .jdp-cell.on { background: var(--primary); color: var(--primary-foreground); font-weight: 700; border-color: var(--primary); }
   .jdp-cell.empty { background: transparent; cursor: default; border-color: transparent; }
   .jdp-cell.empty:hover { background: transparent; border-color: transparent; }
-  .jdp-foot { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-dashed); }
+  .jdp-foot { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
   .jdp-foot button { flex: 1; font-size: 11.5px; padding: 6px; }
 
   /* Misc helpers */
@@ -1582,7 +1931,7 @@
 
   @media (max-width: 860px) {
     .app-layout { flex-direction: column; }
-    .side-nav { width: 100%; height: auto; position: static; min-height: 0; border-inline-end: none; border-bottom: 1px dashed var(--border-dashed); flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 10px; }
+    .side-nav { width: 100%; height: auto; position: static; min-height: 0; border-inline-end: none; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 10px; }
     .workspace-card { width: 100%; padding: 6px 10px; margin-bottom: 6px; }
     .sidebar-footer { display: none; }
     .nav-section-title { display: none; }
@@ -1608,7 +1957,7 @@
         </svg>
       </span>
       <div class="workspace-meta">
-        <span class="brand-title">Coder Review</span>
+        <span class="brand-title">Business Analyzer</span>
         <span class="brand-subtitle">shadcn-admin · v2.0</span>
       </div>
     </div>
@@ -1694,16 +2043,18 @@
           <path d="m15 18-6-6 6-6"></path>
         </svg>
         <span class="bc-current" id="crumbCurrent">مرور کلی تیم و پروژه‌ها</span>
-
-        <span class="header-command-box">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.3-4.3"></path>
-          </svg>
-          <span>دستورات سریع</span>
-          <kbd class="kbd-chip">⌘K</kbd>
-        </span>
       </div>
+
+      <span class="hdr-sep"></span>
+
+      <span class="header-command-box">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <span>جست‌وجو…</span>
+        <kbd class="kbd-chip">⌘K</kbd>
+      </span>
 
       <div class="badges">
         <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
@@ -1722,14 +2073,22 @@
     <div class="content-wrapper">
 
       <!-- ---- home: the team at a glance, then the work itself ---- -->
-      <section class="card" id="homePage" hidden>
-        <div id="homeTeam"><div class="empty">در حال بارگذاری…</div></div>
-        <hr class="section-divider" />
+      <section class="page" id="homePage" hidden>
+        <div class="page-head">
+          <h1>داشبورد</h1>
+          <p>مرور کلی تیم، کد ریویو و تسک‌های در جریان</p>
+        </div>
+        <div id="homeTeam"><div class="card"><div class="empty">در حال بارگذاری…</div></div></div>
         <div id="homeTasks"></div>
       </section>
 
       <!-- ---- merge requests ---- -->
-      <section class="card" id="mrPanelWrap" hidden>
+      <section class="page" id="mrPanelWrap" hidden>
+        <div class="page-head">
+          <h1>کد ریویو</h1>
+          <p>Merge Requestهای باز پروژه‌ی فعال و گزارش ریویوی هرکدام</p>
+        </div>
+        <div class="card">
         <div class="row" style="justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px">
           <label class="switch-badge" id="autoReviewLabel" title="با روشن بودن این، هر MR باز به‌صورت خودکار (بدون کلیک دستی) ریویو می‌شود">
             <span class="switch"><input type="checkbox" id="autoReview" /><span class="track"></span><span class="thumb"></span></span>
@@ -1749,16 +2108,20 @@
           </div>
         </div>
         <div id="mrError"></div>
-        <div class="mr-body">
+        </div>
+        <div class="card mr-body">
           <div class="tabs" id="tabs"></div>
           <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
         </div>
       </section>
 
       <!-- ---- Sentry ---- -->
-      <section class="card" id="sentryPage" hidden>
-        <div class="row" style="justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px">
-          <h3 style="margin:0">🚨 خطاهای Sentry</h3>
+      <section class="page" id="sentryPage" hidden>
+        <div class="page-head-row">
+          <div class="page-head">
+            <h1>خطاهای Sentry</h1>
+            <p>رویدادهای ثبت‌شده در بازه‌ی انتخابی، همراه با تحلیل هر خطا</p>
+          </div>
           <div class="row" style="gap:8px">
             <select id="sentryPeriod" class="project-picker" title="بازه‌ی آماری">
               <option value="24h">۲۴ ساعت اخیر</option>
@@ -1769,38 +2132,42 @@
             <button class="ghost" id="sentryRefreshBtn">🔄 بروزرسانی</button>
           </div>
         </div>
-        <div id="sentryBody"><div class="empty">در حال بارگذاری…</div></div>
+        <div class="card" id="sentryBody"><div class="empty">در حال بارگذاری…</div></div>
       </section>
 
       <!-- ---- developer analytics ---- -->
-      <section class="card" id="devPage" hidden>
-        <div class="row" style="justify-content:space-between; margin-bottom:14px">
-          <h3 style="margin:0">📊 آنالیز دولوپرها</h3>
-          <button class="ghost" id="devBackBtn">→ بازگشت به خانه</button>
+      <section class="page" id="devPage" hidden>
+        <div class="page-head-row">
+          <div class="page-head">
+            <h1>آنالیز دولوپرها</h1>
+            <p>یک نفر را انتخاب کن تا کارنامه‌ی کامل او در همه‌ی پروژه‌ها باز شود</p>
+          </div>
+          <button class="ghost" id="devBackBtn">← بازگشت به خانه</button>
         </div>
-        <div class="dev-page-body">
-          <div>
-            <div class="row" style="justify-content:space-between; margin-bottom:8px">
-              <span class="tag" id="devRosterCacheNote"></span>
-              <button class="ghost" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب" style="padding:2px 8px; font-size:11px">🔄</button>
+        <div class="dev-layout">
+          <aside class="card dev-rail">
+            <div class="dev-rail-head">
+              <span class="dev-rail-title">تیم</span>
+              <button class="ghost" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب" style="padding:3px 8px; font-size:11px">🔄</button>
             </div>
-            <label class="check" id="includeMaintainersLabel" style="font-size:11px; margin-bottom:10px"
+            <span class="tag" id="devRosterCacheNote"></span>
+            <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
+            <label class="check" id="includeMaintainersLabel" style="font-size:11px; border-top:1px solid var(--border); padding-top:10px"
                    title="پیش‌فرض فقط اعضای با نقش Developer در لیست می‌آیند، چون معمولاً maintainerها ریویوکننده‌اند نه ریویوشونده. اگر لید تیم خودش هم فیچر می‌زند، این را روشن کن تا Maintainer و Owner هم بیایند.">
               <input type="checkbox" id="setIncludeMaintainers" /> maintainerها هم در لیست بیایند
             </label>
-            <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
-          </div>
+          </aside>
           <div class="dev-main" id="devMain">
-            <div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div>
+            <div class="card"><div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div></div>
           </div>
         </div>
       </section>
 
       <!-- ---- settings page ---- -->
-      <section class="card" id="settingsPage" hidden>
-        <div class="settings-page">
+      <section class="page" id="settingsPage" hidden>
+        <div class="card settings-page">
           <div class="settings-page-head">
-            <h3 style="margin:0">⚙ تنظیمات</h3>
+            <h1 style="font-size:20px;font-weight:700;letter-spacing:-0.02em;margin:0">تنظیمات</h1>
             <p class="modal-sub" style="margin:6px 0 0">مقادیر مستقیم در فایل <code>secrets.env</code> ذخیره می‌شوند — نیازی به ویرایش دستی فایل نیست. مقدار رمزها فقط با چهار کاراکتر آخر نمایش داده می‌شود.</p>
           </div>
           <div class="panel-tabs" style="margin-bottom:0">
@@ -2785,7 +3152,7 @@ function renderMrContext(ctx) {
           (j.assignee ? '<span class="tag">👤 ' + esc(j.assignee) + '</span>' : '') +
           (j.priority ? '<span class="tag">' + esc(j.priority) + '</span>' : '') +
         '</div>' +
-        (j.description && j.description.trim()
+        (j.description && j.description.trim() && j.description.trim() !== (j.summary || '').trim()
           ? '<div class="task-desc">' + esc(j.description.trim()) + '</div>'
           : '<div class="task-desc muted-desc">این تسک در جیرا شرحی ندارد.</div>') +
       '</div>';
@@ -2855,7 +3222,7 @@ function renderMrPanel() {
       '<div class="meta">شاخه: <b class="mono">' + esc(mr.sourceBranch) + '</b><span class="mono"> → </span>' + branchPill(mr) + '</div>' +
       '<div class="meta">نویسنده: <b>' + esc(mr.author) + '</b>' + (mr.draft ? ' · <b>Draft</b>' : '') + '</div>' +
       '<div class="meta">کامیت فعلی: <span class="mono">' + esc((mr.sha || '').slice(0, 8)) + '</span>' +
-        (isStale ? ' <b style="color:var(--amber)">(بعد از آخرین ریویو تغییر کرده)</b>' : '') + '</div>' +
+        (isStale ? ' <b style="color:var(--orange)">(بعد از آخرین ریویو تغییر کرده)</b>' : '') + '</div>' +
       '<div class="meta">ترتیب merge: <b style="color:var(--violet)">#' + esc(mr.mergeOrder) + '</b>' + (mr.approved ? ' · ✅ approved' : '') + '</div>' +
     '</div>' +
     renderMrContext(S.mrContext[key]) +
@@ -3114,7 +3481,7 @@ const HOME = { taskBucket: null };
 
 const DEV = {
   roster: [], selected: null, analytics: null, score: null, since: '', until: '',
-  ratingMonth: null, taskTab: null, monthTab: null,
+  ratingMonth: null, taskTab: null, monthTab: null, devTab: 'overview', trendRange: '12',
   // The team table is the page's landing view — a manager's first question is
   // "what is my team doing", not "how is one named person doing". Rows arrive
   // one developer at a time (see loadTeam), so `team` holds whatever has come
@@ -3258,23 +3625,68 @@ function relativeTime(ms) {
   return hr + ' ساعت پیش';
 }
 
+// Counts exactly what attentionItems() will list on that person's page: one
+// item per overdue task, one per stale merge request, and the missing-worklog
+// tasks collapsed into a single item the way that function collapses them.
+function rosterAttentionCount(row) {
+  if (!row) return 0;
+  return (row.overdueCount || 0) +
+    (row.staleOpenMrs || 0) +
+    (row.missingWorklogCount ? 1 : 0);
+}
+
+function initials(name) {
+  const parts = String(name).replace(/[_.-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '؟';
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
+
 function renderDevRoster() {
   const box = document.getElementById('devRoster');
   const note = document.getElementById('devRosterCacheNote');
   if (note) note.textContent = DEV.rosterCachedAt ? (DEV.rosterFromCache ? 'کش‌شده — ' : 'تازه — ') + relativeTime(DEV.rosterCachedAt) : '';
   if (!DEV.roster.length) { box.innerHTML = '<div class="empty">هیچ توسعه‌دهنده‌ای پیدا نشد.</div>'; return; }
   // Each name carries its own score and its own count of things that need
-  // attention, so the sidebar is a triage list rather than a phone book —
-  // you can see who to open before opening anybody.
+  // attention, so the rail is a triage list rather than a phone book — you
+  // can see who to open before opening anybody.
+  //
+  // And it is ordered by that: most items needing attention first, then
+  // lowest score. Roster order came from GitLab's member list, which is an
+  // accident of who joined the project when — so the person who most needed
+  // opening could sit anywhere in it, and the list read as unsorted because
+  // it was.
+  // Ordered by the badge the row shows, not by teamOverview's weighted
+  // `attention` ranking. Both are defensible orderings, but only one of them
+  // is legible: sorting by the weighted score put a row badged 4 above a row
+  // badged 8, which reads as no ordering at all. The weighted score stays as
+  // the tie-breaker, so severity still decides between equal counts, and the
+  // home page's team table keeps sorting by it directly.
+  const ranked = DEV.roster.slice().sort((x, y) => {
+    const rx = DEV.team[x.username] || {}, ry = DEV.team[y.username] || {};
+    const cx = rosterAttentionCount(rx), cy = rosterAttentionCount(ry);
+    if (cx !== cy) return cy - cx;
+    const ax = rx.attention || 0, ay = ry.attention || 0;
+    if (ax !== ay) return ay - ax;
+    const sx = rx.score == null ? 101 : rx.score, sy = ry.score == null ? 101 : ry.score;
+    if (sx !== sy) return sx - sy;
+    return String(x.name || '').localeCompare(String(y.name || ''), 'fa');
+  });
+
   box.innerHTML =
-    DEV.roster.map((d) => {
+    ranked.map((d) => {
       const row = DEV.team[d.username];
       const score = row && row.score != null
         ? '<span class="mini-score ' + scoreClass(row.score) + '">' + row.score + '</span>' : '';
-      const flag = row && row.attention > 0 ? '<span class="flag" title="موارد نیازمند رسیدگی">●</span>' : '';
+      const attnCount = rosterAttentionCount(row);
+      const flag = attnCount
+        ? '<span class="flag" title="' + attnCount + ' مورد نیازمند رسیدگی">' + attnCount + '</span>' : '';
       return '<div class="dev-roster-item ' + (DEV.selected === d.username ? 'active' : '') + '" data-username="' + esc(d.username) + '"' +
         ' tabindex="0" role="button" aria-pressed="' + (DEV.selected === d.username) + '">' +
-        '<span class="grow">👤 ' + esc(d.name) + '</span>' + flag + score + '</div>';
+        '<span class="avatar-sm">' + esc(initials(d.name || d.username)) + '</span>' +
+        '<span class="grow">' +
+          '<span class="rn">' + esc(d.name || d.username) + '</span>' +
+          '<span class="rh">@' + esc(d.username) + '</span>' +
+        '</span>' + flag + score + '</div>';
     }).join('');
   box.querySelectorAll('[data-username]').forEach((el) => activate(el, () => selectDeveloper(el.dataset.username)));
 }
@@ -3396,17 +3808,20 @@ function renderTeam() {
 
   const sum = teamSummary(loaded);
   main.innerHTML =
-    '<div class="row" style="justify-content:space-between; margin-bottom:10px">' +
-      '<strong>&#128101; نمای تیم — ' + DEV.roster.length + ' نفر</strong>' +
-      '<span class="tag">' + (DEV.teamPending > 0 ? 'در حال خواندن ' + DEV.teamPending + ' نفر…' : 'کامل') + '</span>' +
+    '<div class="card">' +
+      '<div class="row" style="justify-content:space-between; margin-bottom:14px">' +
+        '<strong>&#128101; نمای تیم — ' + DEV.roster.length + ' نفر</strong>' +
+        '<span class="tag">' + (DEV.teamPending > 0 ? 'در حال خواندن ' + DEV.teamPending + ' نفر…' : 'کامل') + '</span>' +
+      '</div>' +
+      '<div class="date-filter">' +
+        renderDatePicker('teamSince', DEV.since, 'از تاریخ') +
+        renderDatePicker('teamUntil', DEV.until, 'تا تاریخ') +
+        '<button id="teamFilterApply">اعمال فیلتر</button>' +
+        '<button class="ghost" id="teamFilterClear">پاک کردن</button>' +
+        '<button class="ghost" id="teamRefreshBtn">🔄 محاسبه‌ی دوباره</button>' +
+      '</div>' +
     '</div>' +
-    '<div class="date-filter">' +
-      renderDatePicker('teamSince', DEV.since, 'از تاریخ') +
-      renderDatePicker('teamUntil', DEV.until, 'تا تاریخ') +
-      '<button id="teamFilterApply">اعمال فیلتر</button>' +
-      '<button class="ghost" id="teamFilterClear">پاک کردن</button>' +
-      '<button class="ghost" id="teamRefreshBtn">🔄 محاسبه‌ی دوباره</button>' +
-    '</div>' +
+    '<div>' +
     '<div class="band"><h4>وضعیت امروزِ تیم</h4>' +
       '<span class="band-note">جمع همه‌ی افرادی که تا اینجا خوانده شده‌اند (' + loaded.length + ' از ' + DEV.roster.length + ')</span></div>' +
     '<div class="kpi-row">' +
@@ -3416,11 +3831,13 @@ function renderTeam() {
       kpi(sum.blockedNoMr, 'تسک در جریان بدون MR', 'کاری که شروع شده ولی هنوز کدی برایش ثبت نشده', sum.blockedNoMr ? 'warn' : '') +
       kpi(sum.missingWorklog, 'تسک Review/Done بدون ثبت زمان', 'تا این پر نشود، دقت تخمین برای این تسک‌ها قابل محاسبه نیست', sum.missingWorklog ? 'warn' : '') +
       kpi(sum.medianScore == null ? '—' : sum.medianScore, 'میانه‌ی امتیاز تیم', sum.scored + ' نفر امتیاز قابل محاسبه دارند', '') +
-    '</div>' +
-    '<div class="band"><h4>نفر به نفر</h4>' +
-      '<span class="band-note">روی هر ردیف کلیک کن تا صفحه‌ی کامل همان فرد باز شود. ستون‌ها قابل مرتب‌سازی‌اند؛ پیش‌فرض روی «اولویت رسیدگی» است.</span></div>' +
-    '<div style="overflow-x:auto"><table class="team-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
-    '<div class="muted" style="font-size:11px;margin-top:6px">⚠️ ستون امتیاز ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی — فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده.</div>';
+    '</div></div>' +
+    '<div class="card">' +
+      '<div class="band"><h4>نفر به نفر</h4>' +
+        '<span class="band-note">روی هر ردیف کلیک کن تا صفحه‌ی کامل همان فرد باز شود. ستون‌ها قابل مرتب‌سازی‌اند؛ پیش‌فرض روی «اولویت رسیدگی» است.</span></div>' +
+      '<div style="overflow-x:auto"><table class="team-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<div class="muted" style="font-size:11px;margin-top:10px">⚠️ ستون امتیاز ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی — فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده.</div>' +
+    '</div>';
 
   main.querySelectorAll('[data-open]').forEach((el) => activate(el, () => selectDeveloper(el.dataset.open)));
   main.querySelectorAll('[data-teamsort]').forEach((el) => {
@@ -3525,10 +3942,10 @@ function renderTeamTasks() {
   const loaded = DEV.roster.filter((d) => DEV.team[d.username] && !DEV.team[d.username].error).length;
 
   if (!tasks.length) {
-    box.innerHTML = '<div class="band"><h4>تسک‌ها و وظایف</h4></div>' +
+    box.innerHTML = '<div class="card"><div class="band"><h4>تسک‌ها و وظایف</h4></div>' +
       '<div class="empty">' + (DEV.teamPending > 0
         ? 'در حال خواندن تسک‌های تیم…'
-        : 'هیچ تسک بازی برای تیم پیدا نشد.') + '</div>';
+        : 'هیچ تسک بازی برای تیم پیدا نشد.') + '</div></div>';
     return;
   }
 
@@ -3547,6 +3964,7 @@ function renderTeamTasks() {
 
   const shown = tasks.filter(bucket.match);
   box.innerHTML =
+    '<div class="card">' +
     '<div class="band"><h4>تسک‌ها و وظایف</h4>' +
       '<span class="band-note">' + tasks.length + ' تسک از ' + loaded + ' نفر' +
       (DEV.teamPending > 0 ? ' — بقیه در حال خواندن…' : '') +
@@ -3555,7 +3973,8 @@ function renderTeamTasks() {
     '<div class="chart-note" style="margin-bottom:8px">' + esc(bucket.note) + '</div>' +
     (shown.length
       ? '<div class="task-cards two-col">' + shown.map(teamTaskCard).join('') + '</div>'
-      : '<div class="empty">هیچ تسکی در این دسته نیست.</div>');
+      : '<div class="empty">هیچ تسکی در این دسته نیست.</div>') +
+    '</div>';
 
   for (const btn of box.querySelectorAll('[data-taskbucket]')) {
     btn.onclick = () => { HOME.taskBucket = btn.dataset.taskbucket; renderTeamTasks(); };
@@ -3585,6 +4004,27 @@ function teamSummary(rows) {
   };
 }
 
+// The icon and the state pill both come from `cls`, the way the sample's
+// SectionCards drives its lucide icon and growth badge off one metric.
+// Nothing here is invented: the previous version drew a sparkline from a
+// hardcoded array, so every card on the page showed the same fake trend.
+const KPI_ICONS = {
+  bad:   '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
+  warn:  '<circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path>',
+  good:  '<path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path>',
+  quiet: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path>',
+};
+const KPI_PILL_LABEL = { bad: 'نیاز به رسیدگی', warn: 'هشدار', good: 'مطلوب' };
+// state markers, not trend arrows — these cards report a condition, and a
+// downward arrow would claim a direction we never measured
+const KPI_PILL_ICON = {
+  bad:  '<circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path>',
+  warn: '<path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>',
+  good: '<path d="M20 6 9 17l-5-5"></path>',
+};
+const lucide = (paths) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
+
 // `outOf` renders the "of N" half of a progress figure. It exists because
 // two callers were passing '<small>/24</small>' as the value, and the value
 // is escaped — correctly, since sprint names and statuses flow through here
@@ -3593,20 +4033,18 @@ function teamSummary(rows) {
 function kpi(value, label, sub, cls, outOf) {
   const main = typeof value === 'string' ? esc(value) : value;
   const suffix = outOf == null ? '' : '<small>/' + esc(outOf) + '</small>';
-  const sparkHeights = [30, 45, 38, 62, 55, 78, 70, 92];
-  const sparkHtml = '<span class="kpi-sparklines">' + sparkHeights.map((h, i) =>
-    '<span style="height:' + h + '%" class="kpi-sparkbar ' + (i === sparkHeights.length - 1 ? 'active' : '') + '"></span>'
-  ).join('') + '</span>';
+  const key = cls === 'bad' || cls === 'warn' || cls === 'good' ? cls : 'quiet';
+  const icon = '<span class="kpi-icon">' + lucide(KPI_ICONS[key]) + '</span>';
+  const pill = KPI_PILL_LABEL[key]
+    ? '<span class="kpi-pill ' + key + '">' + lucide(KPI_PILL_ICON[key]) + KPI_PILL_LABEL[key] + '</span>'
+    : '';
 
   return '<div class="kpi ' + (cls || '') + '">' +
-    '<div class="kpi-header">' +
+    '<div class="kpi-header">' + icon + pill + '</div>' +
+    '<div class="kpi-body">' +
       '<div class="l">' + esc(label) + '</div>' +
-      '<span class="kpi-icon-pill">' + (cls === 'bad' ? '🔴' : cls === 'warn' ? '⚠️' : cls === 'good' ? '🟢' : '📊') + '</span>' +
-    '</div>' +
-    '<div class="n">' + main + suffix + '</div>' +
-    '<div class="kpi-footer">' +
-      (sub ? '<div class="sub">' + esc(sub) + '</div>' : '<div class="sub-placeholder">آماده برای داده جدید</div>') +
-      sparkHtml +
+      '<div class="n">' + main + suffix + '</div>' +
+      (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
     '</div>' +
   '</div>';
 }
@@ -3628,12 +4066,12 @@ async function selectDeveloper(username) {
 
 async function loadDevMain(force) {
   const main = document.getElementById('devMain');
-  if (!DEV.selected) { main.innerHTML = '<div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div>'; return; }
+  if (!DEV.selected) { main.innerHTML = '<div class="card"><div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div></div>'; return; }
   // A cache hit answers in well under a second; only a genuine miss/refresh
   // pays the "read every MR's branch authors" cost, so this message only
   // shows up when it's actually true.
   if (force || !DEV.analytics) {
-    main.innerHTML = '<div class="empty">در حال محاسبه… (چند ثانیه طول می‌کشد — برای هر MR باید نویسنده‌های برنچش را از گیت‌لب بخوانیم)</div>';
+    main.innerHTML = '<div class="card"><div class="empty">در حال محاسبه… (چند ثانیه طول می‌کشد — برای هر MR باید نویسنده‌های برنچش را از گیت‌لب بخوانیم)</div></div>';
   }
 
   const params = new URLSearchParams();
@@ -3697,108 +4135,73 @@ function renderDevMain() {
   // engineering quality — so it rides in the hero's meta line, stated as
   // what it is, and scores nothing.
 
+  // ---- The page is five named panes behind one tab strip, not eleven
+  // sections in a single scroll. Each pane answers one question, and the
+  // order of the strip is the order the questions actually get asked:
+  // what is on their desk -> what got delivered -> what is stuck ->
+  // the tickets themselves -> the score and what it rests on.
+  //
+  // Splitting them also removed three duplicate readouts: the open-MR count
+  // used to appear in the "now" band, in the coverage fold and again in the
+  // delivery table, each with its own wording.
+  const panes = devPanes(a, scoreData, displayName);
+  const activePane = panes.some((x) => x.id === DEV.devTab) ? DEV.devTab : panes[0].id;
+
   main.innerHTML =
     // ---- The hero: who, the one number, and the caveat that number needs.
-    // Everything below this line on the page is evidence for the figure in
-    // the ring, so it leads rather than sitting fifth in a row of pills.
-    '<div class="dev-hero">' +
+    // Everything in every pane below is evidence for the figure in the ring,
+    // so it sits above the tab strip and stays visible whichever pane is open.
+    '<div class="card dev-hero">' +
       renderScoreRing(auto.score == null ? null : auto.score) +
       '<div class="hero-id">' +
-        '<div class="hero-name">&#128100; ' + esc(displayName) + trendBadge + '</div>' +
+        '<div class="hero-name">' + esc(displayName) + trendBadge + '</div>' +
         '<div class="hero-meta">' +
+          '<span dir="ltr">@' + esc(DEV.selected) + '</span>' +
           (a.lastActivityMs ? '<span title="آخرین رویداد یا ریویوی ثبت‌شده — در امتیاز تأثیری ندارد">آخرین فعالیت: ' + esc(relativeTime(a.lastActivityMs)) + '</span>' : '') +
           (auto.reason ? '<span title="' + esc(auto.reason) + '">چطور حساب شد؟</span>' : '') +
         '</div>' +
-        '<div class="hero-chips">' + attentionChip + manualBadge + '</div>' +
+        '<div class="hero-chips">' + attentionChip + manualBadge + coverageChip(a) + '</div>' +
       '</div>' +
       '<div class="hero-actions">' + cacheNote +
         '<button class="ghost" id="devRefreshBtn">🔄 بروزرسانی این فرد</button>' +
+        '<button class="ghost" id="devExportBtn" title="خروجی اکسل عملکرد ماهانه، همراه با نمودار">📊 خروجی اکسل</button>' +
       '</div>' +
       '<div class="hero-caveat">' +
         '<b>⚠️ این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی.</b> ' +
         'فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده — ' +
-        '<a id="heroBreakdownLink">تفکیک کامل شش مؤلفه‌اش را ببین ↓</a>' +
+        '<a id="heroBreakdownLink">تفکیک کامل شش مؤلفه‌اش را ببین ←</a>' +
       '</div>' +
-    '</div>' +
-    '<div class="date-filter">' +
-      renderDatePicker('devSince', DEV.since, 'از تاریخ') +
-      renderDatePicker('devUntil', DEV.until, 'تا تاریخ') +
-      '<button id="devFilterApply">اعمال فیلتر</button>' +
-      '<button class="ghost" id="devFilterClear">پاک کردن</button>' +
-      '<button class="ghost" id="devExportBtn" title="خروجی اکسل عملکرد ماهانه، همراه با نمودار">📊 خروجی اکسل</button>' +
     '</div>' +
 
-    // ---- 1. What is on their desk right now. Everything here is a live
-    // count, not a historical average — this is the band that answers "what
-    // is this person doing today", which is the question that gets asked.
-    renderNowBand(a) +
-    // ---- 2. What needs a decision. Promoted above everything historical:
-    // it is the only band that names things by name, and a manager opening
-    // one person's page is usually here to find out what to do about them.
-    renderAttentionBand(a) +
-    // ---- 2b. The same trouble, split by who can actually clear it, with the
-    // text to hand over. "Needs attention" says what is wrong; this says who
-    // has to do something about it.
-    renderHandoffBand(a, displayName) +
-    // ---- 3. What got delivered in the window.
-    renderDeliveredBand(a) +
-    // ---- 4. Direction, then the score it produced.
-    '<div class="band"><h4>روند امتیاز خودکار</h4><span class="band-note">امتیاز ماهانه در کنار اسپرینت‌های اخیر — یکی جهت را نشان می‌دهد، دیگری واحدی که این تیم واقعاً در آن برنامه‌ریزی می‌کند.</span></div>' +
-    '<div class="charts-row">' +
-      '<div class="chart-card">' +
-        '<div class="chart-title">روند پیشرفت ماه‌به‌ماه</div>' +
-        // The metric is spelled out on the chart itself: a progress line
-        // nobody can name the axis of invites everyone to read it as
-        // whatever they already believed.
-        '<div class="chart-note">معیار: <b>امتیاز کل ماهانه (۰ تا ۱۰۰)</b> — میانگین وزنی تحویل به‌موقع، دقت تخمین، کیفیت کد، تکمیل تسک‌ها، ثبت زمان و تک‌نویسنده بودن برنچ؛ وزن هر مؤلفه ضربدر ضریب اطمینانِ حجم نمونه‌اش. ماهی که داده‌ی قابل‌سنجش ندارد اصلاً نقطه نمی‌گیرد.</div>' +
-        '<div class="chart-wrap">' + renderProgressChart(a.monthlyRows) + '</div>' +
-      '</div>' +
-      '<div class="chart-card">' +
-        '<div class="chart-title">تسک‌ها در ۵ اسپرینت اخیر</div>' +
-        '<div class="chart-legend">' +
-          '<span><span class="sw" style="background:var(--green)"></span>با ثبت زمان</span>' +
-          '<span><span class="sw" style="background:var(--amber)"></span>بدون ثبت زمان</span>' +
-          '<span><span class="sw" style="background:var(--dim)"></span>هنوز به Review نرسیده</span>' +
+    // Tab strip and the date filter share a row: the filter applies to every
+    // pane, so it belongs beside the strip rather than repeated inside panes.
+    '<div class="card" style="padding:16px 18px">' +
+      '<div class="dev-tabbar">' +
+        '<div class="seg">' + panes.map((x) => (
+          '<button class="seg-item' + (x.id === activePane ? ' on' : '') + '" data-devtab="' + x.id + '">' +
+            esc(x.label) +
+            (x.count != null ? '<span class="seg-count">' + x.count + '</span>' : '') +
+            (x.alert ? '<span class="seg-dot" title="نیازمند رسیدگی"></span>' : '') +
+          '</button>'
+        )).join('') + '</div>' +
+        '<div class="date-filter" style="margin-inline-start:auto">' +
+          renderDatePicker('devSince', DEV.since, 'از تاریخ') +
+          renderDatePicker('devUntil', DEV.until, 'تا تاریخ') +
+          '<button id="devFilterApply">اعمال فیلتر</button>' +
+          '<button class="ghost" id="devFilterClear">پاک کردن</button>' +
         '</div>' +
-        '<div class="chart-wrap">' + renderSprintChart(a.sprints) + '</div>' +
-      '</div>' +
-      // Moved out of the coverage fold to sit beside its siblings: three
-      // charts about the same window read as one picture, and a chart alone
-      // behind a collapsed section was a chart nobody saw.
-      '<div class="chart-card">' +
-        '<div class="chart-title">Merge Requestها بر اساس ماه</div>' +
-        // A chart of uniformly grey bars does not tell anyone why it is grey.
-        (a.totalMRs && !a.reportedMRs
-          ? '<div class="chart-note" style="color:var(--amber)">هیچ‌کدام از ' + a.totalMRs +
-            ' MR این فرد تا حالا با این ابزار ریویو نشده، پس «تمیز / رفت‌وبرگشتی» برای هیچ‌کدام قابل محاسبه نیست — این ستون‌ها فقط تعداد MR را نشان می‌دهند.</div>'
-          : '') +
-        '<div class="chart-legend">' +
-          '<span><span class="sw" style="background:var(--green)"></span>تمیز</span>' +
-          '<span><span class="sw" style="background:var(--red)"></span>چندنویسنده</span>' +
-          '<span><span class="sw" style="background:var(--amber)"></span>نامشخص</span>' +
-          '<span><span class="sw" style="background:var(--noreport)"></span>ریویو نشده</span>' +
-        '</div>' +
-        '<div class="chart-wrap">' + renderMonthChart(a.months) + '</div>' +
       '</div>' +
     '</div>' +
-    // ---- 5. The score, directly under the trend chart it summarises, so the
-    // number and the line that produced it are read together.
-    renderAutoScore(a) +
-    // ---- 6. How much of the above can be trusted: what share of this
-    // person's work was ever reviewed, and which numbers rest on a handful
-    // of samples. It stays folded — it is a table, not a headline — but it
-    // sits directly under the score now rather than below the task list,
-    // because reading a score without its coverage is how a number gets
-    // believed more than it deserves. Its summary line carries the coverage
-    // figure, so it warns without being opened.
-    renderCoverageFold(a) +
-    // ---- 7. The manager's own judgement. An input, so it belongs where the
-    // person filling it in has just finished reading the evidence — not
-    // stranded at the bottom under a hundred task cards.
-    renderRatingSection(scoreData) +
-    // ---- 8. The work itself, last: it is reference material. Anyone who
-    // wants a specific ticket goes to Jira; this page is for deciding.
-    renderJiraTasks(a);
+
+    (panes.find((x) => x.id === activePane) || {}).html;
+
+
+  for (const btn of main.querySelectorAll('[data-devtab]')) {
+    btn.onclick = () => { DEV.devTab = btn.dataset.devtab; renderDevMain(); };
+  }
+  for (const btn of main.querySelectorAll('[data-trendrange]')) {
+    btn.onclick = () => { DEV.trendRange = btn.dataset.trendrange; renderDevMain(); };
+  }
 
   document.getElementById('devFilterApply').onclick = () => {
     DEV.since = document.getElementById('devSince').value;
@@ -3815,18 +4218,12 @@ function renderDevMain() {
   // points at is one click away; the attention chip is only useful if it
   // takes you to the list it counted.
   const breakdownLink = document.getElementById('heroBreakdownLink');
-  if (breakdownLink) breakdownLink.onclick = () => scrollToDevSection('autoScoreSection');
+  if (breakdownLink) breakdownLink.onclick = () => openDevTab('score', 'autoScoreSection');
   for (const btn of document.querySelectorAll('[data-copy]')) {
     btn.onclick = () => copyHandoff(btn.dataset.copy, btn);
   }
   const attnChip = document.getElementById('heroAttentionChip');
-  if (attnChip) {
-    attnChip.onclick = () => {
-      const fold = document.getElementById('attentionFold');
-      if (fold) fold.open = true; // a chip that scrolls you to a collapsed section has told you nothing
-      scrollToDevSection('attentionFold');
-    };
-  }
+  if (attnChip) attnChip.onclick = () => openDevTab('attention', 'attentionFold');
   // Switching panes is pure re-render off data already in hand — no refetch.
   for (const btn of document.querySelectorAll('[data-tasktab]')) {
     btn.onclick = () => { DEV.taskTab = btn.dataset.tasktab; renderDevMain(); };
@@ -3848,6 +4245,342 @@ function renderDevMain() {
   if (saveBtn) saveBtn.onclick = () => saveDevRating(DEV.selected);
   const monthSelect = document.getElementById('ratingMonthSelect');
   if (monthSelect) monthSelect.onchange = (e) => switchRatingMonth(DEV.selected, e.target.value);
+}
+
+// ---- The five panes --------------------------------------------------------
+// Each pane answers one question and owns every readout that belongs to it.
+// Before this split the page was eleven sections in one scroll and three
+// numbers appeared twice: open merge requests were counted in the "now"
+// band, again in the coverage fold and again in the delivery table, each
+// time with different wording, so the same fact read as three findings.
+function devPanes(a, scoreData, displayName) {
+  const attn = attentionItems(a);
+  const tasks = a.jiraTasks || [];
+
+  return [
+    {
+      id: 'overview',
+      label: 'نمای کلی',
+      html:
+        '<div>' + renderNowBand(a) + '</div>' +
+        '<div class="charts-row">' + renderTrendCard(a) + '</div>',
+    },
+    {
+      id: 'delivery',
+      label: 'تحویل',
+      html:
+        '<div>' + renderDeliveredBand(a) + '</div>' +
+        '<div class="charts-row">' +
+          renderMonthCard(a) +
+          renderSprintCard(a) +
+        '</div>' +
+        renderDeliveryMetrics(a),
+    },
+    {
+      id: 'attention',
+      label: 'رسیدگی',
+      count: attn.length,
+      alert: attn.some((i) => i.level === 'high'),
+      html: renderAttentionBand(a) + renderHandoffBand(a, displayName),
+    },
+    {
+      id: 'tasks',
+      label: 'تسک‌ها',
+      count: tasks.length,
+      html: renderJiraTasks(a),
+    },
+    {
+      id: 'score',
+      // The score and the coverage it rests on are one pane, never two. A
+      // composite built from four reviewed merge requests out of fifty is a
+      // different claim from the same number built from forty, and the old
+      // page put that ratio behind a collapsed section two screens away.
+      label: 'امتیاز و پوشش',
+      html:
+        renderAutoScore(a) +
+        renderCoverageFold(a) +
+        renderRatingSection(scoreData),
+    },
+  ];
+}
+
+// Switches pane and then scrolls, so a link from the hero to a section that
+// only exists inside another pane actually lands on it.
+function openDevTab(tab, sectionId) {
+  DEV.devTab = tab;
+  renderDevMain();
+  if (sectionId) requestAnimationFrame(() => scrollToDevSection(sectionId));
+}
+
+// The share of this person's work the review tool ever saw, stated beside
+// their score rather than buried under it.
+function coverageChip(a) {
+  if (!a.totalMRs) return '';
+  const pct = Math.round((a.reportedMRs / a.totalMRs) * 100);
+  const cls = pct >= 60 ? 'ok' : pct >= 25 ? 'warn' : 'bad';
+  return '<span class="cover-chip ' + cls + '" title="امتیاز فقط از همین بخش ریویوشده ساخته می‌شود">' +
+    'پوشش ریویو: <span dir="ltr">' + a.reportedMRs + '/' + a.totalMRs + ' · ' + pct + '%</span></span>';
+}
+
+// ---- Charts ----------------------------------------------------------------
+// All three plots follow the grammar the sample's ChartAreaInteractive uses:
+// horizontal gridlines only, no axis line and no tick marks, values carried
+// by the hover tooltip instead of printed over every mark, and a viewBox
+// that scales to the card. The old ones were fixed-pixel SVGs inside an
+// overflow-x box, so on any normal screen a third of each chart was off the
+// edge, and their labels were painted with var(--text) and var(--muted) —
+// one undefined, the other a background colour — so the axes were invisible.
+
+const CHART_PAD = { top: 18, bottom: 34, start: 34, end: 10 };
+
+function chartFrame(w, h, inner) {
+  return '<svg class="chart-svg" viewBox="0 0 ' + w + ' ' + h + '" role="img">' + inner + '</svg>';
+}
+
+function chartEmpty(text) {
+  return '<div class="chart-empty">' + esc(text) + '</div>';
+}
+
+// Horizontal gridlines with the value each one stands for, so "how tall is
+// that bar" is a read rather than a guess.
+function gridLines(w, h, maxValue, steps) {
+  const plotH = h - CHART_PAD.top - CHART_PAD.bottom;
+  let out = '';
+  for (let i = 0; i <= steps; i++) {
+    const y = CHART_PAD.top + plotH - (plotH * i) / steps;
+    const value = Math.round((maxValue * i) / steps);
+    out += '<line class="grid-line" x1="' + CHART_PAD.start + '" y1="' + y.toFixed(1) +
+      '" x2="' + (w - CHART_PAD.end) + '" y2="' + y.toFixed(1) + '"' +
+      (i === 0 ? '' : ' opacity="0.6"') + '></line>';
+    out += '<text class="axis-label" x="' + (CHART_PAD.start - 8) + '" y="' + (y + 3.5).toFixed(1) +
+      '" text-anchor="end">' + value + '</text>';
+  }
+  return out;
+}
+
+// Catmull-Rom through the points, converted to cubic beziers — the curve
+// Recharts draws for type="natural", and the reason the trend reads as a
+// direction rather than a zigzag.
+function smoothPath(pts) {
+  if (pts.length < 2) return '';
+  let d = 'M' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ' C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ',' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) +
+      ',' + p2.x.toFixed(1) + ' ' + p2.y.toFixed(1);
+  }
+  return d;
+}
+
+// ---- 1. The headline chart: monthly score as a filled area -----------------
+function renderTrendCard(a) {
+  const all = (a.monthlyRows || []).filter((r) => r.score != null);
+  const ranges = [
+    { id: '6', label: '۶ ماه اخیر' },
+    { id: '12', label: '۱۲ ماه اخیر' },
+    { id: 'all', label: 'همه' },
+  ];
+  const active = ranges.some((r) => r.id === DEV.trendRange) ? DEV.trendRange : '12';
+  const rows = active === 'all' ? all : all.slice(-Number(active));
+
+  const toggle = '<div class="seg chart-action">' + ranges.map((r) => (
+    '<button class="seg-item' + (r.id === active ? ' on' : '') + '" data-trendrange="' + r.id + '">' +
+      esc(r.label) + '</button>'
+  )).join('') + '</div>';
+
+  const delta = rows.length >= 2 ? rows[rows.length - 1].score - rows[0].score : null;
+  const deltaText = delta == null ? ''
+    : delta > 0 ? '↑ ' + delta + ' نمره بالاتر از ابتدای این بازه'
+    : delta < 0 ? '↓ ' + Math.abs(delta) + ' نمره پایین‌تر از ابتدای این بازه'
+    : 'بدون تغییر در این بازه';
+  const deltaCls = delta == null ? '' : delta > 0 ? 'ok' : delta < 0 ? 'bad' : '';
+
+  return '<div class="chart-card wide">' +
+    '<div class="chart-head">' +
+      '<div class="chart-heading">' +
+        '<span class="chart-title">روند امتیاز ماه‌به‌ماه</span>' +
+        '<span class="chart-desc">امتیاز کل ماهانه (۰ تا ۱۰۰): میانگین وزنی تحویل به‌موقع، دقت تخمین، کیفیت کد، تکمیل تسک‌ها، ثبت زمان و تک‌نویسنده بودن برنچ — هر مؤلفه ضربدر ضریب اطمینانِ حجم نمونه‌اش. ماهی که داده‌ی قابل‌سنجش ندارد اصلاً نقطه نمی‌گیرد.</span>' +
+      '</div>' + toggle +
+    '</div>' +
+    (deltaText ? '<div><span class="cover-chip ' + deltaCls + '">' + esc(deltaText) + '</span></div>' : '') +
+    renderTrendChart(rows) +
+  '</div>';
+}
+
+function renderTrendChart(rows) {
+  if (rows.length < 2) {
+    return chartEmpty('برای رسم روند دست‌کم دو ماهِ دارای امتیاز لازم است' +
+      (rows.length ? ' (فعلاً ۱ ماه).' : '.'));
+  }
+  const H = 260;
+  const W = Math.max(520, CHART_PAD.start + CHART_PAD.end + (rows.length - 1) * 78 + 40);
+  const plotH = H - CHART_PAD.top - CHART_PAD.bottom;
+  const y = (score) => CHART_PAD.top + plotH - (plotH * score) / 100;
+  const stepX = (W - CHART_PAD.start - CHART_PAD.end - 24) / (rows.length - 1);
+  const x = (i) => CHART_PAD.start + 12 + i * stepX;
+
+  const pts = rows.map((r, i) => ({ x: x(i), y: y(r.score) }));
+  const line = smoothPath(pts);
+  const area = line +
+    ' L' + pts[pts.length - 1].x.toFixed(1) + ' ' + y(0).toFixed(1) +
+    ' L' + pts[0].x.toFixed(1) + ' ' + y(0).toFixed(1) + ' Z';
+
+  let marks = '';
+  rows.forEach((r, i) => {
+    const px = pts[i].x, py = pts[i].y;
+    const last = i === rows.length - 1;
+    marks += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="' + (last ? 5 : 3.5) +
+      '" fill="var(--chart-1)" stroke="var(--card)" stroke-width="2">' +
+      '<title>' + esc(faMonth(r.month)) + ' — امتیاز ' + r.score + ' · ' + r.mrCount + ' MR · ' + r.taskCount + ' تسک</title></circle>';
+    // Only the newest point is labelled. A number over every dot turns a
+    // trend line into a table that happens to be curved.
+    if (last) {
+      marks += '<text class="value-label" x="' + px.toFixed(1) + '" y="' + (py - 12).toFixed(1) +
+        '" text-anchor="middle">' + r.score + '</text>';
+    }
+    marks += '<text class="axis-label" x="' + px.toFixed(1) + '" y="' + (H - 12) +
+      '" text-anchor="middle">' + esc(faMonthShort(r.month)) + '</text>';
+  });
+
+  return chartFrame(W, H,
+    '<defs><linearGradient id="fillScore" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="5%" stop-color="var(--chart-1)" stop-opacity="0.35"></stop>' +
+      '<stop offset="95%" stop-color="var(--chart-1)" stop-opacity="0.02"></stop>' +
+    '</linearGradient></defs>' +
+    gridLines(W, H, 100, 4) +
+    '<path d="' + area + '" fill="url(#fillScore)" stroke="none"></path>' +
+    '<path d="' + line + '" fill="none" stroke="var(--chart-1)" stroke-width="2.5" ' +
+      'stroke-linecap="round" stroke-linejoin="round"></path>' +
+    marks);
+}
+
+// ---- 2 & 3. Stacked bars ----------------------------------------------------
+// One implementation for both the month chart and the sprint chart: they were
+// two near-identical 45-line functions that differed only in which segments
+// they stacked and what they wrote under each bar.
+function stackedBarChart(items) {
+  if (!items.length) return chartEmpty('داده‌ای برای رسم نمودار نیست.');
+  const H = 260;
+  const slot = Math.min(96, Math.max(52, 560 / items.length));
+  const barW = Math.min(46, slot * 0.58);
+  const W = Math.max(480, CHART_PAD.start + CHART_PAD.end + items.length * slot);
+  const plotH = H - CHART_PAD.top - CHART_PAD.bottom;
+  const maxCount = Math.max(1, ...items.map((it) => it.total));
+  const scale = plotH / maxCount;
+
+  let bars = '';
+  items.forEach((it, i) => {
+    const cx = CHART_PAD.start + slot * i + slot / 2;
+    const bx = cx - barW / 2;
+    let top = CHART_PAD.top + plotH;
+    let stack = '';
+    // Drawn bottom-up; the topmost segment is the only one that needs its
+    // corners rounded, so the stack reads as one bar rather than a pile.
+    const drawn = it.segments.filter((sg) => sg.count > 0);
+    drawn.forEach((sg, k) => {
+      const h = sg.count * scale;
+      top -= h;
+      const r = k === drawn.length - 1 ? 4 : 0;
+      stack += '<rect class="bar" x="' + bx.toFixed(1) + '" y="' + top.toFixed(1) +
+        '" width="' + barW.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="' + r + '" fill="' + sg.color + '">' +
+        '<title>' + esc(it.label) + ' — ' + esc(sg.label) + ': ' + sg.count + '</title></rect>';
+    });
+    if (!drawn.length) {
+      stack += '<rect class="bar" x="' + bx.toFixed(1) + '" y="' + (CHART_PAD.top + plotH - 2) +
+        '" width="' + barW.toFixed(1) + '" height="2" rx="1" fill="var(--muted)"></rect>';
+    }
+    bars += '<g class="bar-group">' + stack +
+      '<text class="value-label" x="' + cx.toFixed(1) + '" y="' + (top - 7).toFixed(1) +
+        '" text-anchor="middle">' + it.total + '</text>' +
+      '<text class="axis-label" x="' + cx.toFixed(1) + '" y="' + (H - 18) + '" text-anchor="middle">' +
+        esc(it.axis) + (it.axisTitle ? '<title>' + esc(it.axisTitle) + '</title>' : '') + '</text>' +
+      (it.sub ? '<text class="axis-label" x="' + cx.toFixed(1) + '" y="' + (H - 5) +
+        '" text-anchor="middle" opacity="0.7">' + esc(it.sub) + '</text>' : '') +
+    '</g>';
+  });
+
+  return chartFrame(W, H, gridLines(W, H, maxCount, 4) + bars);
+}
+
+function legend(entries) {
+  return '<div class="chart-legend">' + entries.map((e) => (
+    '<span><span class="sw" style="background:' + e.color + '"></span>' + esc(e.label) + '</span>'
+  )).join('') + '</div>';
+}
+
+function renderMonthCard(a) {
+  const months = (a.months || []).slice().reverse();
+  const items = months.map((m) => {
+    const clean = Math.max(0, m.mrCount - m.roundTripCount - m.uncheckedCount - (m.noReportCount || 0));
+    return {
+      label: faMonth(m.month),
+      axis: faMonthShort(m.month),
+      total: m.mrCount,
+      segments: [
+        { count: clean, color: 'var(--chart-2)', label: 'تمیز' },
+        { count: m.roundTripCount, color: 'var(--chart-5)', label: 'چندنویسنده' },
+        { count: m.uncheckedCount, color: 'var(--chart-3)', label: 'نامشخص' },
+        { count: m.noReportCount || 0, color: 'var(--muted)', label: 'ریویو نشده' },
+      ],
+    };
+  });
+
+  return '<div class="chart-card">' +
+    '<div class="chart-head"><div class="chart-heading">' +
+      '<span class="chart-title">Merge Requestها بر اساس ماه</span>' +
+      '<span class="chart-desc">هر ستون یک ماه است، تقسیم‌شده بر اساس آنچه ریویو درباره‌ی برنچش فهمیده.</span>' +
+    '</div></div>' +
+    (a.totalMRs && !a.reportedMRs
+      ? '<div class="chart-note warn">هیچ‌کدام از ' + a.totalMRs +
+        ' MR این فرد تا حالا با این ابزار ریویو نشده، پس «تمیز / چندنویسنده» برای هیچ‌کدام قابل محاسبه نیست — این ستون‌ها فقط تعداد MR را نشان می‌دهند.</div>'
+      : '') +
+    legend([
+      { color: 'var(--chart-2)', label: 'تمیز' },
+      { color: 'var(--chart-5)', label: 'چندنویسنده' },
+      { color: 'var(--chart-3)', label: 'نامشخص' },
+      { color: 'var(--muted)', label: 'ریویو نشده' },
+    ]) +
+    stackedBarChart(items) +
+  '</div>';
+}
+
+function renderSprintCard(a) {
+  const items = (a.sprints || []).map((sp) => {
+    const rest = Math.max(0, sp.taskCount - sp.loggedCount - sp.noTimeLogged);
+    // Sprint names are long (Sprint-61-050616-50631); only the number fits an
+    // axis this narrow, with the full name in the tooltip.
+    const shortName = (String(sp.name).match(/(\d+)/) || [null, sp.name])[1];
+    return {
+      label: sp.name,
+      axis: shortName,
+      axisTitle: sp.name,
+      sub: sp.score == null ? 'بدون امتیاز' : 'امتیاز ' + sp.score,
+      total: sp.taskCount,
+      segments: [
+        { count: sp.loggedCount, color: 'var(--chart-2)', label: 'Review/Done با ثبت زمان' },
+        { count: sp.noTimeLogged, color: 'var(--chart-3)', label: 'Review/Done بدون ثبت زمان' },
+        { count: rest, color: 'var(--muted)', label: 'هنوز به Review نرسیده' },
+      ],
+    };
+  });
+
+  return '<div class="chart-card">' +
+    '<div class="chart-head"><div class="chart-heading">' +
+      '<span class="chart-title">تسک‌ها در اسپرینت‌های اخیر</span>' +
+      '<span class="chart-desc">اسپرینت واحدی است که این تیم واقعاً در آن برنامه‌ریزی می‌کند. تقسیم‌بندی بر اساس اینکه کارِ رسیده به Review/Done زمان ثبت‌شده دارد یا نه — همان چیزی که تعیین می‌کند بقیه‌ی اعداد معنا دارند یا نه.</span>' +
+    '</div></div>' +
+    legend([
+      { color: 'var(--chart-2)', label: 'با ثبت زمان' },
+      { color: 'var(--chart-3)', label: 'بدون ثبت زمان' },
+      { color: 'var(--muted)', label: 'هنوز به Review نرسیده' },
+    ]) +
+    (items.length ? stackedBarChart(items) : chartEmpty('هیچ تسکی اسپرینت ثبت‌شده ندارد.')) +
+  '</div>';
 }
 
 // ---- The three bands the developer page is built from -----------------------
@@ -4147,9 +4880,13 @@ function handoffText(report, which) {
   return out.join('\n').trimEnd();
 }
 
+const HANDOFF_ROWS = 12;
+
 function renderHandoffList(items, emptyText) {
   if (!items.length) return '<div class="attn-empty">&#10003; ' + esc(emptyText) + '</div>';
-  return '<div class="attn">' + items.map(({ t, late }) => {
+  const shown = items.slice(0, HANDOFF_ROWS);
+  const rest = items.length - shown.length;
+  return '<div class="attn">' + shown.map(({ t, late }) => {
     // Same phrasing as the copied text, from the same helper — a panel and a
     // clipboard saying different things about one ticket is how a reader
     // stops trusting both.
@@ -4160,7 +4897,11 @@ function renderHandoffList(items, emptyText) {
         esc(t.key) + ' — ' + esc(t.summary || '') + '</a></span>' +
       '<span class="why">' + esc(bits.join(' · ')) + '</span>' +
     '</div>';
-  }).join('') + '</div>';
+  }).join('') +
+  (rest > 0
+    ? '<div class="attn-item mid"><span class="grow">و ' + rest +
+      ' مورد دیگر — دکمه‌ی کپی همه‌شان را برمی‌دارد</span></div>'
+    : '') + '</div>';
 }
 
 function renderHandoffBand(a, displayName) {
@@ -4317,16 +5058,17 @@ function renderDeliveryMetrics(a) {
       extra: d.medianOpenAgeHours != null ? 'میانه‌ی سن: ' + humanHours(d.medianOpenAgeHours) + ' · قدیمی‌ترین: ' + humanHours(d.oldestOpenHours) : '', n: d.stillOpenCount },
     { label: 'میانه‌ی تعداد کامنت روی هر MR', value: d.medianNotes == null ? '—' : String(d.medianNotes), extra: '', n: d.notesSample },
   ];
-  return '<h4 style="margin:18px 0 6px">🚚 معیارهای تحویل (مستقیم از گیت‌لب)</h4>' +
-    '<div class="muted" style="margin-bottom:8px;font-size:11px">این اعداد به پر کردن هیچ فیلدی توسط کسی وابسته نیستند، پس برای همه‌ی MRها کامل‌اند — برخلاف معیارهای جیرا که روی دیتای ناقص می‌ایستند. میانه گزارش می‌شود نه میانگین: یک MR که روی تعطیلات باز مانده، میانگین را از هر چیزی که تیم «معمول» بداند دور می‌کند.</div>' +
-    '<table class="score-table"><tbody>' +
+  return '<div class="card">' +
+    '<div class="band"><h4>🚚 معیارهای تحویل (مستقیم از گیت‌لب)</h4>' +
+      '<span class="band-note">این اعداد به پر کردن هیچ فیلدی توسط کسی وابسته نیستند، پس برای همه‌ی MRها کامل‌اند — برخلاف معیارهای جیرا که روی دیتای ناقص می‌ایستند. میانه گزارش می‌شود نه میانگین: یک MR که روی تعطیلات باز مانده، میانگین را از هر چیزی که تیم «معمول» بداند دور می‌کند.</span></div>' +
+    '<div class="table-wrap"><table class="score-table"><tbody>' +
     rows.map((r) => '<tr>' +
       '<td>' + esc(r.label) + '</td>' +
       '<td class="num" style="font-weight:700">' + esc(r.value) + '</td>' +
       '<td class="muted">' + esc(r.extra) + '</td>' +
       '<td class="muted">' + (r.n ? '<span class="tag">n=' + r.n + '</span>' : '') + '</td>' +
     '</tr>').join('') +
-    '</tbody></table>';
+    '</tbody></table></div></div>';
 }
 
 // A task that reached Review/Done with no logged hours — the same rule the
@@ -4646,7 +5388,10 @@ function dueBadge(t) {
 function renderAutoScore(a) {
   const s = a.autoScore;
   if (!s) return '';
-  if (s.score == null) return '<h4 style="margin:18px 0 6px">🎯 امتیاز خودکار</h4><div class="empty">' + esc(s.reason) + '</div>';
+  if (s.score == null) {
+    return '<div class="card"><div class="band"><h4 id="autoScoreSection">🎯 امتیاز خودکار</h4></div>' +
+      '<div class="empty">' + esc(s.reason) + '</div></div>';
+  }
   const rows = s.components.map((c) => {
     const bar = c.available
       ? '<div class="score-bar"><span style="width:' + c.score + '%"></span></div>'
@@ -4662,11 +5407,12 @@ function renderAutoScore(a) {
           : '') + '</td>' +
     '</tr>';
   }).join('');
-  return '<h4 id="autoScoreSection" style="margin:18px 0 6px">🎯 امتیاز خودکار — <span style="color:var(--cyan)">' + s.score + '</span> از ۱۰۰</h4>' +
+  return '<div class="card">' +
+    '<div class="band"><h4 id="autoScoreSection">🎯 امتیاز خودکار — ' + s.score + ' از ۱۰۰</h4>' +
+      '<span class="band-note">' + esc(s.reason) + '</span></div>' +
     renderScoreGovernanceBanner() +
-    '<div class="muted" style="margin-bottom:8px">' + esc(s.reason) + '</div>' +
-    '<table class="score-table"><thead><tr><th>مؤلفه</th><th>امتیاز</th><th>وزن مؤثر</th><th></th><th>بر چه اساسی</th></tr></thead><tbody>' +
-    rows + '</tbody></table>';
+    '<div class="table-wrap"><table class="score-table"><thead><tr><th>مؤلفه</th><th>امتیاز</th><th>وزن مؤثر</th><th></th><th>بر چه اساسی</th></tr></thead><tbody>' +
+    rows + '</tbody></table></div></div>';
 }
 
 // Every design choice in lib/devScore.js (dropping components with no data
@@ -4686,8 +5432,8 @@ function renderJiraTasks(a) {
   if (!a.jiraConfigured) return ''; // Jira not set up — no empty section, no noise
   const tasks = a.jiraTasks || [];
   if (!tasks.length) {
-    return '<h4 style="margin:18px 0 6px">🧩 تسک‌های جیرا</h4>' +
-      '<div class="empty">هیچ تسکی در جیرا برای این نام کاربری پیدا نشد — ممکن است نام کاربری‌اش در جیرا با گیت‌لب فرق داشته باشد.</div>';
+    return '<div class="card"><div class="band"><h4>🧩 تسک‌های جیرا</h4></div>' +
+      '<div class="empty">هیچ تسکی در جیرا برای این نام کاربری پیدا نشد — ممکن است نام کاربری‌اش در جیرا با گیت‌لب فرق داشته باشد.</div></div>';
   }
   const withoutMr = tasks.filter((t) => !t.hasMr).length;
   // Jira caps how many issues come back per query, so say so rather than
@@ -4774,11 +5520,16 @@ function renderJiraTasks(a) {
     '</button>'
   )).join('');
 
-  return '<h4 style="margin:18px 0 6px">🧩 تسک‌های جیرا — ' + tasks.length + ' تسک' +
-    (withoutMr ? '، <span style="color:var(--amber)">' + withoutMr + ' تا در همین لیست MR ندارند</span>' : '') + '</h4>' +
-    (capNote ? '<div style="margin-bottom:8px">' + capNote + '</div>' : '') +
+  return '<div class="card">' +
+    '<div class="band"><h4>🧩 تسک‌های جیرا — ' + tasks.length + ' تسک</h4>' +
+      '<span class="band-note">' +
+        (withoutMr ? withoutMr + ' تا از همین‌ها هنوز هیچ MRی ندارند. ' : '') +
+        'گروه‌بندی بر اساس وضعیت جیرا؛ کارتِ حاشیه‌نارنجی یعنی به Review/Done رسیده ولی زمان ثبت‌شده ندارد.' +
+      '</span></div>' +
+    (capNote ? '<div style="margin-bottom:10px">' + capNote + '</div>' : '') +
     '<div class="htabs">' + tabs + '</div>' +
-    '<div>' + (panes.find((p) => p.id === active) || {}).html + '</div>';
+    '<div>' + (panes.find((p) => p.id === active) || {}).html + '</div>' +
+  '</div>';
 }
 
 // The maintainer's C/L rating, when they left one. Size gets a colour
@@ -4887,157 +5638,6 @@ function renderMonthTabs(months) {
 //
 // It reads from the same monthlyRows the Excel export is built from, so the
 // picture and the spreadsheet cannot disagree.
-function renderProgressChart(rows) {
-  const points = (rows || []).filter((r) => r.score != null);
-  if (points.length < 2) {
-    return '<div class="empty">برای رسم روند دست‌کم دو ماهِ دارای امتیاز لازم است' +
-      (points.length ? ' (فعلاً ۱ ماه).' : '.') + '</div>';
-  }
-  const H = 200;
-  const padTop = 16, padBottom = 40, padStart = 30, padEnd = 12;
-  const plotH = H - padTop - padBottom;
-  const stepW = 70;
-  const W = Math.max(380, padStart + padEnd + (points.length - 1) * stepW + 20);
-  const y = (score) => padTop + plotH - (plotH * score) / 100;
-  const x = (i) => padStart + i * stepW;
-
-  let grid = '';
-  for (let v = 0; v <= 100; v += 25) {
-    const gy = y(v);
-    grid += '<line x1="' + padStart + '" y1="' + gy.toFixed(1) + '" x2="' + (W - padEnd) + '" y2="' + gy.toFixed(1) +
-      '" stroke="var(--border)" stroke-width="1" stroke-dasharray="' + (v === 0 ? '0' : '3,4') + '"></line>';
-    grid += '<text x="' + (padStart - 6) + '" y="' + (gy + 3).toFixed(1) + '" text-anchor="end" font-size="9" fill="var(--dim)">' + v + '</text>';
-  }
-
-  const line = points.map((r, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(r.score).toFixed(1)).join(' ');
-  // A soft fill under the line makes the direction readable at a glance
-  // without needing to trace the stroke itself.
-  const area = line + ' L' + x(points.length - 1).toFixed(1) + ' ' + y(0).toFixed(1) + ' L' + x(0).toFixed(1) + ' ' + y(0).toFixed(1) + ' Z';
-
-  let dots = '';
-  points.forEach((r, i) => {
-    const px = x(i), py = y(r.score);
-    dots += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="4" fill="var(--cyan)" stroke="var(--panel-2)" stroke-width="2">' +
-      '<title>' + esc(faMonth(r.month)) + ' — امتیاز ' + r.score + ' · ' + r.mrCount + ' MR · ' + r.taskCount + ' تسک</title></circle>';
-    dots += '<text x="' + px.toFixed(1) + '" y="' + (py - 10).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + r.score + '</text>';
-    dots += '<text x="' + px.toFixed(1) + '" y="' + (H - 22) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(faMonthShort(r.month)) + '</text>';
-  });
-
-  const first = points[0].score, last = points[points.length - 1].score;
-  const delta = last - first;
-  const trend = delta > 0 ? '↑ ' + delta + ' نمره بهتر از اولین ماه' : delta < 0 ? '↓ ' + Math.abs(delta) + ' نمره پایین‌تر از اولین ماه' : 'بدون تغییر نسبت به اولین ماه';
-  const trendColor = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--dim)';
-
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' +
-      grid +
-      '<path d="' + area + '" fill="rgba(52,227,227,.10)" stroke="none"></path>' +
-      '<path d="' + line + '" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round"></path>' +
-      dots +
-      '<text x="' + padStart + '" y="' + (H - 6) + '" font-size="10" fill="' + trendColor + '">' + esc(trend) + '</text>' +
-    '</svg>';
-}
-
-// Sprints beside the months: same visual grammar as renderMonthChart, but
-// the bars are tasks rather than MRs, split by whether the work that reached
-// Review/Done actually has time logged against it — the split that decides
-// whether the rest of the sprint's numbers mean anything. The sprint's score
-// sits above its bar.
-function renderSprintChart(sprints) {
-  if (!sprints || !sprints.length) return '<div class="empty">هیچ تسکی اسپرینت ثبت‌شده ندارد.</div>';
-  const H = 200;
-  const padTop = 16, padBottom = 40, padStart = 8;
-  const plotH = H - padTop - padBottom;
-  const barW = 44, gap = 26;
-  const W = Math.max(380, padStart * 2 + sprints.length * (barW + gap));
-  const maxCount = Math.max(1, ...sprints.map((s) => s.taskCount));
-  const scale = plotH / maxCount;
-
-  let grid = '';
-  const gridSteps = 4;
-  for (let i = 0; i <= gridSteps; i++) {
-    const y = padTop + plotH - (plotH * i) / gridSteps;
-    const value = Math.round((maxCount * i) / gridSteps);
-    grid += '<line x1="' + padStart + '" y1="' + y.toFixed(1) + '" x2="' + (W - padStart) + '" y2="' + y.toFixed(1) + '" stroke="var(--border)" stroke-width="1" stroke-dasharray="' + (i === 0 ? '0' : '3,4') + '"></line>';
-    grid += '<text x="' + padStart + '" y="' + (y - 3).toFixed(1) + '" font-size="9" fill="var(--dim)">' + value + '</text>';
-  }
-
-  let bars = '';
-  sprints.forEach((sp, i) => {
-    const x = padStart + 10 + i * (barW + gap);
-    const rest = Math.max(0, sp.taskCount - sp.loggedCount - sp.noTimeLogged);
-    const segments = [
-      { count: sp.loggedCount, color: 'var(--green)', label: 'Review/Done با ثبت زمان' },
-      { count: sp.noTimeLogged, color: 'var(--amber)', label: 'Review/Done بدون ثبت زمان' },
-      { count: rest, color: 'var(--dim)', label: 'هنوز به Review نرسیده' },
-    ];
-    let y = padTop + plotH;
-    for (const seg of segments) {
-      const h = seg.count * scale;
-      if (h <= 0) continue;
-      y -= h;
-      bars += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + barW + '" height="' + h.toFixed(1) + '" fill="' + seg.color + '" rx="3">' +
-        '<title>' + esc(sp.name) + ' — ' + esc(seg.label) + ': ' + seg.count + '</title></rect>';
-    }
-    // The sprint name is long (Sprint-61-050616-50631); only the number is
-    // useful on an axis this narrow, with the full name in the tooltip.
-    const shortName = (String(sp.name).match(/(\d+)/) || [null, sp.name])[1];
-    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 22) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' +
-      esc(shortName) + '<title>' + esc(sp.name) + '</title></text>';
-    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9" fill="var(--dim)">' +
-      (sp.score == null ? 'بدون امتیاز' : 'امتیاز ' + sp.score) + '</text>';
-    bars += '<text x="' + (x + barW / 2) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + sp.taskCount + '</text>';
-  });
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' + grid + bars + '</svg>';
-}
-
-function renderMonthChart(monthsNewestFirst) {
-  if (!monthsNewestFirst.length) return '<div class="empty">داده‌ای برای رسم نمودار نیست.</div>';
-  const months = monthsNewestFirst.slice().reverse();
-  const H = 200;
-  const padTop = 16, padBottom = 26, padStart = 8;
-  const plotH = H - padTop - padBottom;
-  const barW = 44;
-  const gap = 26;
-  const W = Math.max(380, padStart * 2 + months.length * (barW + gap));
-  const maxCount = Math.max(1, ...months.map((m) => m.mrCount));
-  const scale = plotH / maxCount;
-
-  // Gridlines at 0/25/50/75/100% of the tallest bar, each labeled with the
-  // count it represents — turns "how tall is that bar" into an actual read.
-  let grid = '';
-  const gridSteps = 4;
-  for (let s = 0; s <= gridSteps; s++) {
-    const y = padTop + plotH - (plotH * s) / gridSteps;
-    const value = Math.round((maxCount * s) / gridSteps);
-    grid += '<line x1="' + padStart + '" y1="' + y.toFixed(1) + '" x2="' + (W - padStart) + '" y2="' + y.toFixed(1) + '" stroke="var(--border)" stroke-width="1" stroke-dasharray="' + (s === 0 ? '0' : '3,4') + '"></line>';
-    grid += '<text x="' + padStart + '" y="' + (y - 3).toFixed(1) + '" font-size="9" fill="var(--dim)">' + value + '</text>';
-  }
-
-  let bars = '';
-  months.forEach((m, i) => {
-    const x = padStart + 10 + i * (barW + gap);
-    const clean = Math.max(0, m.mrCount - m.roundTripCount - m.uncheckedCount - m.noReportCount);
-    const segments = [
-      { count: clean, color: 'var(--green)', label: 'تمیز' },
-      { count: m.roundTripCount, color: 'var(--red)', label: 'رفت‌وبرگشتی' },
-      { count: m.uncheckedCount, color: 'var(--amber)', label: 'نامشخص' },
-      { count: m.noReportCount || 0, color: 'var(--noreport)', label: 'این ابزار ریویوش نکرده' },
-    ];
-    let y = padTop + plotH;
-    for (const seg of segments) {
-      const h = seg.count * scale;
-      if (h > 0) {
-        y -= h;
-        bars += '<rect x="' + x + '" y="' + y.toFixed(1) + '" width="' + barW + '" height="' + h.toFixed(1) + '" fill="' + seg.color + '" rx="3">' +
-          '<title>' + esc(faMonth(m.month)) + ' — ' + esc(seg.label) + ': ' + seg.count + '</title></rect>';
-      }
-    }
-    bars += '<text x="' + (x + barW / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + esc(faMonthShort(m.month)) + '</text>';
-    bars += '<text x="' + (x + barW / 2) + '" y="' + (y - 5).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + m.mrCount + '</text>';
-  });
-  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="max-width:100%">' + grid + bars + '</svg>';
-}
-
 // Last 12 calendar months (this month first), union'd with whatever months
 // already have a saved rating — so an old rating from further back than a
 // year ago is still reachable in the picker, not silently hidden.
@@ -5072,7 +5672,7 @@ function renderRatingSection(scoreData) {
   return '<details class="fold dev-rating"><summary>&#9997; امتیازدهی دستی (بر اساس ماه) ' +
     '<span class="band-note">— قضاوت خودت، جدا از عدد خودکار و بدون قاطی شدن با آن</span></summary>' +
     '<div class="row" style="margin:10px 0 4px">' +
-      '<label style="font-size:12px;color:var(--muted)">ماه:</label>' +
+      '<label style="font-size:12px;color:var(--muted-foreground)">ماه:</label>' +
       '<select id="ratingMonthSelect" style="width:140px;margin-bottom:0">' + monthOptions + '</select>' +
       (scoreData.availableMonths && scoreData.availableMonths.length ? '<span class="tag">✓ یعنی برای آن ماه قبلاً امتیاز ثبت شده</span>' : '') +
     '</div>' +

@@ -1,5 +1,5 @@
 {
-  "name": "coder-review",
+  "name": "business-analyzer",
   "version": "0.1.0",
   "description": "AI code reviewer for GitLab merge requests — webhook-driven, knowledge-base aware.",
   "main": "server.js",
