@@ -10,12 +10,13 @@
 <!-- Google Fonts: Inter + Vazirmatn + JetBrains Mono -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" />
 
 <style>
   :root {
     --font-sans: 'Inter', 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', Consolas, monospace;
+    --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
     --font-primary: var(--font-sans);
 
     /* Shadcn UI Dark Zinc Color Palette (itsnyein/shadcn-admin style) */
@@ -87,9 +88,15 @@
     color: var(--foreground);
     font-family: var(--font-primary);
     font-size: 13.5px;
-    line-height: 1.6;
+    line-height: 1.65;
     direction: rtl;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  table, td, th, .kpi .n, .tabular-nums, .badge, .trend {
+    font-variant-numeric: tabular-nums;
   }
 
   /* Custom Scrollbar */
