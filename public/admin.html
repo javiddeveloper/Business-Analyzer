@@ -2064,6 +2064,60 @@
   .jdp-foot { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
   .jdp-foot button { flex: 1; font-size: 11.5px; padding: 6px; }
 
+  /* jdp-title — clickable month/year label */
+  .jdp-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--foreground);
+    cursor: pointer;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    transition: background .15s, border-color .15s, color .15s;
+    box-shadow: none;
+    flex: 1;
+    text-align: center;
+  }
+  .jdp-title:hover { background: rgba(255,255,255,.07); border-color: var(--border); color: var(--primary); }
+
+  /* Year / Month picker panel */
+  .jdp-ym { margin-bottom: 8px; }
+  .jdp-ym-months {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .jdp-ym-years {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+  }
+  .ym-m, .ym-y {
+    background: rgba(255,255,255,.04);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--foreground);
+    font-size: 12px;
+    padding: 6px 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: background .12s, border-color .12s, color .12s;
+    box-shadow: none;
+  }
+  .ym-m:hover, .ym-y:hover { background: rgba(255,255,255,.1); border-color: var(--border-strong); }
+  .ym-m.ym-active, .ym-y.ym-active {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-color: var(--primary);
+    font-weight: 700;
+  }
+
+
+
   /* Misc helpers */
   .empty { color: var(--dim); padding: 20px 0; text-align: center; font-size: 13px; }
   .error-box { background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fecdd3; border-radius: var(--radius-sm); padding: 10px; font-size: 12.5px; }
@@ -6351,21 +6405,39 @@ function jdpGrid(id) {
   for (let day = 1; day <= len; day++) {
     const on = selected && selected.year === view.year && selected.month === view.month && selected.day === day;
     const isToday = today.year === view.year && today.month === view.month && today.day === day;
-    // Friday is the weekend here, so it is coloured like one — it makes the
-    // week's shape readable at a glance instead of a uniform block of numbers.
     const isFriday = (lead + day - 1) % 7 === 6;
     const cls = 'jdp-cell' + (on ? ' on' : '') + (isToday ? ' today' : '') + (isFriday ? ' off' : '');
     cells += '<button type="button" class="' + cls + '" data-jdp-day="' + day + '"' +
       (isToday ? ' title="امروز"' : '') + '>' + faNum(day) + '</button>';
   }
 
+  // Year/month selector grid (shown when title is clicked)
+  let ymPicker = '';
+  if (JDP.ymMode) {
+    // Month rows
+    const months = FA_MONTH_NAMES.map((m, i) => {
+      const active = (i + 1) === view.month ? ' ym-active' : '';
+      return '<button type="button" class="ym-m' + active + '" data-jdp-month="' + (i + 1) + '">' + m + '</button>';
+    }).join('');
+    // Year rows: 5 years around current
+    let years = '';
+    for (let y = view.year - 4; y <= view.year + 4; y++) {
+      const active = y === view.year ? ' ym-active' : '';
+      years += '<button type="button" class="ym-y' + active + '" data-jdp-year="' + y + '">' + faNum(y) + '</button>';
+    }
+    ymPicker = '<div class="jdp-ym"><div class="jdp-ym-months">' + months + '</div><div class="jdp-ym-years">' + years + '</div></div>';
+  }
+
   return '<div class="jdp-head">' +
-      '<button type="button" class="jdp-nav" data-jdp-step="-1" title="ماه قبل">›</button>' +
-      '<span class="jdp-title">' + esc(FA_MONTH_NAMES[view.month - 1]) + ' ' + faNum(view.year) + '</span>' +
+      // In RTL: right arrow (‹) = next month, left arrow (›) = prev month
       '<button type="button" class="jdp-nav" data-jdp-step="1" title="ماه بعد">‹</button>' +
+      '<button type="button" class="jdp-title" data-jdp-ym="1" title="انتخاب سال / ماه">' + esc(FA_MONTH_NAMES[view.month - 1]) + ' ' + faNum(view.year) + ' ' + (JDP.ymMode ? '▴' : '▾') + '</button>' +
+      '<button type="button" class="jdp-nav" data-jdp-step="-1" title="ماه قبل">›</button>' +
     '</div>' +
-    '<div class="jdp-week">' + FA_WEEKDAYS.map((w, i) => '<span' + (i === 6 ? ' class="off"' : '') + '>' + w + '</span>').join('') + '</div>' +
-    '<div class="jdp-grid">' + cells + '</div>' +
+    (JDP.ymMode ? ymPicker : (
+      '<div class="jdp-week">' + FA_WEEKDAYS.map((w, i) => '<span' + (i === 6 ? ' class="off"' : '') + '>' + w + '</span>').join('') + '</div>' +
+      '<div class="jdp-grid">' + cells + '</div>'
+    )) +
     '<div class="jdp-foot">' +
       '<button type="button" class="ghost" data-jdp-today="1">امروز</button>' +
       '<button type="button" class="ghost" data-jdp-clear="1">پاک کردن</button>' +
@@ -6386,6 +6458,7 @@ function openDatePicker(id) {
   if (JDP.open === id) { closeDatePicker(); return; }
   closeDatePicker();
   JDP.open = id;
+  JDP.ymMode = false;
   JDP.view = isoToJalaliParts(input.value) || toJalaliParts(new Date());
   paintDatePicker(id);
   pop.hidden = false;
@@ -6396,16 +6469,47 @@ function paintDatePicker(id) {
   const input = document.getElementById(id);
   pop.innerHTML = jdpGrid(id);
 
+  // ── Navigation arrows ───────────────────────────────────────────────
   pop.querySelectorAll('[data-jdp-step]').forEach((b) => {
     b.onclick = () => {
       let { year, month } = JDP.view;
       month += Number(b.dataset.jdpStep);
       if (month < 1) { month = 12; year--; }
       if (month > 12) { month = 1; year++; }
+      JDP.ymMode = false;
       JDP.view = { year, month, day: 1 };
       paintDatePicker(id);
     };
   });
+
+  // ── Year/month toggle ────────────────────────────────────────────────
+  const ymBtn = pop.querySelector('[data-jdp-ym]');
+  if (ymBtn) {
+    ymBtn.onclick = () => {
+      JDP.ymMode = !JDP.ymMode;
+      paintDatePicker(id);
+    };
+  }
+
+  // ── Month selector ───────────────────────────────────────────────────
+  pop.querySelectorAll('[data-jdp-month]').forEach((b) => {
+    b.onclick = () => {
+      JDP.view = { year: JDP.view.year, month: Number(b.dataset.jdpMonth), day: 1 };
+      JDP.ymMode = false;
+      paintDatePicker(id);
+    };
+  });
+
+  // ── Year selector ────────────────────────────────────────────────────
+  pop.querySelectorAll('[data-jdp-year]').forEach((b) => {
+    b.onclick = () => {
+      JDP.view = { year: Number(b.dataset.jdpYear), month: JDP.view.month, day: 1 };
+      JDP.ymMode = false;
+      paintDatePicker(id);
+    };
+  });
+
+  // ── Day selector ─────────────────────────────────────────────────────
   pop.querySelectorAll('[data-jdp-day]').forEach((b) => {
     b.onclick = () => {
       const iso = jalaliPartsToIso({ year: JDP.view.year, month: JDP.view.month, day: Number(b.dataset.jdpDay) });
@@ -6415,8 +6519,11 @@ function paintDatePicker(id) {
       input.dispatchEvent(new Event('change', { bubbles: true }));
     };
   });
+
+  // ── Footer buttons ───────────────────────────────────────────────────
   pop.querySelector('[data-jdp-today]').onclick = () => {
     JDP.view = toJalaliParts(new Date());
+    JDP.ymMode = false;
     paintDatePicker(id);
   };
   pop.querySelector('[data-jdp-clear]').onclick = () => {
