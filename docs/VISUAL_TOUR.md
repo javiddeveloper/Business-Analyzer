@@ -110,3 +110,29 @@ Expanding any Sentry crash displays its stacktrace alongside an automated AI int
 ### AI Assistance
 - **Root Cause Summary**: Concise explanation of the underlying failure mode without requiring manual log archaeology.
 - **One-Click Jira Task Creation**: Automatically pre-populates a structured Jira task with appropriate priority, time estimate, and assignee recommendation.
+
+---
+
+## 9. Secure Environment Configuration
+
+The Settings panel provides a secure, unified interface for managing API keys, connection strings, and LLM provider credentials required by the system.
+
+![Settings & Environment](screenshots/09_settings_env.png)
+
+### Security Features
+- **Masked Secrets**: Sensitive tokens and passwords are automatically masked with reveal-on-demand functionality.
+- **Provider Context Switching**: Dynamic configuration panels that adapt based on the selected AI engine (OpenAI, Gemini, or Claude).
+- **In-Memory Volatility**: Secrets are securely handled by the backend orchestrator and never persisted in plain text logs.
+
+---
+
+## 10. Engineering Knowledge Base
+
+The built-in Knowledge Base serves as the "brain" for the autonomous AI reviewer, storing team-specific conventions, architecture rules, and "gotchas."
+
+![Knowledge Base](screenshots/10_knowledge_base.png)
+
+### Knowledge Injection
+- **Contextual Awareness**: The AI engine actively reads relevant Knowledge Base articles before reviewing new code.
+- **Enforced Standards**: Prevents recurring anti-patterns by explicitly codifying decisions (e.g., "Always use parameterized queries").
+- **Smooth Navigation**: High-performance CSS grid accordion interface for frictionless browsing of team guidelines.
