@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Business Analyzer — Shadcn Admin Dashboard</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fafafa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M32%204%20L58%2019%20L32%2034%20L6%2019%20Z%27%20fill%3D%27%23A5B4FC%27%2F%3E%3Cpath%20d%3D%27M6%2019%20L32%2034%20L32%2060%20L6%2045%20Z%27%20fill%3D%27%236366F1%27%2F%3E%3Cpath%20d%3D%27M58%2019%20L58%2045%20L32%2060%20L32%2034%20Z%27%20fill%3D%27%234338CA%27%2F%3E%3C%2Fsvg%3E" />
 <meta name="theme-color" content="#1a1a1a" />
 
 <!-- Google Fonts: Inter + Vazirmatn + JetBrains Mono -->
@@ -177,16 +177,15 @@
   .brand-icon {
     width: 32px;
     height: 32px;
-    border-radius: var(--radius-lg);
-    background: var(--sidebar-primary);
-    color: var(--sidebar-primary-foreground);
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: none;
   }
-  .brand-icon svg { width: 17px; height: 17px; }
+  /* Fills the slot: the mark is the shape, so it needs no padding inside a
+     tile that is no longer there. */
+  .brand-icon svg { width: 30px; height: 30px; }
 
   .workspace-meta {
     display: flex;
@@ -2170,9 +2169,13 @@
     <!-- Workspace Card Header -->
     <div class="workspace-card">
       <span class="brand-icon">
-        <!-- Lucide Command Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"></path>
+        <!-- Product mark (Prism). Source of truth is docs/assets/logo-mark.svg
+             — keep the two in step. It carries its own colour, so .brand-icon
+             deliberately has no tile behind it. -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+          <path d="M32 4 L58 19 L32 34 L6 19 Z" fill="#A5B4FC"></path>
+          <path d="M6 19 L32 34 L32 60 L6 45 Z" fill="#6366F1"></path>
+          <path d="M58 19 L58 45 L32 60 L32 34 Z" fill="#4338CA"></path>
         </svg>
       </span>
       <div class="workspace-meta">

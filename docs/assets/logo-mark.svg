@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"
+     role="img" aria-label="Business Analyzer">
+  <title>Business Analyzer</title>
+  <!-- Prism: three facets of one solid, in three tints of the product indigo.
+       The mark carries its own colour and needs no container — do not set it
+       on a filled tile, which flattens the facets into a single silhouette.
+       For single-colour contexts use logo-mark-mono.svg. -->
+  <path d="M32 4 L58 19 L32 34 L6 19 Z" fill="#A5B4FC"/>
+  <path d="M6 19 L32 34 L32 60 L6 45 Z" fill="#6366F1"/>
+  <path d="M58 19 L58 45 L32 60 L32 34 Z" fill="#4338CA"/>
+</svg>
