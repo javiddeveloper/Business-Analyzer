@@ -2411,11 +2411,11 @@ function isMockMode() {
 }
 
 const MOCK_ROSTER = [
-  { id: 101, username: 'sarah.chen', name: 'Sarah Chen (Staff Engineer)', role: 'Developer', access_level: 30 },
-  { id: 102, username: 'alex.morgan', name: 'Alex Morgan (Tech Lead)', role: 'Developer', access_level: 30 },
-  { id: 103, username: 'elena.rostova', name: 'Elena Rostova (Systems Architect)', role: 'Developer', access_level: 30 },
-  { id: 104, username: 'david.kim', name: 'David Kim (Backend Engineer)', role: 'Developer', access_level: 30 },
-  { id: 105, username: 'marcus.vance', name: 'Marcus Vance (Full Stack Dev)', role: 'Developer', access_level: 30 }
+  { id: 101, username: 'sara.ahmadi', name: 'سارا احمدی (مهندس ارشد)', role: 'Developer', access_level: 30 },
+  { id: 102, username: 'ali.rezaei', name: 'علی رضایی (تکنیکال لید)', role: 'Developer', access_level: 30 },
+  { id: 103, username: 'maryam.hosseini', name: 'مریم حسینی (معمار سیستم)', role: 'Developer', access_level: 30 },
+  { id: 104, username: 'reza.karimi', name: 'رضا کریمی (مهندس بک‌اند)', role: 'Developer', access_level: 30 },
+  { id: 105, username: 'mehdi.shafiee', name: 'مهدی شفیعی (توسعه‌دهنده فول‌استک)', role: 'Developer', access_level: 30 }
 ];
 
 const MOCK_TASKS = [
@@ -2430,9 +2430,9 @@ const MOCK_TASKS = [
 ];
 
 const MOCK_TEAM_ROWS = {
-  'sarah.chen': {
-    username: 'sarah.chen',
-    name: 'Sarah Chen (Staff Engineer)',
+  'sara.ahmadi': {
+    username: 'sara.ahmadi',
+    name: 'سارا احمدی (مهندس ارشد)',
     score: 94,
     scoreReason: 'عالی — تحویل به‌موقع و تخمین دقیق در تمام اسپرینت‌ها',
     trend: { delta: 3, from: '1405-05', months: 2 },
@@ -2450,13 +2450,13 @@ const MOCK_TEAM_ROWS = {
     p90OpenToMergeHours: 14.2,
     attention: 0,
     tasks: [
-      { key: 'BILL-890', summary: 'Idempotent Stripe webhook handling without duplicate charges', status: 'In Review', statusCategory: 'indeterminate', dueDate: '2026-09-19', estimateHours: 12, spentHours: 10, project: 'Cloud Billing', sprint: 'Sprint 28', hasMr: true, reasons: [], owner: 'sarah.chen', ownerName: 'Sarah Chen' },
-      { key: 'BILL-885', summary: 'Automated invoice reconciliation pipeline for SEPA transfers', status: 'Done', statusCategory: 'done', dueDate: '2026-09-10', estimateHours: 14, spentHours: 13, project: 'Cloud Billing', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'sarah.chen', ownerName: 'Sarah Chen' }
+      { key: 'BILL-890', summary: 'Idempotent Stripe webhook handling without duplicate charges', status: 'In Review', statusCategory: 'indeterminate', dueDate: '2026-09-19', estimateHours: 12, spentHours: 10, project: 'Cloud Billing', sprint: 'Sprint 28', hasMr: true, reasons: [], owner: 'sara.ahmadi', ownerName: 'سارا احمدی' },
+      { key: 'BILL-885', summary: 'Automated invoice reconciliation pipeline for SEPA transfers', status: 'Done', statusCategory: 'done', dueDate: '2026-09-10', estimateHours: 14, spentHours: 13, project: 'Cloud Billing', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'sara.ahmadi', ownerName: 'سارا احمدی' }
     ]
   },
-  'alex.morgan': {
-    username: 'alex.morgan',
-    name: 'Alex Morgan (Tech Lead)',
+  'ali.rezaei': {
+    username: 'ali.rezaei',
+    name: 'علی رضایی (تکنیکال لید)',
     score: 89,
     scoreReason: 'بسیار خوب — کیفیت کد عالی، زمان ثبت‌شده کامل',
     trend: { delta: 2, from: '1405-05', months: 2 },
@@ -2474,13 +2474,13 @@ const MOCK_TEAM_ROWS = {
     p90OpenToMergeHours: 16.0,
     attention: 0,
     tasks: [
-      { key: 'AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', dueDate: '2026-09-20', estimateHours: 8, spentHours: 6, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: true, reasons: [], owner: 'alex.morgan', ownerName: 'Alex Morgan' },
-      { key: 'AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to Cloud KMS', status: 'Done', statusCategory: 'done', dueDate: '2026-09-12', estimateHours: 16, spentHours: 14, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'alex.morgan', ownerName: 'Alex Morgan' }
+      { key: 'AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', dueDate: '2026-09-20', estimateHours: 8, spentHours: 6, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: true, reasons: [], owner: 'ali.rezaei', ownerName: 'علی رضایی' },
+      { key: 'AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to Cloud KMS', status: 'Done', statusCategory: 'done', dueDate: '2026-09-12', estimateHours: 16, spentHours: 14, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'ali.rezaei', ownerName: 'علی رضایی' }
     ]
   },
-  'elena.rostova': {
-    username: 'elena.rostova',
-    name: 'Elena Rostova (Systems Architect)',
+  'maryam.hosseini': {
+    username: 'maryam.hosseini',
+    name: 'مریم حسینی (معمار سیستم)',
     score: 88,
     scoreReason: 'خوب — انحراف جزئی در تخمین تسک‌های معماری',
     trend: { delta: 0, from: '1405-05', months: 2 },
@@ -2498,12 +2498,12 @@ const MOCK_TEAM_ROWS = {
     p90OpenToMergeHours: 22.0,
     attention: 5,
     tasks: [
-      { key: 'ORD-230', summary: 'Migrate checkout pipeline to event-driven saga orchestration', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-22', estimateHours: 16, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: false, reasons: ['no-mr', 'no-worklog'], owner: 'elena.rostova', ownerName: 'Elena Rostova' }
+      { key: 'ORD-230', summary: 'Migrate checkout pipeline to event-driven saga orchestration', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-22', estimateHours: 16, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: false, reasons: ['no-mr', 'no-worklog'], owner: 'maryam.hosseini', ownerName: 'مریم حسینی' }
     ]
   },
-  'david.kim': {
-    username: 'david.kim',
-    name: 'David Kim (Backend Engineer)',
+  'reza.karimi': {
+    username: 'reza.karimi',
+    name: 'رضا کریمی (مهندس بک‌اند)',
     score: 82,
     scoreReason: 'متوسط به بالا — نیاز به ثبت دقیق‌تر زمان کارکرد',
     trend: { delta: -1, from: '1405-05', months: 2 },
@@ -2521,12 +2521,12 @@ const MOCK_TEAM_ROWS = {
     p90OpenToMergeHours: 24.5,
     attention: 2,
     tasks: [
-      { key: 'PERF-395', summary: 'Optimize GIN indexing on audit events query table', status: 'Done', statusCategory: 'done', dueDate: '2026-09-08', estimateHours: 10, spentHours: 9, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'david.kim', ownerName: 'David Kim' }
+      { key: 'PERF-395', summary: 'Optimize GIN indexing on audit events query table', status: 'Done', statusCategory: 'done', dueDate: '2026-09-08', estimateHours: 10, spentHours: 9, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'reza.karimi', ownerName: 'رضا کریمی' }
     ]
   },
-  'marcus.vance': {
-    username: 'marcus.vance',
-    name: 'Marcus Vance (Full Stack Dev)',
+  'mehdi.shafiee': {
+    username: 'mehdi.shafiee',
+    name: 'مهدی شفیعی (توسعه‌دهنده فول‌استک)',
     score: 74,
     scoreReason: 'نیازمند رسیدگی — ۲ تسک عقب‌افتاده و MR راکد',
     trend: { delta: -4, from: '1405-05', months: 2 },
@@ -2544,8 +2544,8 @@ const MOCK_TEAM_ROWS = {
     p90OpenToMergeHours: 48.0,
     attention: 16,
     tasks: [
-      { key: 'PERF-401', summary: 'Tiered Redis multi-region cluster connection pooling', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-14', overdueDays: 5, estimateHours: 20, spentHours: 24, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: true, reasons: ['overdue'], owner: 'marcus.vance', ownerName: 'Marcus Vance' },
-      { key: 'SEC-310', summary: 'Enforce secret vault rotation on database cluster credentials', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-15', overdueDays: 4, estimateHours: 8, spentHours: 0, project: 'Identity Gateway', sprint: 'Sprint 28', hasMr: false, reasons: ['overdue', 'no-mr', 'no-worklog'], owner: 'marcus.vance', ownerName: 'Marcus Vance' }
+      { key: 'PERF-401', summary: 'Tiered Redis multi-region cluster connection pooling', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-14', overdueDays: 5, estimateHours: 20, spentHours: 24, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: true, reasons: ['overdue'], owner: 'mehdi.shafiee', ownerName: 'مهدی شفیعی' },
+      { key: 'SEC-310', summary: 'Enforce secret vault rotation on database cluster credentials', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-15', overdueDays: 4, estimateHours: 8, spentHours: 0, project: 'Identity Gateway', sprint: 'Sprint 28', hasMr: false, reasons: ['overdue', 'no-mr', 'no-worklog'], owner: 'mehdi.shafiee', ownerName: 'مهدی شفیعی' }
     ]
   }
 };
@@ -2557,7 +2557,7 @@ const MOCK_TEAM_ROWS = {
     projectId: 'nexus/core-platform',
     title: 'feat(auth): implement OAuth2 PKCE token exchange with refresh rotation',
     state: 'opened',
-    author: 'Alex Morgan (Tech Lead)',
+    author: 'علی رضایی (تکنیکال لید)',
     sourceBranch: 'feature/AUTH-1042-oauth-pkce',
     targetBranch: 'develop',
     targetIsDevelop: true,
@@ -2577,7 +2577,7 @@ const MOCK_TEAM_ROWS = {
     projectId: 'nexus/core-platform',
     title: 'fix(billing): ensure idempotent stripe webhook retries without duplicate charges',
     state: 'opened',
-    author: 'Sarah Chen (Staff Engineer)',
+    author: 'سارا احمدی (مهندس ارشد)',
     sourceBranch: 'fix/BILL-890-webhook-idempotency',
     targetBranch: 'develop',
     targetIsDevelop: true,
@@ -2597,7 +2597,7 @@ const MOCK_TEAM_ROWS = {
     projectId: 'nexus/core-platform',
     title: 'perf(cache): tiered Redis multi-region cluster caching & connection pooling',
     state: 'opened',
-    author: 'Marcus Vance (Full Stack Dev)',
+    author: 'مهدی شفیعی (توسعه‌دهنده فول‌استک)',
     sourceBranch: 'perf/PERF-401-redis-cluster',
     targetBranch: 'develop',
     targetIsDevelop: true,
@@ -2617,7 +2617,7 @@ const MOCK_TEAM_ROWS = {
     projectId: 'nexus/core-platform',
     title: 'refactor(orders): migrate checkout pipeline to event-driven saga orchestration',
     state: 'opened',
-    author: 'Elena Rostova (Systems Architect)',
+    author: 'مریم حسینی (معمار سیستم)',
     sourceBranch: 'refactor/ORD-230-saga-pattern',
     targetBranch: 'main',
     targetIsDevelop: false,
@@ -2682,7 +2682,7 @@ const MOCK_JOBS = [
     projectId: 'nexus/core-platform',
     title: 'refactor(orders): migrate checkout pipeline to event-driven saga orchestration',
     state: 'opened',
-    author: 'Elena Rostova (Systems Architect)',
+    author: 'مریم حسینی (معمار سیستم)',
     sourceBranch: 'refactor/ORD-230-saga-pattern',
     targetBranch: 'main',
     targetIsDevelop: false,
@@ -2762,7 +2762,7 @@ async function handleMockApi(path, options = {}) {
   if (path === '/api/status') {
     return {
       ok: true,
-      user: { id: 102, username: 'alex.morgan', name: 'Alex Morgan (Tech Lead)' },
+      user: { id: 102, username: 'ali.rezaei', name: 'علی رضایی (تکنیکال لید)' },
       activeProject: { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
       projects: [
         { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
@@ -2770,7 +2770,7 @@ async function handleMockApi(path, options = {}) {
         { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
       ],
       projectPath: { set: true, value: '/repos/nexus-core-platform' },
-      gitlab: { url: 'https://gitlab.example.com', ok: true, user: 'alex.lead', name: 'Alex Morgan (Tech Lead)', bot: false, error: null },
+      gitlab: { url: 'https://gitlab.example.com', ok: true, user: 'ali.rezaei', name: 'علی رضایی (تکنیکال لید)', bot: false, error: null },
       ai: { provider: 'claude-cli', model: 'claude-3-7-sonnet', state: 'ready' },
       settings: { autoReview: true, autoApprove: true, skipDrafts: true, inlineComments: true, autoPost: true, pollSeconds: 120 }
     };
@@ -2821,7 +2821,7 @@ async function handleMockApi(path, options = {}) {
   }
 
   if (path === '/api/maintainers') {
-    return [{ id: 102, username: 'alex.morgan', name: 'Alex Morgan' }];
+    return [{ id: 102, username: 'ali.rezaei', name: 'علی رضایی' }];
   }
 
   if (path.startsWith('/api/jira/epics')) {
@@ -2900,12 +2900,12 @@ async function handleMockApi(path, options = {}) {
   const devAnalyticsMatch = path.match(/^\/api\/developers\/([^\/]+)\/analytics/);
   if (devAnalyticsMatch) {
     const author = decodeURIComponent(devAnalyticsMatch[1]);
-    const isAlex = author === 'alex.morgan';
-    const isSarah = author === 'sarah.chen';
+    const isAli = author === 'ali.rezaei';
+    const isSara = author === 'sara.ahmadi';
 
     return {
       author,
-      name: isAlex ? 'Alex Morgan (Tech Lead)' : (isSarah ? 'Sarah Chen (Staff Engineer)' : author),
+      name: isAli ? 'علی رضایی (تکنیکال لید)' : (isSara ? 'سارا احمدی (مهندس ارشد)' : author),
       jiraConfigured: true,
       jiraTasksTotal: 4,
       totalMRs: 14,
@@ -2922,8 +2922,8 @@ async function handleMockApi(path, options = {}) {
         merged: 10,
         closed: 1,
         stillOpenCount: 3,
-        medianOpenToMergeHours: isSarah ? 6.4 : 8.2,
-        p90OpenToMergeHours: isSarah ? 14.2 : 16.0,
+        medianOpenToMergeHours: isSara ? 6.4 : 8.2,
+        p90OpenToMergeHours: isSara ? 14.2 : 16.0,
         openToMergeSample: 10,
         medianCycleHours: 8.5,
         p90CycleHours: 18.0,
@@ -2934,18 +2934,18 @@ async function handleMockApi(path, options = {}) {
         discussedCount: 9,
         discussedSample: 12,
         medianOpenAgeHours: 12,
-        oldestOpenHours: isSarah ? 18 : 4,
+        oldestOpenHours: isSara ? 18 : 4,
         medianNotes: 4,
         notesSample: 12
       },
       autoScore: {
-        score: isSarah ? 94 : (isAlex ? 89 : 82),
-        baseScore: isSarah ? 92 : (isAlex ? 87 : 80),
+        score: isSara ? 94 : (isAli ? 89 : 82),
+        baseScore: isSara ? 92 : (isAli ? 87 : 80),
         complexityAdjustment: 2,
         complexitySample: 3,
         complexityConfidence: 60,
         availableWeight: 115,
-        reason: isSarah ? 'عالی — تحویل به‌موقع و تخمین دقیق در تمام اسپرینت‌ها' : 'بسیار خوب — کیفیت کد بالا و انضباط کامل',
+        reason: isSara ? 'عالی — تحویل به‌موقع و تخمین دقیق در تمام اسپرینت‌ها' : 'بسیار خوب — کیفیت کد بالا و انضباط کامل',
         components: [
           {
             key: 'onTime',
@@ -2953,7 +2953,7 @@ async function handleMockApi(path, options = {}) {
             baseWeight: 25,
             effectiveWeight: 25,
             confidence: 62,
-            score: isSarah ? 96 : 88,
+            score: isSara ? 96 : 88,
             sampleSize: 8,
             detail: '۸ تسک جیرا با موعد سررسید؛ ۰ روز تأخیر',
             available: true
@@ -2964,7 +2964,7 @@ async function handleMockApi(path, options = {}) {
             baseWeight: 25,
             effectiveWeight: 25,
             confidence: 55,
-            score: isSarah ? 94 : 92,
+            score: isSara ? 94 : 92,
             sampleSize: 6,
             detail: 'میانگین انحراف تخمین در محدوده ۱۲٪',
             available: true
@@ -2975,7 +2975,7 @@ async function handleMockApi(path, options = {}) {
             baseWeight: 20,
             effectiveWeight: 20,
             confidence: 50,
-            score: isSarah ? 95 : 84,
+            score: isSara ? 95 : 84,
             sampleSize: 5,
             detail: 'بدون یافته‌ی بحرانی در ۵ MR اخیر',
             available: true
@@ -2986,7 +2986,7 @@ async function handleMockApi(path, options = {}) {
             baseWeight: 15,
             effectiveWeight: 15,
             confidence: 67,
-            score: isSarah ? 95 : 90,
+            score: isSara ? 95 : 90,
             sampleSize: 10,
             detail: '۹ تسک از ۱۰ تعهد اسپرینت حل شده',
             available: true
@@ -3008,7 +3008,7 @@ async function handleMockApi(path, options = {}) {
             baseWeight: 15,
             effectiveWeight: 15,
             confidence: 50,
-            score: isSarah ? 90 : 85,
+            score: isSara ? 90 : 85,
             sampleSize: 6,
             detail: 'میانگین حجم تغییرات هر MR زیر ۲۵۰ خط کد',
             available: true
@@ -3019,20 +3019,20 @@ async function handleMockApi(path, options = {}) {
             baseWeight: 5,
             effectiveWeight: 5,
             confidence: 50,
-            score: isSarah ? 85 : 80,
+            score: isSara ? 85 : 80,
             sampleSize: 5,
             detail: '۴ از ۵ MR به صورت کاملاً مستقل روی برنچ پوش شده',
             available: true
           }
         ]
       },
-      latestSprint: { name: 'Sprint 28', score: isSarah ? 94 : 89, taskCount: 6, doneCount: 5 },
+      latestSprint: { name: 'Sprint 28', score: isSara ? 94 : 89, taskCount: 6, doneCount: 5 },
       sprints: [
         { name: 'Sprint 24', score: 84, taskCount: 5, loggedCount: 4, noTimeLogged: 1, doneCount: 4 },
         { name: 'Sprint 25', score: 86, taskCount: 5, loggedCount: 5, noTimeLogged: 0, doneCount: 5 },
         { name: 'Sprint 26', score: 88, taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 },
         { name: 'Sprint 27', score: 89, taskCount: 6, loggedCount: 6, noTimeLogged: 0, doneCount: 6 },
-        { name: 'Sprint 28', score: isSarah ? 94 : 89, taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 }
+        { name: 'Sprint 28', score: isSara ? 94 : 89, taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 }
       ],
       jiraTasks: [
         { key: 'AUTH-1042', url: 'https://jira.example.com/browse/AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', type: 'Story', priority: 'High', sprint: 'Sprint 28', storyPoints: 5, updated: '2026-09-18T14:30:00Z', dueDate: '2026-09-20', estimateHours: 8, spentHours: 6, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
@@ -3043,7 +3043,7 @@ async function handleMockApi(path, options = {}) {
       monthlyRows: [
         { month: '1405-04', score: 85, mrCount: 5, taskCount: 6 },
         { month: '1405-05', score: 88, mrCount: 6, taskCount: 7 },
-        { month: '1405-06', score: isSarah ? 94 : 89, mrCount: 7, taskCount: 8 }
+        { month: '1405-06', score: isSara ? 94 : 89, mrCount: 7, taskCount: 8 }
       ],
       months: [
         {
@@ -3135,7 +3135,7 @@ async function handleMockApi(path, options = {}) {
         title: 'feat(auth): implement OAuth2 PKCE token exchange with refresh rotation',
         sourceBranch: 'feature/AUTH-1042-oauth-pkce',
         targetBranch: 'develop',
-        author: 'Alex Morgan (Tech Lead)'
+        author: 'علی رضایی (تکنیکال لید)'
       },
       commits: {
         total: 3,
@@ -3149,7 +3149,7 @@ async function handleMockApi(path, options = {}) {
         status: 'In Review',
         type: 'Story',
         priority: 'High',
-        assignee: 'Alex Morgan',
+        assignee: 'علی رضایی',
         dueDate: '2026-09-20',
         estimateHours: 8,
         spentHours: 6,
@@ -3200,8 +3200,8 @@ async function handleMockApi(path, options = {}) {
       },
       stack: '> com.nexus.billing.webhook.StripeWebhookHandler.processEvent(StripeWebhookHandler.java:142)\n  com.nexus.billing.webhook.StripeWebhookController.handleWebhook(StripeWebhookController.java:58)\n  jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)',
       suggestions: [
-        { username: 'sarah.chen', name: 'Sarah Chen (Staff Engineer)', load: 'خفیف', inProgress: 1, openMrs: 1 },
-        { username: 'alex.morgan', name: 'Alex Morgan (Tech Lead)', load: 'متوسط', inProgress: 2, openMrs: 1 }
+        { username: 'sara.ahmadi', name: 'سارا احمدی (مهندس ارشد)', load: 'خفیف', inProgress: 1, openMrs: 1 },
+        { username: 'ali.rezaei', name: 'علی رضایی (تکنیکال لید)', load: 'متوسط', inProgress: 2, openMrs: 1 }
       ]
     };
   }
