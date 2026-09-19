@@ -15,6 +15,7 @@
 
 </div>
 
+
 ---
 
 ## ⚡ What is Business Analyzer?
@@ -222,3 +223,14 @@ If your organization requires:
 - **GitHub**: [@javiddeveloper](https://github.com/javiddeveloper)
 - **Repository**: [Business-Analyzer](https://github.com/javiddeveloper/Business-Analyzer)
 - **LinkedIn**: [Javid Sattar](https://www.linkedin.com/in/javid-sattar/) *(reach out via GitHub issue or LinkedIn message for enterprise licensing and consulting)*
+
+## License
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+- Free for personal, internal, and open-source use.
+- If you modify the software and run it as a network service (SaaS), you must make the source code of your modified version available to users.
+- Commercial licenses are available for organizations that need closed-source use, professional support, custom features, or enterprise deployment.
+
+For commercial licensing and consulting, contact:  
+**Javid Sattar** → [LinkedIn](https://www.linkedin.com/in/javid-sattar/) or open a GitHub Issue.
