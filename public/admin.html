@@ -2812,12 +2812,13 @@ async function handleMockApi(path, options = {}) {
   }
 
   if (path === '/api/engines') {
-    return [
-      { id: 'claude-cli', label: 'Claude Code CLI', icon: '🤖', state: 'ready', isCurrent: true, model: 'claude-3-7-sonnet' },
-      { id: 'openai-compatible', label: 'OpenAI / GapGPT', icon: '⚡', state: 'ready', isCurrent: false, model: 'gpt-4o-mini' },
-      { id: '9router', label: '9Router Gateway', icon: '🔀', state: 'ready', isCurrent: false, model: 'combo' },
-      { id: 'gemini', label: 'Google Gemini', icon: '✨', state: 'ready', isCurrent: false, model: 'gemini-2.0-flash' }
+    const engines = [
+      { id: 'claude-cli',         label: 'Claude Code CLI',   icon: '🤖', state: 'ready', active: true,  isCurrent: true,  model: 'claude-3-7-sonnet' },
+      { id: 'openai-compatible',  label: 'OpenAI / GapGPT',   icon: '⚡', state: 'ready', active: false, isCurrent: false, model: 'gpt-4o-mini' },
+      { id: '9router',            label: '9Router Gateway',    icon: '🔀', state: 'ready', active: false, isCurrent: false, model: 'combo' },
+      { id: 'gemini',             label: 'Google Gemini',      icon: '✨', state: 'ready', active: false, isCurrent: false, model: 'gemini-2.0-flash' }
     ];
+    return { engines, current: 'claude-cli' };
   }
 
   if (path === '/api/maintainers') {
@@ -3204,6 +3205,39 @@ async function handleMockApi(path, options = {}) {
         { username: 'ali.rezaei', name: 'علی رضایی (تکنیکال لید)', load: 'متوسط', inProgress: 2, openMrs: 1 }
       ]
     };
+  }
+
+  // secrets.env tab
+  if (path === '/api/env' && (!options.method || options.method === 'GET')) {
+    return [
+      // ── General ──────────────────────────────────────────────────────────
+      { key: 'GITLAB_URL',        value: 'https://gitlab.example.com',        group: 'GitLab',     engine: null, secret: false, required: true,  hint: 'آدرس کامل نمونه GitLab شما' },
+      { key: 'GITLAB_TOKEN',      value: 'glpat-xxxxxxxxxxxxxxxxxxxx',         group: 'GitLab',     engine: null, secret: true,  required: true,  hint: 'توکن Personal Access Token با دسترسی api+read_user' },
+      { key: 'GITLAB_BOT_USER',   value: 'business-analyzer-bot',             group: 'GitLab',     engine: null, secret: false, required: false, hint: 'یوزرنیم بات GitLab (اختیاری)' },
+      { key: 'JIRA_URL',          value: 'https://nexus.atlassian.net',        group: 'Jira',       engine: null, secret: false, required: false, hint: 'آدرس پایه Jira Cloud یا Server' },
+      { key: 'JIRA_USER',         value: 'ali.rezaei@nexus.io',               group: 'Jira',       engine: null, secret: false, required: false, hint: 'ایمیل کاربر Jira' },
+      { key: 'JIRA_TOKEN',        value: 'ATATT3xFfGF0xxxxxxxxxxxxxxxxxx',     group: 'Jira',       engine: null, secret: true,  required: false, hint: 'Jira API Token' },
+      { key: 'JIRA_PROJECT_KEY',  value: 'NEXUS',                             group: 'Jira',       engine: null, secret: false, required: false, hint: 'کلید پروژه پیش‌فرض Jira' },
+      { key: 'SENTRY_DSN',        value: 'https://abc123@o12345.ingest.sentry.io/678901', group: 'Sentry', engine: null, secret: true, required: false, hint: 'DSN پروژه Sentry برای تریاژ خطاها' },
+      { key: 'SENTRY_ORG',        value: 'nexus-tech',                        group: 'Sentry',     engine: null, secret: false, required: false, hint: 'نام سازمان Sentry' },
+      { key: 'ADMIN_TOKEN',       value: 'demo-admin-token-2026',              group: 'امنیت',     engine: null, secret: true,  required: true,  hint: 'توکن دسترسی ادمین به داشبورد' },
+      // ── AI Engines ────────────────────────────────────────────────────────
+      { key: 'AI_PROVIDER',       value: 'claude-cli',                        group: 'هوش مصنوعی', engine: null, secret: false, required: true,  hint: 'موتور فعال: claude-cli | openai-compatible | gemini', internal: true },
+      { key: 'OPENAI_API_KEY',    value: 'sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxx', group: 'OpenAI / GapGPT', engine: 'openai-compatible', secret: true, required: false, hint: 'کلید API سرویس OpenAI-compatible' },
+      { key: 'OPENAI_BASE_URL',   value: 'https://api.openai.com/v1',         group: 'OpenAI / GapGPT', engine: 'openai-compatible', secret: false, required: false, hint: 'Base URL (برای پروکسی‌های سازگار با OpenAI)' },
+      { key: 'OPENAI_MODEL',      value: 'gpt-4o-mini',                       group: 'OpenAI / GapGPT', engine: 'openai-compatible', secret: false, required: false, hint: 'مدل پیش‌فرض' },
+      { key: 'GEMINI_API_KEY',    value: 'AIzaSyXXXXXXXXXXXXXXXXXXXXXX',     group: 'Google Gemini',   engine: 'gemini',            secret: true,  required: false, hint: 'کلید API Google AI Studio' },
+      { key: 'GEMINI_MODEL',      value: 'gemini-2.0-flash',                  group: 'Google Gemini',   engine: 'gemini',            secret: false, required: false, hint: 'مدل Gemini' },
+      { key: 'CLAUDE_MODEL',      value: 'claude-3-7-sonnet',                 group: 'Claude CLI',      engine: 'claude-cli',        secret: false, required: false, hint: 'مدل Claude (claude-cli از محیط می‌خواند)' }
+    ];
+  }
+
+  if (path === '/api/env' && options.method === 'POST') {
+    return { ok: true };   // در demo ذخیره‌سازی واقعی انجام نمی‌شود
+  }
+
+  if (path.startsWith('/api/models')) {
+    return { models: ['claude-3-7-sonnet', 'claude-3-5-haiku', 'gpt-4o', 'gpt-4o-mini', 'gemini-2.0-flash', 'gemini-1.5-pro'] };
   }
 
   if (path === '/api/knowledge') {
