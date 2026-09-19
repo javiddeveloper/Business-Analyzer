@@ -2006,7 +2006,7 @@
     z-index: 80;
     top: calc(100% + 6px);
     right: 0;
-    width: 300px;
+    width: 310px;
     box-sizing: border-box;
     background: var(--popover);
     border: 1px solid var(--border-strong);
@@ -2045,6 +2045,9 @@
   }
   .jdp-week span.off, .jdp-cell.off { color: var(--red); }
   .jdp-cell {
+    padding: 0;
+    margin: 0;
+    min-width: 0;
     aspect-ratio: 1;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
@@ -6461,6 +6464,10 @@ function openDatePicker(id) {
   JDP.open = id;
   JDP.ymMode = false;
   JDP.view = isoToJalaliParts(input.value) || toJalaliParts(new Date());
+  
+  // Stop clicks inside the popover from bubbling up to the document click-outside handler
+  pop.onclick = (e) => e.stopPropagation();
+  
   paintDatePicker(id);
   pop.hidden = false;
 }
@@ -6542,13 +6549,9 @@ document.addEventListener('click', (e) => {
   const trigger = e.target.closest('[data-jdp]');
   if (trigger) { openDatePicker(trigger.dataset.jdp); return; }
   
-  // When a calendar button is clicked, it often triggers a re-render which 
-  // removes the button from the DOM before the event bubbles to 'document'.
-  // e.composedPath() reliably checks if the click originated inside the popover.
-  const path = e.composedPath ? e.composedPath() : [];
-  const isInsidePop = e.target.closest('.jdp-pop') || path.some(el => el.classList && el.classList.contains('jdp-pop'));
-  
-  if (!isInsidePop) closeDatePicker();
+  // Any click that reaches here means it wasn't inside a .jdp-pop (because 
+  // they stop propagation) and wasn't a trigger button.
+  if (JDP.open) closeDatePicker();
 });
 
 // Short form for chart axes, where a full date would collide with its
