@@ -589,6 +589,26 @@
     color: var(--accent-foreground);
   }
 
+  .btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px !important;
+    font-size: 13px !important;
+    font-weight: 500;
+    color: var(--foreground);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .btn-refresh:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
   button.danger {
     background: rgba(231, 81, 90, 0.15);
     border: 1px solid rgba(231, 81, 90, 0.35);
@@ -2293,7 +2313,7 @@
             <span class="switch"><input type="checkbox" id="autoReview" /><span class="track"></span><span class="thumb"></span></span>
             🔁 ریویوی خودکار
           </label>
-          <button class="ghost" id="refreshBtn">🔄 بروزرسانی لیست MRها</button>
+          <button class="btn-refresh" id="refreshBtn">🔄 بروزرسانی لیست MRها</button>
         </div>
         <div class="settings-group">
           <p class="settings-group-title">تنظیمات ریویو</p>
@@ -2328,7 +2348,7 @@
               <option value="30d">۳۰ روز اخیر</option>
               <option value="90d">۹۰ روز اخیر</option>
             </select>
-            <button class="ghost" id="sentryRefreshBtn">🔄 بروزرسانی</button>
+            <button class="btn-refresh" id="sentryRefreshBtn">🔄 بروزرسانی</button>
           </div>
         </div>
         <div class="card" id="sentryBody"><div class="empty">در حال بارگذاری…</div></div>
@@ -2347,7 +2367,7 @@
           <aside class="card dev-rail">
             <div class="dev-rail-head">
               <span class="dev-rail-title">تیم</span>
-              <button class="ghost" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب" style="padding:3px 8px; font-size:11px">🔄</button>
+              <button class="btn-refresh" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب">🔄</button>
             </div>
             <span class="tag" id="devRosterCacheNote"></span>
             <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
@@ -2410,7 +2430,7 @@
           <div class="settings-panel" id="maintainersPanel" hidden>
             <div class="row" style="justify-content:space-between;align-items:center">
               <div class="group-title" style="margin:0">👤 maintainerهای گیت‌لب</div>
-              <button class="ghost" id="maintRefreshBtn" style="padding:2px 8px;font-size:11px" title="بروزرسانی از گیت‌لب">🔄</button>
+              <button class="btn-refresh" id="maintRefreshBtn" title="بروزرسانی از گیت‌لب">🔄</button>
             </div>
             <p class="meta">
               این لیست از خود گیت‌لب خوانده می‌شود (نقش Maintainer یا Owner) و قابل ویرایش از اینجا نیست —
@@ -2443,7 +2463,7 @@
               فقط خواندنی است — ساخت و ویرایش اپیک در خود جیرا انجام می‌شود. یک ساعت کش می‌شود.
             </p>
             <div class="row" style="margin-bottom:10px">
-              <button class="ghost" id="epicsRefreshBtn">🔄 خواندن دوباره از جیرا</button>
+              <button class="btn-refresh" id="epicsRefreshBtn">🔄 خواندن دوباره از جیرا</button>
               <span class="meta" id="epicsNote"></span>
             </div>
             <div id="epicsList"><div class="empty">در حال بارگذاری…</div></div>
@@ -4977,7 +4997,7 @@ function renderTeam() {
         renderDatePicker('teamUntil', DEV.until, 'تا تاریخ') +
         '<button id="teamFilterApply">اعمال فیلتر</button>' +
         '<button class="ghost" id="teamFilterClear">پاک کردن</button>' +
-        '<button class="ghost" id="teamRefreshBtn">🔄 محاسبه‌ی دوباره</button>' +
+        '<button class="btn-refresh" id="teamRefreshBtn">🔄 محاسبه‌ی دوباره</button>' +
       '</div>' +
     '</div>' +
     '<div>' +
@@ -5322,7 +5342,7 @@ function renderDevMain() {
         '<div class="hero-chips">' + attentionChip + manualBadge + coverageChip(a) + '</div>' +
       '</div>' +
       '<div class="hero-actions">' + cacheNote +
-        '<button class="ghost" id="devRefreshBtn">🔄 بروزرسانی این فرد</button>' +
+        '<button class="btn-refresh" id="devRefreshBtn">🔄 بروزرسانی این فرد</button>' +
         '<button class="ghost" id="devExportBtn" title="خروجی اکسل عملکرد ماهانه، همراه با نمودار">📊 خروجی اکسل</button>' +
       '</div>' +
       '<div class="hero-caveat">' +
