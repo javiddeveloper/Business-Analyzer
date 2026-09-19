@@ -2353,243 +2353,696 @@ function headers() {
   return h;
 }
 
+
 // ---- Mock Data Engine for Demonstration & Screenshots --------------------
 function isMockMode() {
   return window.location.search.includes('mock=1') || window.location.search.includes('demo=1');
 }
 
-const MOCK_DB = {
-  status: {
-    ok: true,
-    user: { id: 101, username: 'alex.morgan', name: 'Alex Morgan' },
-    activeProject: { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
-    projects: [
-      { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
-      { id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine' },
-      { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
-    ],
-    projectPath: { set: true, value: '/repos/nexus-core-platform' },
-    gitlab: { url: 'https://gitlab.example.com', ok: true, user: 'alex.lead', name: 'Alex Morgan (Tech Lead)', bot: false, error: null },
-    ai: { provider: 'claude-cli', model: 'claude-3-7-sonnet', state: 'ready' },
-    settings: {
-      autoReview: true,
-      autoApprove: true,
-      skipDrafts: true,
-      inlineComments: true,
-      autoPost: true,
-      pollSeconds: 120
-    }
+const MOCK_ROSTER = [
+  { id: 101, username: 'sarah.chen', name: 'Sarah Chen (Staff Engineer)', role: 'Developer', access_level: 30 },
+  { id: 102, username: 'alex.morgan', name: 'Alex Morgan (Tech Lead)', role: 'Developer', access_level: 30 },
+  { id: 103, username: 'elena.rostova', name: 'Elena Rostova (Systems Architect)', role: 'Developer', access_level: 30 },
+  { id: 104, username: 'david.kim', name: 'David Kim (Backend Engineer)', role: 'Developer', access_level: 30 },
+  { id: 105, username: 'marcus.vance', name: 'Marcus Vance (Full Stack Dev)', role: 'Developer', access_level: 30 }
+];
+
+const MOCK_TASKS = [
+  { key: 'AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', dueDate: '2026-09-20', estimateHours: 8, spentHours: 6, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: true, reasons: [] },
+  { key: 'BILL-890', summary: 'Idempotent Stripe webhook handling without duplicate charges', status: 'In Review', statusCategory: 'indeterminate', dueDate: '2026-09-19', estimateHours: 12, spentHours: 10, project: 'Cloud Billing', sprint: 'Sprint 28', hasMr: true, reasons: [] },
+  { key: 'PERF-401', summary: 'Tiered Redis multi-region cluster connection pooling', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-14', overdueDays: 5, estimateHours: 20, spentHours: 24, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: true, reasons: ['overdue'] },
+  { key: 'ORD-230', summary: 'Migrate checkout pipeline to event-driven saga orchestration', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-22', estimateHours: 16, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: false, reasons: ['no-mr', 'no-worklog'] },
+  { key: 'SEC-310', summary: 'Enforce secret vault rotation on database cluster credentials', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-15', overdueDays: 4, estimateHours: 8, spentHours: 0, project: 'Identity Gateway', sprint: 'Sprint 28', hasMr: false, reasons: ['overdue', 'no-mr', 'no-worklog'] },
+  { key: 'AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to Cloud KMS', status: 'Done', statusCategory: 'done', dueDate: '2026-09-12', estimateHours: 16, spentHours: 14, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, reasons: [] },
+  { key: 'BILL-885', summary: 'Automated invoice reconciliation pipeline for SEPA transfers', status: 'Done', statusCategory: 'done', dueDate: '2026-09-10', estimateHours: 14, spentHours: 13, project: 'Cloud Billing', sprint: 'Sprint 27', hasMr: true, reasons: [] },
+  { key: 'PERF-395', summary: 'Optimize GIN indexing on audit events query table', status: 'Done', statusCategory: 'done', dueDate: '2026-09-08', estimateHours: 10, spentHours: 9, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, reasons: [] }
+];
+
+const MOCK_TEAM_ROWS = {
+  'sarah.chen': {
+    username: 'sarah.chen',
+    name: 'Sarah Chen (Staff Engineer)',
+    score: 94,
+    scoreReason: 'عالی — تحویل به‌موقع و تخمین دقیق در تمام اسپرینت‌ها',
+    trend: { delta: 3, from: '1405-05', months: 2 },
+    openMrs: 1,
+    oldestOpenHours: 18,
+    staleOpenMrs: 0,
+    inProgressCount: 2,
+    blockedNoMr: 0,
+    overdueCount: 0,
+    worstOverdueDays: null,
+    missingWorklogCount: 0,
+    doneCount: 8,
+    mergedCount: 6,
+    medianOpenToMergeHours: 6.4,
+    p90OpenToMergeHours: 14.2,
+    attention: 0,
+    tasks: [
+      { key: 'BILL-890', summary: 'Idempotent Stripe webhook handling without duplicate charges', status: 'In Review', statusCategory: 'indeterminate', dueDate: '2026-09-19', estimateHours: 12, spentHours: 10, project: 'Cloud Billing', sprint: 'Sprint 28', hasMr: true, reasons: [], owner: 'sarah.chen', ownerName: 'Sarah Chen' },
+      { key: 'BILL-885', summary: 'Automated invoice reconciliation pipeline for SEPA transfers', status: 'Done', statusCategory: 'done', dueDate: '2026-09-10', estimateHours: 14, spentHours: 13, project: 'Cloud Billing', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'sarah.chen', ownerName: 'Sarah Chen' }
+    ]
   },
-  usage: {
-    days: 30,
-    reviewsCount: 142,
-    promptTokens: 4850200,
-    completionTokens: 612400,
-    totalTokens: 5462600,
-    byProvider: {
-      'claude-cli': { reviews: 98, promptTokens: 3820000, completionTokens: 490000 },
-      'openai-compatible': { reviews: 44, promptTokens: 1030200, completionTokens: 122400 }
-    }
+  'alex.morgan': {
+    username: 'alex.morgan',
+    name: 'Alex Morgan (Tech Lead)',
+    score: 89,
+    scoreReason: 'بسیار خوب — کیفیت کد عالی، زمان ثبت‌شده کامل',
+    trend: { delta: 2, from: '1405-05', months: 2 },
+    openMrs: 1,
+    oldestOpenHours: 4,
+    staleOpenMrs: 0,
+    inProgressCount: 3,
+    blockedNoMr: 0,
+    overdueCount: 0,
+    worstOverdueDays: null,
+    missingWorklogCount: 0,
+    doneCount: 7,
+    mergedCount: 5,
+    medianOpenToMergeHours: 8.2,
+    p90OpenToMergeHours: 16.0,
+    attention: 0,
+    tasks: [
+      { key: 'AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', dueDate: '2026-09-20', estimateHours: 8, spentHours: 6, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: true, reasons: [], owner: 'alex.morgan', ownerName: 'Alex Morgan' },
+      { key: 'AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to Cloud KMS', status: 'Done', statusCategory: 'done', dueDate: '2026-09-12', estimateHours: 16, spentHours: 14, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'alex.morgan', ownerName: 'Alex Morgan' }
+    ]
   },
-  accuracy: {
-    total: 86,
-    helpful: 79,
-    accuracyRate: 91.8
+  'elena.rostova': {
+    username: 'elena.rostova',
+    name: 'Elena Rostova (Systems Architect)',
+    score: 88,
+    scoreReason: 'خوب — انحراف جزئی در تخمین تسک‌های معماری',
+    trend: { delta: 0, from: '1405-05', months: 2 },
+    openMrs: 1,
+    oldestOpenHours: 48,
+    staleOpenMrs: 0,
+    inProgressCount: 2,
+    blockedNoMr: 1,
+    overdueCount: 0,
+    worstOverdueDays: null,
+    missingWorklogCount: 1,
+    doneCount: 6,
+    mergedCount: 4,
+    medianOpenToMergeHours: 12.5,
+    p90OpenToMergeHours: 22.0,
+    attention: 5,
+    tasks: [
+      { key: 'ORD-230', summary: 'Migrate checkout pipeline to event-driven saga orchestration', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-22', estimateHours: 16, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: false, reasons: ['no-mr', 'no-worklog'], owner: 'elena.rostova', ownerName: 'Elena Rostova' }
+    ]
   },
-  projects: [
-    { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
-    { id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine' },
-    { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
-  ],
-  engines: [
-    { id: 'claude-cli', label: 'Claude Code CLI', icon: '🤖', state: 'ready', isCurrent: true, model: 'claude-3-7-sonnet' },
-    { id: 'openai-compatible', label: 'OpenAI / GapGPT', icon: '⚡', state: 'ready', isCurrent: false, model: 'gpt-4o-mini' },
-    { id: '9router', label: '9Router Gateway', icon: '🔀', state: 'ready', isCurrent: false, model: 'combo' },
-    { id: 'gemini', label: 'Google Gemini', icon: '✨', state: 'ready', isCurrent: false, model: 'gemini-2.0-flash' }
-  ],
-  mergeRequests: [
-    {
-      id: 1054,
-      iid: 104,
-      project_id: 'nexus/core-platform',
-      title: 'feat(auth): implement OAuth2 PKCE token exchange with refresh rotation',
-      state: 'opened',
-      author: { id: 101, username: 'alex.morgan', name: 'Alex Morgan', avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=128&fit=crop&crop=faces' },
-      source_branch: 'feature/AUTH-1042-oauth-pkce',
-      target_branch: 'develop',
-      created_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
-      hasReviewReport: true,
-      lastDecision: 'APPROVE',
-      findingsCount: 3,
-      taskKey: 'AUTH-1042',
-      mergeOrder: 1,
-      draft: false
-    },
-    {
-      id: 1053,
-      iid: 103,
-      project_id: 'nexus/core-platform',
-      title: 'fix(billing): ensure idempotent stripe webhook retries without duplicate charges',
-      state: 'opened',
-      author: { id: 102, username: 'sarah.chen', name: 'Sarah Chen', avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=128&fit=crop&crop=faces' },
-      source_branch: 'fix/BILL-890-webhook-idempotency',
-      target_branch: 'develop',
-      created_at: new Date(Date.now() - 18 * 3600 * 1000).toISOString(),
-      hasReviewReport: true,
-      lastDecision: 'APPROVE',
-      findingsCount: 1,
-      taskKey: 'BILL-890',
-      mergeOrder: 2,
-      draft: false
-    },
-    {
-      id: 1052,
-      iid: 102,
-      project_id: 'nexus/core-platform',
-      title: 'perf(cache): tiered Redis multi-region cluster caching & connection pooling',
-      state: 'opened',
-      author: { id: 103, username: 'marcus.vance', name: 'Marcus Vance', avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=128&fit=crop&crop=faces' },
-      source_branch: 'perf/PERF-401-redis-cluster',
-      target_branch: 'develop',
-      created_at: new Date(Date.now() - 28 * 3600 * 1000).toISOString(),
-      hasReviewReport: true,
-      lastDecision: 'REQUEST_CHANGES',
-      findingsCount: 4,
-      taskKey: 'PERF-401',
-      mergeOrder: 3,
-      draft: false
-    },
-    {
-      id: 1051,
-      iid: 101,
-      project_id: 'nexus/core-platform',
-      title: 'refactor(orders): migrate checkout pipeline to event-driven saga orchestration',
-      state: 'opened',
-      author: { id: 104, username: 'elena.rostova', name: 'Elena Rostova', avatar_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=128&fit=crop&crop=faces' },
-      source_branch: 'refactor/ORD-230-saga-pattern',
-      target_branch: 'main',
-      created_at: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
-      hasReviewReport: false,
-      lastDecision: null,
-      findingsCount: 0,
-      taskKey: 'ORD-230',
-      mergeOrder: 4,
-      draft: false
-    }
-  ],
-  jobs: [
-    {
-      key: 'nexus/core-platform!101',
-      projectId: 'nexus/core-platform',
-      mrIid: 101,
-      status: 'running',
-      trigger: 'auto',
-      startedAt: Date.now() - 35000,
-      progress: { step: 'agent_exploration', message: 'Analyzing saga compensation boundaries across 14 files...' }
-    }
-  ],
-  roster: [
-    { id: 101, username: 'alex.morgan', name: 'Alex Morgan', role: 'Developer', access_level: 30 },
-    { id: 102, username: 'sarah.chen', name: 'Sarah Chen', role: 'Developer', access_level: 30 },
-    { id: 103, username: 'marcus.vance', name: 'Marcus Vance', role: 'Developer', access_level: 30 },
-    { id: 104, username: 'elena.rostova', name: 'Elena Rostova', role: 'Developer', access_level: 30 },
-    { id: 105, username: 'david.kim', name: 'David Kim', role: 'Developer', access_level: 30 }
-  ],
-  teamRows: {
-    'sarah.chen': { author: 'sarah.chen', name: 'Sarah Chen', wipTasks: 2, openMrs: 1, staleMrs: 0, overdueTasks: 0, tasksWithoutMr: 0, unloggedTasks: 0, doneTasks: 8, mergedMrs: 6, medianHoursToMerge: 6.4, overallScore: 94, attentionFlags: [] },
-    'alex.morgan': { author: 'alex.morgan', name: 'Alex Morgan', wipTasks: 3, openMrs: 1, staleMrs: 0, overdueTasks: 0, tasksWithoutMr: 1, unloggedTasks: 0, doneTasks: 7, mergedMrs: 5, medianHoursToMerge: 8.2, overallScore: 89, attentionFlags: [] },
-    'elena.rostova': { author: 'elena.rostova', name: 'Elena Rostova', wipTasks: 2, openMrs: 1, staleMrs: 0, overdueTasks: 1, tasksWithoutMr: 0, unloggedTasks: 0, doneTasks: 6, mergedMrs: 4, medianHoursToMerge: 12.5, overallScore: 88, attentionFlags: ['OVERDUE_TASK'] },
-    'david.kim': { author: 'david.kim', name: 'David Kim', wipTasks: 2, openMrs: 0, staleMrs: 0, overdueTasks: 0, tasksWithoutMr: 0, unloggedTasks: 1, doneTasks: 5, mergedMrs: 3, medianHoursToMerge: 14.1, overallScore: 82, attentionFlags: ['UNLOGGED_TASK'] },
-    'marcus.vance': { author: 'marcus.vance', name: 'Marcus Vance', wipTasks: 3, openMrs: 1, staleMrs: 1, overdueTasks: 2, tasksWithoutMr: 1, unloggedTasks: 1, doneTasks: 3, mergedMrs: 2, medianHoursToMerge: 28.6, overallScore: 74, attentionFlags: ['OVERDUE_TASK', 'STALE_MR'] }
+  'david.kim': {
+    username: 'david.kim',
+    name: 'David Kim (Backend Engineer)',
+    score: 82,
+    scoreReason: 'متوسط به بالا — نیاز به ثبت دقیق‌تر زمان کارکرد',
+    trend: { delta: -1, from: '1405-05', months: 2 },
+    openMrs: 0,
+    oldestOpenHours: null,
+    staleOpenMrs: 0,
+    inProgressCount: 2,
+    blockedNoMr: 0,
+    overdueCount: 0,
+    worstOverdueDays: null,
+    missingWorklogCount: 1,
+    doneCount: 5,
+    mergedCount: 3,
+    medianOpenToMergeHours: 14.1,
+    p90OpenToMergeHours: 24.5,
+    attention: 2,
+    tasks: [
+      { key: 'PERF-395', summary: 'Optimize GIN indexing on audit events query table', status: 'Done', statusCategory: 'done', dueDate: '2026-09-08', estimateHours: 10, spentHours: 9, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, reasons: [], owner: 'david.kim', ownerName: 'David Kim' }
+    ]
   },
-  knowledge: [
-    { id: 'kb-1', title: 'Security: Zero-Trust Parameterized Queries & ORM Sanitation', content: 'Never concatenate raw client inputs into SQL or NoSQL database queries. Always utilize parameterized queries or strongly-typed ORM query builders.', updated_at: '2026-09-14' },
-    { id: 'kb-2', title: 'Architecture: Distributed Idempotency Keys for Payment Handlers', content: 'All financial webhooks and charging operations must verify incoming idempotency headers in Redis before processing transactions.', updated_at: '2026-09-15' },
-    { id: 'kb-3', title: 'Code Quality: Mandatory Test Assertions on Non-Happy-Path Branches', content: 'Every pull request modifying domain business logic must include automated test coverage for failure modes and error rejections.', updated_at: '2026-09-16' }
-  ],
-  sentryIssues: [
-    {
-      id: '14920',
-      title: 'NullPointerException in StripeWebhookHandler.processEvent',
-      culprit: 'StripeWebhookHandler.processEvent',
-      level: 'error',
-      count: 3420,
-      userCount: 840,
-      firstSeen: new Date(Date.now() - 5 * 86400 * 1000).toISOString(),
-      lastSeen: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      hasJiraTask: true,
-      jiraTask: { key: 'BILL-890', summary: 'Handle missing webhook customer metadata safely' }
-    },
-    {
-      id: '14918',
-      title: 'RedisConnectionTimeout: Sentinel cluster failover in region eu-west-1',
-      culprit: 'RedisClusterConnectionPool.acquire',
-      level: 'fatal',
-      count: 1290,
-      userCount: 310,
-      firstSeen: new Date(Date.now() - 2 * 86400 * 1000).toISOString(),
-      lastSeen: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      hasJiraTask: false
-    },
-    {
-      id: '14915',
-      title: 'TokenExpiredException: Refresh token rotation replay window exceeded',
-      culprit: 'OAuthTokenService.rotateRefreshToken',
-      level: 'warning',
-      count: 420,
-      userCount: 95,
-      firstSeen: new Date(Date.now() - 8 * 86400 * 1000).toISOString(),
-      lastSeen: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-      hasJiraTask: false
-    },
-    {
-      id: '14910',
-      title: 'DatabaseDeadlockDetected: Concurrent updates on inventory_reservations',
-      culprit: 'InventoryReservationService.lockStockBatch',
-      level: 'error',
-      count: 215,
-      userCount: 42,
-      firstSeen: new Date(Date.now() - 12 * 86400 * 1000).toISOString(),
-      lastSeen: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
-      hasJiraTask: false
-    }
-  ]
+  'marcus.vance': {
+    username: 'marcus.vance',
+    name: 'Marcus Vance (Full Stack Dev)',
+    score: 74,
+    scoreReason: 'نیازمند رسیدگی — ۲ تسک عقب‌افتاده و MR راکد',
+    trend: { delta: -4, from: '1405-05', months: 2 },
+    openMrs: 1,
+    oldestOpenHours: 92,
+    staleOpenMrs: 1,
+    inProgressCount: 3,
+    blockedNoMr: 1,
+    overdueCount: 2,
+    worstOverdueDays: 5,
+    missingWorklogCount: 1,
+    doneCount: 3,
+    mergedCount: 2,
+    medianOpenToMergeHours: 28.6,
+    p90OpenToMergeHours: 48.0,
+    attention: 16,
+    tasks: [
+      { key: 'PERF-401', summary: 'Tiered Redis multi-region cluster connection pooling', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-14', overdueDays: 5, estimateHours: 20, spentHours: 24, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: true, reasons: ['overdue'], owner: 'marcus.vance', ownerName: 'Marcus Vance' },
+      { key: 'SEC-310', summary: 'Enforce secret vault rotation on database cluster credentials', status: 'In Progress', statusCategory: 'indeterminate', dueDate: '2026-09-15', overdueDays: 4, estimateHours: 8, spentHours: 0, project: 'Identity Gateway', sprint: 'Sprint 28', hasMr: false, reasons: ['overdue', 'no-mr', 'no-worklog'], owner: 'marcus.vance', ownerName: 'Marcus Vance' }
+    ]
+  }
 };
 
-async function handleMockApi(path, options = {}) {
-  // Simulate minimal async tick
-  await new Promise(r => setTimeout(r, 60));
+   const MOCK_MERGE_REQUESTS = [
+  {
+    id: 1054,
+    iid: 104,
+    projectId: 'nexus/core-platform',
+    title: 'feat(auth): implement OAuth2 PKCE token exchange with refresh rotation',
+    state: 'opened',
+    author: 'Alex Morgan (Tech Lead)',
+    sourceBranch: 'feature/AUTH-1042-oauth-pkce',
+    targetBranch: 'develop',
+    targetIsDevelop: true,
+    created_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+    hasReviewReport: true,
+    lastDecision: 'APPROVE',
+    findingsCount: 2,
+    task: 'AUTH-1042',
+    mergeOrder: 1,
+    draft: false,
+    sha: 'a1d94c2e',
+    lastReviewedSha: 'a1d94c2e'
+  },
+  {
+    id: 1053,
+    iid: 103,
+    projectId: 'nexus/core-platform',
+    title: 'fix(billing): ensure idempotent stripe webhook retries without duplicate charges',
+    state: 'opened',
+    author: 'Sarah Chen (Staff Engineer)',
+    sourceBranch: 'fix/BILL-890-webhook-idempotency',
+    targetBranch: 'develop',
+    targetIsDevelop: true,
+    created_at: new Date(Date.now() - 18 * 3600 * 1000).toISOString(),
+    hasReviewReport: true,
+    lastDecision: 'APPROVE',
+    findingsCount: 0,
+    task: 'BILL-890',
+    mergeOrder: 2,
+    draft: false,
+    sha: 'b8e9102c',
+    lastReviewedSha: 'b8e9102c'
+  },
+  {
+    id: 1052,
+    iid: 102,
+    projectId: 'nexus/core-platform',
+    title: 'perf(cache): tiered Redis multi-region cluster caching & connection pooling',
+    state: 'opened',
+    author: 'Marcus Vance (Full Stack Dev)',
+    sourceBranch: 'perf/PERF-401-redis-cluster',
+    targetBranch: 'develop',
+    targetIsDevelop: true,
+    created_at: new Date(Date.now() - 28 * 3600 * 1000).toISOString(),
+    hasReviewReport: true,
+    lastDecision: 'REQUEST_CHANGES',
+    findingsCount: 3,
+    task: 'PERF-401',
+    mergeOrder: 3,
+    draft: false,
+    sha: 'c7d81234',
+    lastReviewedSha: 'c7d81234'
+  },
+  {
+    id: 1051,
+    iid: 101,
+    projectId: 'nexus/core-platform',
+    title: 'refactor(orders): migrate checkout pipeline to event-driven saga orchestration',
+    state: 'opened',
+    author: 'Elena Rostova (Systems Architect)',
+    sourceBranch: 'refactor/ORD-230-saga-pattern',
+    targetBranch: 'main',
+    targetIsDevelop: false,
+    created_at: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+    hasReviewReport: false,
+    lastDecision: null,
+    findingsCount: 0,
+    task: 'ORD-230',
+    mergeOrder: 4,
+    draft: false,
+    sha: 'd6e75432'
+  }
+];
 
-  if (path === '/api/status') return MOCK_DB.status;
-  if (path.startsWith('/api/usage')) return MOCK_DB.usage;
-  if (path.startsWith('/api/feedback/accuracy')) return MOCK_DB.accuracy;
-  if (path === '/api/projects') return MOCK_DB.projects;
-  if (path === '/api/engines') return MOCK_DB.engines;
-  if (path === '/api/maintainers') return [{ id: 101, username: 'alex.morgan', name: 'Alex Morgan' }];
-  if (path.startsWith('/api/audit')) return [];
-  if (path === '/api/backups') return [{ path: 'backups/2026-09-16-120000', date: '2026-09-16 12:00:00', sizeBytes: 412000 }];
-  if (path === '/api/merge-requests') return MOCK_DB.mergeRequests;
-  if (path === '/api/jobs') return MOCK_DB.jobs;
-  if (path === '/api/developers/roster') return MOCK_DB.roster;
-  if (path === '/api/knowledge') return MOCK_DB.knowledge;
-  if (path.startsWith('/api/sentry/issues')) {
+const MOCK_JOBS = [
+  {
+    key: 'nexus/core-platform!104',
+    projectId: 'nexus/core-platform',
+    mrIid: 104,
+    status: 'done',
+    decision: 'APPROVE',
+    summary: 'Decision: APPROVE ✅ (Score: 91/100)\nAll 5 deterministic security checks passed. Zero high-severity findings.',
+    findings: [
+      { severity: 'medium', title: 'Implement token refresh expiry jitter', filePath: 'src/auth/tokenService.ts', line: 142, suggestion: 'Add ±180 seconds random jitter to avoid thundering herd on auth servers.' },
+      { severity: 'low', title: 'Use constant-time comparison for secret hash validation', filePath: 'src/auth/crypto.ts', line: 58, suggestion: 'Prefer crypto.timingSafeEqual over direct string equality.' }
+    ],
+    posted: true,
+    approved: true,
+    reportPath: 'review/MR-104.md',
+    startedAt: Date.now() - 3600000,
+    finishedAt: Date.now() - 3550000
+  },
+  {
+    key: 'nexus/core-platform!103',
+    projectId: 'nexus/core-platform',
+    mrIid: 103,
+    status: 'done',
+    decision: 'APPROVE',
+    summary: 'Decision: APPROVE ✅\nIdempotency header validation verified in Redis cache before charge dispatch.',
+    findings: [],
+    posted: true,
+    approved: true,
+    reportPath: 'review/MR-103.md'
+  },
+  {
+    key: 'nexus/core-platform!102',
+    projectId: 'nexus/core-platform',
+    mrIid: 102,
+    status: 'done',
+    decision: 'REQUEST_CHANGES',
+    summary: 'Decision: REQUEST_CHANGES 🔴\n1 high severity finding blocking merge: potential distributed lock release race condition.',
+    findings: [
+      { severity: 'high', title: 'Race condition in distributed lock release without Lua script validation', filePath: 'src/cache/redisLock.ts', line: 87, suggestion: 'Ensure lock release uses atomic Lua script verifying lock owner token.' }
+    ],
+    posted: true,
+    approved: false,
+    reportPath: 'review/MR-102.md'
+  },
+  {
+    id: 1051,
+    iid: 101,
+    projectId: 'nexus/core-platform',
+    title: 'refactor(orders): migrate checkout pipeline to event-driven saga orchestration',
+    state: 'opened',
+    author: 'Elena Rostova (Systems Architect)',
+    sourceBranch: 'refactor/ORD-230-saga-pattern',
+    targetBranch: 'main',
+    targetIsDevelop: false,
+    created_at: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+    hasReviewReport: false,
+    lastDecision: null,
+    findingsCount: 0,
+    task: 'ORD-230',
+    mergeOrder: 4,
+    draft: false,
+    sha: 'd6e75432'
+  }
+];
+
+const MOCK_SENTRY_ISSUES = [
+  {
+    id: '14920',
+    title: 'NullPointerException in StripeWebhookHandler.processEvent',
+    culprit: 'StripeWebhookHandler.processEvent',
+    level: 'error',
+    count: 3420,
+    userCount: 840,
+    firstSeen: new Date(Date.now() - 5 * 86400 * 1000).toISOString(),
+    lastSeen: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    project: 'nexus-core',
+    shortId: 'CORE-14920',
+    permalink: 'https://sentry.example.com/issues/14920',
+    jiraTask: { key: 'BILL-890', summary: 'Handle missing webhook customer metadata safely', url: 'https://jira.example.com/browse/BILL-890' }
+  },
+  {
+    id: '14918',
+    title: 'RedisConnectionTimeout: Sentinel cluster failover in region eu-west-1',
+    culprit: 'RedisClusterConnectionPool.acquire',
+    level: 'fatal',
+    count: 1290,
+    userCount: 310,
+    firstSeen: new Date(Date.now() - 2 * 86400 * 1000).toISOString(),
+    lastSeen: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    project: 'nexus-core',
+    shortId: 'CORE-14918',
+    permalink: 'https://sentry.example.com/issues/14918',
+    jiraTask: null
+  },
+  {
+    id: '14915',
+    title: 'TokenExpiredException: Refresh token rotation replay window exceeded',
+    culprit: 'OAuthTokenService.rotateRefreshToken',
+    level: 'warning',
+    count: 420,
+    userCount: 95,
+    firstSeen: new Date(Date.now() - 8 * 86400 * 1000).toISOString(),
+    lastSeen: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+    project: 'nexus-core',
+    shortId: 'CORE-14915',
+    permalink: 'https://sentry.example.com/issues/14915',
+    jiraTask: null
+  },
+  {
+    id: '14910',
+    title: 'DatabaseDeadlockDetected: Concurrent updates on inventory_reservations',
+    culprit: 'InventoryReservationService.lockStockBatch',
+    level: 'error',
+    count: 215,
+    userCount: 42,
+    firstSeen: new Date(Date.now() - 12 * 86400 * 1000).toISOString(),
+    lastSeen: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
+    project: 'nexus-core',
+    shortId: 'CORE-14910',
+    permalink: 'https://sentry.example.com/issues/14910',
+    jiraTask: null
+  }
+];
+
+async function handleMockApi(path, options = {}) {
+  await new Promise(r => setTimeout(r, 40));
+
+  if (path === '/api/status') {
     return {
-      configured: true,
-      stale: false,
-      projects: ['nexus-core'],
-      errors: [],
-      canCreateTask: true,
-      projectKey: 'AUTH',
-      issues: MOCK_DB.sentryIssues
+      ok: true,
+      user: { id: 102, username: 'alex.morgan', name: 'Alex Morgan (Tech Lead)' },
+      activeProject: { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
+      projects: [
+        { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
+        { id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine' },
+        { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
+      ],
+      projectPath: { set: true, value: '/repos/nexus-core-platform' },
+      gitlab: { url: 'https://gitlab.example.com', ok: true, user: 'alex.lead', name: 'Alex Morgan (Tech Lead)', bot: false, error: null },
+      ai: { provider: 'claude-cli', model: 'claude-3-7-sonnet', state: 'ready' },
+      settings: { autoReview: true, autoApprove: true, skipDrafts: true, inlineComments: true, autoPost: true, pollSeconds: 120 }
     };
   }
 
-  // Team row
+  if (path.startsWith('/api/usage')) {
+    return {
+      days: 30,
+      today: { totalTokens: 184500, reviews: 14 },
+      reviewsCount: 142,
+      totalTokens: 5462600,
+      byProvider: [
+        { provider: 'claude-cli', totalTokens: 4310000, reviews: 98 },
+        { provider: 'openai-compatible', totalTokens: 1152600, reviews: 44 }
+      ]
+    };
+  }
+
+  if (path.startsWith('/api/feedback/accuracy')) {
+    return {
+      total: 86,
+      up: 79,
+      down: 7,
+      rate: 92,
+      byCategory: [
+        { category: 'منطق و کارکرد', up: 35, down: 2, total: 37, rate: 95 },
+        { category: 'امنیت', up: 28, down: 1, total: 29, rate: 97 },
+        { category: 'کیفیت و ساختار', up: 16, down: 4, total: 20, rate: 80 }
+      ]
+    };
+  }
+
+  if (path === '/api/projects') {
+    return [
+      { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
+      { id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine' },
+      { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
+    ];
+  }
+
+  if (path === '/api/engines') {
+    return [
+      { id: 'claude-cli', label: 'Claude Code CLI', icon: '🤖', state: 'ready', isCurrent: true, model: 'claude-3-7-sonnet' },
+      { id: 'openai-compatible', label: 'OpenAI / GapGPT', icon: '⚡', state: 'ready', isCurrent: false, model: 'gpt-4o-mini' },
+      { id: '9router', label: '9Router Gateway', icon: '🔀', state: 'ready', isCurrent: false, model: 'combo' },
+      { id: 'gemini', label: 'Google Gemini', icon: '✨', state: 'ready', isCurrent: false, model: 'gemini-2.0-flash' }
+    ];
+  }
+
+  if (path === '/api/maintainers') {
+    return [{ id: 102, username: 'alex.morgan', name: 'Alex Morgan' }];
+  }
+
+  if (path.startsWith('/api/jira/epics')) {
+    return {
+      epics: [
+        { key: 'AUTH-EPIC-1', name: 'Identity & Access Management (OAuth2 / PKCE)', status: 'In Progress' },
+        { key: 'BILL-EPIC-3', name: 'Payment Infrastructure & Idempotency Hardening', status: 'In Progress' },
+        { key: 'PERF-EPIC-2', name: 'High-Throughput Multi-Region Redis Caching', status: 'In Progress' }
+      ]
+    };
+  }
+
+  if (path.startsWith('/api/audit')) return [];
+  if (path === '/api/backups') return [{ path: 'backups/2026-09-16-120000', date: '2026-09-16 12:00:00', sizeBytes: 412000 }];
+  if (path === '/api/merge-requests') return MOCK_MERGE_REQUESTS;
+  if (path === '/api/jobs') return MOCK_JOBS;
+
+  // Developer roster: MUST return { authors: [...], cachedAt, fromCache }
+  if (path.startsWith('/api/developers/roster')) {
+    return {
+      authors: MOCK_ROSTER,
+      cachedAt: Date.now() - 120000,
+      fromCache: true
+    };
+  }
+
+  // Developer team row
   const teamMatch = path.match(/^\/api\/team\/([^\/]+)\/row/);
   if (teamMatch) {
     const author = decodeURIComponent(teamMatch[1]);
-    return MOCK_DB.teamRows[author] || {
-      author, name: author, wipTasks: 1, openMrs: 1, staleMrs: 0, overdueTasks: 0, tasksWithoutMr: 0, unloggedTasks: 0, doneTasks: 4, mergedMrs: 3, medianHoursToMerge: 12.0, overallScore: 85, attentionFlags: []
+    const row = MOCK_TEAM_ROWS[author] || {
+      username: author,
+      name: author,
+      score: 85,
+      scoreReason: 'عملکرد پایدار و مطلوب',
+      trend: { delta: 1, from: '1405-05', months: 2 },
+      openMrs: 1,
+      oldestOpenHours: 8,
+      staleOpenMrs: 0,
+      inProgressCount: 2,
+      blockedNoMr: 0,
+      overdueCount: 0,
+      worstOverdueDays: null,
+      missingWorklogCount: 0,
+      doneCount: 5,
+      mergedCount: 4,
+      medianOpenToMergeHours: 10.5,
+      p90OpenToMergeHours: 18.0,
+      attention: 0,
+      tasks: []
+    };
+    return row;
+  }
+
+  // Developer score & rating
+  const devScoreMatch = path.match(/^\/api\/developers\/([^\/]+)\/score/);
+  if (devScoreMatch) {
+    return {
+      month: '1405-06',
+      ratingOverall: 88,
+      availableMonths: ['1405-05', '1405-06'],
+      ratingParams: [
+        { key: 'codeQuality', label: 'کیفیت پیاده‌سازی و معماری' },
+        { key: 'collaboration', label: 'همکاری و ریویو' },
+        { key: 'discipline', label: 'انضباط و ثبت لاگ زمان' }
+      ],
+      rating: {
+        scores: { codeQuality: 5, collaboration: 5, discipline: 4 },
+        note: 'عملکرد پایدار، تعهد بالا به موعد سررسید و مشارکت تیمی مطلوب',
+        updatedAt: new Date(Date.now() - 86400000).toISOString()
+      }
+    };
+  }
+
+  // Developer full analytics
+  const devAnalyticsMatch = path.match(/^\/api\/developers\/([^\/]+)\/analytics/);
+  if (devAnalyticsMatch) {
+    const author = decodeURIComponent(devAnalyticsMatch[1]);
+    const isAlex = author === 'alex.morgan';
+    const isSarah = author === 'sarah.chen';
+
+    return {
+      author,
+      name: isAlex ? 'Alex Morgan (Tech Lead)' : (isSarah ? 'Sarah Chen (Staff Engineer)' : author),
+      jiraConfigured: true,
+      jiraTasksTotal: 4,
+      totalMRs: 14,
+      reportedMRs: 12,
+      roundTripMRs: 2,
+      uncheckedMRs: 0,
+      checkedCap: 25,
+      cachedAt: Date.now() - 180000,
+      fromCache: true,
+      lastActivityMs: Date.now() - 3600000 * 2,
+      delivery: {
+        mrCount: 14,
+        total: 14,
+        merged: 10,
+        closed: 1,
+        stillOpenCount: 3,
+        medianOpenToMergeHours: isSarah ? 6.4 : 8.2,
+        p90OpenToMergeHours: isSarah ? 14.2 : 16.0,
+        openToMergeSample: 10,
+        medianCycleHours: 8.5,
+        p90CycleHours: 18.0,
+        cycleSample: 10,
+        medianCommitsAfterOpen: 2,
+        afterOpenSample: 12,
+        discussedPct: 75,
+        discussedCount: 9,
+        discussedSample: 12,
+        medianOpenAgeHours: 12,
+        oldestOpenHours: isSarah ? 18 : 4,
+        medianNotes: 4,
+        notesSample: 12
+      },
+      autoScore: {
+        score: isSarah ? 94 : (isAlex ? 89 : 82),
+        baseScore: isSarah ? 92 : (isAlex ? 87 : 80),
+        complexityAdjustment: 2,
+        complexitySample: 3,
+        complexityConfidence: 60,
+        availableWeight: 115,
+        reason: isSarah ? 'عالی — تحویل به‌موقع و تخمین دقیق در تمام اسپرینت‌ها' : 'بسیار خوب — کیفیت کد بالا و انضباط کامل',
+        components: [
+          {
+            key: 'onTime',
+            label: 'تحویل به‌موقع (نسبت به Due date)',
+            baseWeight: 25,
+            effectiveWeight: 25,
+            confidence: 62,
+            score: isSarah ? 96 : 88,
+            sampleSize: 8,
+            detail: '۸ تسک جیرا با موعد سررسید؛ ۰ روز تأخیر',
+            available: true
+          },
+          {
+            key: 'estimateAccuracy',
+            label: 'دقت تخمین (Original Estimate در برابر Time Spent)',
+            baseWeight: 25,
+            effectiveWeight: 25,
+            confidence: 55,
+            score: isSarah ? 94 : 92,
+            sampleSize: 6,
+            detail: 'میانگین انحراف تخمین در محدوده ۱۲٪',
+            available: true
+          },
+          {
+            key: 'codeQuality',
+            label: 'کیفیت کد (یافته‌های ریویو، نسبت به اندازه‌ی MR)',
+            baseWeight: 20,
+            effectiveWeight: 20,
+            confidence: 50,
+            score: isSarah ? 95 : 84,
+            sampleSize: 5,
+            detail: 'بدون یافته‌ی بحرانی در ۵ MR اخیر',
+            available: true
+          },
+          {
+            key: 'completion',
+            label: 'تکمیل تسک‌ها (Done از کل تسک‌های بازه)',
+            baseWeight: 15,
+            effectiveWeight: 15,
+            confidence: 67,
+            score: isSarah ? 95 : 90,
+            sampleSize: 10,
+            detail: '۹ تسک از ۱۰ تعهد اسپرینت حل شده',
+            available: true
+          },
+          {
+            key: 'timeLogging',
+            label: 'ثبت زمان روی تسک‌های Review/Done',
+            baseWeight: 10,
+            effectiveWeight: 10,
+            confidence: 62,
+            score: 100,
+            sampleSize: 8,
+            detail: '۱۰۰٪ تسک‌های رسیده به ریویو دارای زمان ثبت‌شده هستند',
+            available: true
+          },
+          {
+            key: 'mrSize',
+            label: 'اندازه‌ی Merge Requestها (L — چقدر کد باید خوانده شود)',
+            baseWeight: 15,
+            effectiveWeight: 15,
+            confidence: 50,
+            score: isSarah ? 90 : 85,
+            sampleSize: 6,
+            detail: 'میانگین حجم تغییرات هر MR زیر ۲۵۰ خط کد',
+            available: true
+          },
+          {
+            key: 'reworkFree',
+            label: 'برنچ تک‌نویسنده (بدون کامیت از فرد دیگر)',
+            baseWeight: 5,
+            effectiveWeight: 5,
+            confidence: 50,
+            score: isSarah ? 85 : 80,
+            sampleSize: 5,
+            detail: '۴ از ۵ MR به صورت کاملاً مستقل روی برنچ پوش شده',
+            available: true
+          }
+        ]
+      },
+      latestSprint: { name: 'Sprint 28', score: isSarah ? 94 : 89, taskCount: 6, doneCount: 5 },
+      sprints: [
+        { name: 'Sprint 24', score: 84, taskCount: 5, loggedCount: 4, noTimeLogged: 1, doneCount: 4 },
+        { name: 'Sprint 25', score: 86, taskCount: 5, loggedCount: 5, noTimeLogged: 0, doneCount: 5 },
+        { name: 'Sprint 26', score: 88, taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 },
+        { name: 'Sprint 27', score: 89, taskCount: 6, loggedCount: 6, noTimeLogged: 0, doneCount: 6 },
+        { name: 'Sprint 28', score: isSarah ? 94 : 89, taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 }
+      ],
+      jiraTasks: [
+        { key: 'AUTH-1042', url: 'https://jira.example.com/browse/AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', type: 'Story', priority: 'High', sprint: 'Sprint 28', storyPoints: 5, updated: '2026-09-18T14:30:00Z', dueDate: '2026-09-20', estimateHours: 8, spentHours: 6, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
+        { key: 'AUTH-1038', url: 'https://jira.example.com/browse/AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to Cloud KMS', status: 'Done', statusCategory: 'done', type: 'Task', priority: 'Medium', sprint: 'Sprint 27', storyPoints: 8, updated: '2026-09-12T10:15:00Z', dueDate: '2026-09-12', estimateHours: 16, spentHours: 14, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
+        { key: 'AUTH-1035', url: 'https://jira.example.com/browse/AUTH-1035', summary: 'Implement session revocation blacklist in Redis cluster', status: 'Done', statusCategory: 'done', type: 'Task', priority: 'Medium', sprint: 'Sprint 27', storyPoints: 5, updated: '2026-09-08T18:00:00Z', dueDate: '2026-09-08', estimateHours: 12, spentHours: 12, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
+        { key: 'AUTH-1029', url: 'https://jira.example.com/browse/AUTH-1029', summary: 'Configure audit logging on administrative login endpoints', status: 'Done', statusCategory: 'done', type: 'Improvement', priority: 'Low', sprint: 'Sprint 26', storyPoints: 3, updated: '2026-09-04T12:00:00Z', dueDate: '2026-09-04', estimateHours: 4, spentHours: 4, hasMr: true, project: 'Nexus Core Platform', reasons: [] }
+      ],
+      monthlyRows: [
+        { month: '1405-04', score: 85, mrCount: 5, taskCount: 6 },
+        { month: '1405-05', score: 88, mrCount: 6, taskCount: 7 },
+        { month: '1405-06', score: isSarah ? 94 : 89, mrCount: 7, taskCount: 8 }
+      ],
+      months: [
+        {
+          month: '1405-06',
+          mrCount: 7,
+          roundTripCount: 1,
+          uncheckedCount: 0,
+          noReportCount: 0,
+          tasks: [
+            {
+              iid: 104,
+              title: 'feat(auth): implement OAuth2 PKCE token exchange',
+              state: 'opened',
+              createdAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+              webUrl: 'https://gitlab.example.com/nexus/core-platform/-/merge_requests/104',
+              task: 'AUTH-1042',
+              hasReport: true,
+              roundTrip: false,
+              rating: { complexity: 3, length: 2 }
+            },
+            {
+              iid: 98,
+              title: 'feat(auth): migrate JWT signature to KMS',
+              state: 'merged',
+              createdAt: new Date(Date.now() - 10 * 86400 * 1000).toISOString(),
+              webUrl: 'https://gitlab.example.com/nexus/core-platform/-/merge_requests/98',
+              task: 'AUTH-1038',
+              hasReport: true,
+              roundTrip: false,
+              rating: { complexity: 2, length: 2 }
+            }
+          ]
+        },
+        {
+          month: '1405-05',
+          mrCount: 6,
+          roundTripCount: 1,
+          uncheckedCount: 0,
+          noReportCount: 0,
+          tasks: []
+        },
+        {
+          month: '1405-04',
+          mrCount: 5,
+          roundTripCount: 1,
+          uncheckedCount: 0,
+          noReportCount: 0,
+          tasks: []
+        }
+      ]
     };
   }
 
@@ -2597,95 +3050,75 @@ async function handleMockApi(path, options = {}) {
   const mrContextMatch = path.match(/^\/api\/merge-requests\/([^\/]+)\/(\d+)\/context/);
   if (mrContextMatch) {
     const iid = parseInt(mrContextMatch[2], 10);
-    const reportMd = "# Review for MR !" + iid + "\\n\\n" +
-      "## Summary & Decision\\n" +
-      "**Decision**: APPROVE ✅ (Score: 88/100)\\n" +
-      "- **High Severity**: 0\\n" +
-      "- **Medium Severity**: 1\\n" +
-      "- **Low Severity**: 2\\n" +
-      "- **Blocking Items**: None\\n\\n" +
-      "---\\n\\n" +
-      "## Positive Observations ✨\\n" +
-      "1. **Clean Architectural Isolation**: Excellent abstraction of the OAuth2 PKCE challenge generator from the core HTTP transport layer.\\n" +
-      "2. **Defensive Cryptography**: High-entropy cryptographically random state generator protects against CSRF replay vectors.\\n" +
-      "3. **Comprehensive Unit Tests**: Complete coverage of edge cases, token expiration boundaries, and invalid PKCE code verifiers.\\n\\n" +
-      "---\\n\\n" +
-      "## Findings & Recommendations 🔍\\n\\n" +
-      "### [Medium] Implement token refresh expiry jitter\\n" +
-      "- **File**: `src/auth/tokenService.ts:142`\\n" +
-      "- **Details**: When a fleet of client workers renews credentials simultaneously at exact 3600-second windows, auth servers experience thundering herd traffic spikes. Adding a random jitter of ±180 seconds prevents synchronized contention.\\n\\n" +
-      "### [Low] Use constant-time comparison for secret hash validation\\n" +
-      "- **File**: `src/auth/crypto.ts:58`\\n" +
-      "- **Details**: Direct string comparison === is susceptible to sub-millisecond timing attacks. Prefer crypto.timingSafeEqual for client secret hashes.\\n\\n" +
-      "---\\n\\n" +
-      "## Process & Operational Metrics\\n" +
-      "- **Files Inspected**: 18 files (1,240 added lines, 210 deleted lines)\\n" +
-      "- **Deterministic Checks**: Secret scan clean, No debug statements, Tests verified.\\n" +
+    const reportMd = "# Review for MR !" + iid + "\n\n" +
+      "## Summary & Decision\n" +
+      "**Decision**: APPROVE ✅ (Score: 91/100)\n" +
+      "- **High Severity**: 0\n" +
+      "- **Medium Severity**: 1\n" +
+      "- **Low Severity**: 1\n" +
+      "- **Blocking Items**: None\n\n" +
+      "---\n\n" +
+      "## Positive Observations ✨\n" +
+      "1. **Clean Architectural Isolation**: Excellent abstraction of the OAuth2 PKCE challenge generator from the core HTTP transport layer.\n" +
+      "2. **Defensive Cryptography**: High-entropy cryptographically random state generator protects against CSRF replay vectors.\n" +
+      "3. **Comprehensive Unit Tests**: Complete coverage of edge cases, token expiration boundaries, and invalid PKCE code verifiers.\n\n" +
+      "---\n\n" +
+      "## Findings & Recommendations 🔍\n\n" +
+      "### [Medium] Implement token refresh expiry jitter\n" +
+      "- **File**: src/auth/tokenService.ts:142\n" +
+      "- **Details**: When a fleet of client workers renews credentials simultaneously at exact 3600-second windows, auth servers experience thundering herd traffic spikes. Adding a random jitter of ±180 seconds prevents synchronized contention.\n\n" +
+      "### [Low] Use constant-time comparison for secret hash validation\n" +
+      "- **File**: src/auth/crypto.ts:58\n" +
+      "- **Details**: Direct string comparison === is susceptible to sub-millisecond timing attacks. Prefer crypto.timingSafeEqual for client secret hashes.\n\n" +
+      "---\n\n" +
+      "## Process & Operational Metrics\n" +
+      "- **Files Inspected**: 18 files (1,240 added lines, 210 deleted lines)\n" +
+      "- **Deterministic Checks**: Secret scan clean, No debug statements, Tests verified.\n" +
       "- **Model Engine**: Claude 3.7 Sonnet (Agentic Worktree Mode)";
 
     return {
       mr: {
         id: 1054,
         iid: 104,
+        projectId: 'nexus/core-platform',
         title: 'feat(auth): implement OAuth2 PKCE token exchange with refresh rotation',
-        source_branch: 'feature/AUTH-1042-oauth-pkce',
-        target_branch: 'develop',
-        author: { name: 'Alex Morgan', username: 'alex.morgan' }
+        sourceBranch: 'feature/AUTH-1042-oauth-pkce',
+        targetBranch: 'develop',
+        author: 'Alex Morgan (Tech Lead)'
       },
-      commits: [
-        { id: 'c4a89d1', short_id: 'c4a89d1', title: 'feat(auth): implement PKCE verifier generation', author_name: 'Alex Morgan', created_at: new Date(Date.now() - 4 * 3600 * 1000).toISOString() },
-        { id: 'b7e21f0', short_id: 'b7e21f0', title: 'test(auth): add unit tests for PKCE challenge validation', author_name: 'Alex Morgan', created_at: new Date(Date.now() - 3 * 3600 * 1000).toISOString() },
-        { id: 'a1d94c2', short_id: 'a1d94c2', title: 'refactor(auth): inject token jitter window', author_name: 'Alex Morgan', created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString() }
-      ],
+      commits: {
+        total: 3,
+        reworkCommits: 0,
+        otherAuthors: []
+      },
       jira: {
         key: 'AUTH-1042',
+        url: 'https://jira.example.com/browse/AUTH-1042',
         summary: 'Implement OAuth2 Authorization Code Flow with PKCE for mobile and SPA clients',
         status: 'In Review',
+        type: 'Story',
+        priority: 'High',
         assignee: 'Alex Morgan',
-        dueDate: '2026-09-18',
-        originalEstimateHours: 8,
-        timeSpentHours: 6
+        dueDate: '2026-09-20',
+        estimateHours: 8,
+        spentHours: 6,
+        description: 'Deliver secure PKCE challenge generator and refresh token rotation service to protect SPA endpoints from replay vulnerabilities.'
       },
       report: reportMd,
       reportExists: true
     };
   }
 
-  // Developer analytics
-  const devAnalyticsMatch = path.match(/^\/api\/developers\/([^\/]+)\/analytics/);
-  if (devAnalyticsMatch) {
-    const author = decodeURIComponent(devAnalyticsMatch[1]);
-    const isAlex = author === 'alex.morgan';
+  // Sentry issues list
+  if (path.startsWith('/api/sentry/issues') && !path.includes('/issues/')) {
     return {
-      author,
-      name: isAlex ? 'Alex Morgan' : 'Sarah Chen',
-      overallScore: isAlex ? 89 : 94,
-      metrics: {
-        onTime: { score: isAlex ? 88 : 96, weight: 25, sampleSize: 8, confidence: 0.615, description: '8/8 Jira tasks delivered on or before due date' },
-        estimation: { score: isAlex ? 92 : 94, weight: 25, sampleSize: 6, confidence: 0.545, description: 'Average estimation variance within 12%' },
-        codeQuality: { score: isAlex ? 84 : 92, weight: 20, sampleSize: 5, confidence: 0.500, description: 'Zero high severity findings across last 5 MRs' },
-        completion: { score: isAlex ? 90 : 95, weight: 15, sampleSize: 10, confidence: 0.667, description: '9/10 sprint commitments resolved' },
-        worklogs: { score: isAlex ? 100 : 100, weight: 10, sampleSize: 8, confidence: 0.615, description: '100% of reviewed tasks have logged work hours' },
-        singleAuthor: { score: isAlex ? 80 : 85, weight: 5, sampleSize: 5, confidence: 0.500, description: '4 of 5 MRs authored exclusively on branch' }
-      },
-      sprints: [
-        { name: 'Sprint 24', score: 84 },
-        { name: 'Sprint 25', score: 86 },
-        { name: 'Sprint 26', score: 88 },
-        { name: 'Sprint 27', score: 89 },
-        { name: 'Sprint 28', score: isAlex ? 89 : 94 }
-      ],
-      workItems: [
-        { key: 'AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange', status: 'In Review', estimateHours: 8, spentHours: 6, onTime: true },
-        { key: 'AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to KMS', status: 'Done', estimateHours: 16, spentHours: 14, onTime: true },
-        { key: 'AUTH-1035', summary: 'Implement session revocation blacklist in Redis', status: 'Done', estimateHours: 12, spentHours: 12, onTime: true },
-        { key: 'AUTH-1029', summary: 'Configure audit logging on administrative login endpoints', status: 'Done', estimateHours: 4, spentHours: 4, onTime: true }
-      ],
-      mergeRequests: [
-        { iid: 104, title: 'feat(auth): implement OAuth2 PKCE token exchange', filesCount: 18, findingsCount: 3, decision: 'APPROVE', merged: false },
-        { iid: 98, title: 'feat(auth): migrate JWT signature to KMS', filesCount: 12, findingsCount: 1, decision: 'APPROVE', merged: true },
-        { iid: 94, title: 'fix(session): Redis cluster blacklist replication', filesCount: 8, findingsCount: 2, decision: 'APPROVE', merged: true }
-      ]
+      configured: true,
+      stale: false,
+      projects: ['nexus-core'],
+      errors: [],
+      canCreateTask: true,
+      projectKey: 'AUTH',
+      issues: MOCK_SENTRY_ISSUES
     };
   }
 
@@ -2701,21 +3134,33 @@ async function handleMockApi(path, options = {}) {
         level: 'error',
         count: 3420,
         userCount: 840,
+        release: 'v2.8.4',
+        environment: 'production',
+        tags: { runtime: 'Java 21', region: 'eu-west-1', server: 'billing-prod-04' },
         firstSeen: new Date(Date.now() - 5 * 86400 * 1000).toISOString(),
         lastSeen: new Date(Date.now() - 15 * 60 * 1000).toISOString()
       },
-      event: {
-        message: 'java.lang.NullPointerException: Cannot invoke "CustomerMetadata.getTenantId()" because "metadata" is null',
-        stacktrace: [
-          'at com.nexus.billing.webhook.StripeWebhookHandler.processEvent(StripeWebhookHandler.java:142)',
-          'at com.nexus.billing.webhook.StripeWebhookController.handleWebhook(StripeWebhookController.java:58)',
-          'at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)'
-        ]
+      priority: 'High',
+      analysis: {
+        summary: 'وقوع NullPointerException هنگام پردازش وب‌هوک Stripe به دلیل نبود آبجکت customer metadata',
+        cause: 'تراکنش‌های اخیر Stripe فیلد اختیاری metadata را خالی ارسال کرده‌اند که باعث کرش لایه‌ی پرداخت می‌شود',
+        where: 'com.nexus.billing.webhook.StripeWebhookHandler.processEvent (خط ۱۴۲)',
+        fix: 'اعمال بررسی ایمن null-check روی metadata قبل از واکشی tenantId و استفاده از مقدار پیش‌فرض'
       },
-      analysis: 'The crash happens when incoming Stripe customer charge events omit the optional metadata payload. Adding a null-safe guard and defaulting to tenant-level resolution prevents the NullPointerException.',
-      suggestedPriority: 'High',
-      suggestedAssignee: 'sarah.chen'
+      stack: '> com.nexus.billing.webhook.StripeWebhookHandler.processEvent(StripeWebhookHandler.java:142)\n  com.nexus.billing.webhook.StripeWebhookController.handleWebhook(StripeWebhookController.java:58)\n  jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)',
+      suggestions: [
+        { username: 'sarah.chen', name: 'Sarah Chen (Staff Engineer)', load: 'خفیف', inProgress: 1, openMrs: 1 },
+        { username: 'alex.morgan', name: 'Alex Morgan (Tech Lead)', load: 'متوسط', inProgress: 2, openMrs: 1 }
+      ]
     };
+  }
+
+  if (path === '/api/knowledge') {
+    return [
+      { id: 'kb-1', title: 'Security: Zero-Trust Parameterized Queries & ORM Sanitation', content: 'Never concatenate raw client inputs into SQL or NoSQL database queries. Always utilize parameterized queries or strongly-typed ORM query builders.', updated_at: '2026-09-14' },
+      { id: 'kb-2', title: 'Architecture: Distributed Idempotency Keys for Payment Handlers', content: 'All financial webhooks and charging operations must verify incoming idempotency headers in Redis before processing transactions.', updated_at: '2026-09-15' },
+      { id: 'kb-3', title: 'Code Quality: Mandatory Test Assertions on Non-Happy-Path Branches', content: 'Every pull request modifying domain business logic must include automated test coverage for failure modes and error rejections.', updated_at: '2026-09-16' }
+    ];
   }
 
   return { ok: true };
