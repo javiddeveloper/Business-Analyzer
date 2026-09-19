@@ -2006,7 +2006,8 @@
     z-index: 80;
     top: calc(100% + 6px);
     right: 0;
-    width: 280px;
+    width: 300px;
+    box-sizing: border-box;
     background: var(--popover);
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-lg);
@@ -6540,7 +6541,14 @@ function paintDatePicker(id) {
 document.addEventListener('click', (e) => {
   const trigger = e.target.closest('[data-jdp]');
   if (trigger) { openDatePicker(trigger.dataset.jdp); return; }
-  if (!e.target.closest('.jdp-pop')) closeDatePicker();
+  
+  // When a calendar button is clicked, it often triggers a re-render which 
+  // removes the button from the DOM before the event bubbles to 'document'.
+  // e.composedPath() reliably checks if the click originated inside the popover.
+  const path = e.composedPath ? e.composedPath() : [];
+  const isInsidePop = e.target.closest('.jdp-pop') || path.some(el => el.classList && el.classList.contains('jdp-pop'));
+  
+  if (!isInsidePop) closeDatePicker();
 });
 
 // Short form for chart axes, where a full date would collide with its
