@@ -3240,13 +3240,74 @@ async function handleMockApi(path, options = {}) {
     return { models: ['claude-3-7-sonnet', 'claude-3-5-haiku', 'gpt-4o', 'gpt-4o-mini', 'gemini-2.0-flash', 'gemini-1.5-pro'] };
   }
 
-  if (path === '/api/knowledge') {
-    return [
-      { id: 'kb-1', title: 'Security: Zero-Trust Parameterized Queries & ORM Sanitation', content: 'Never concatenate raw client inputs into SQL or NoSQL database queries. Always utilize parameterized queries or strongly-typed ORM query builders.', updated_at: '2026-09-14' },
-      { id: 'kb-2', title: 'Architecture: Distributed Idempotency Keys for Payment Handlers', content: 'All financial webhooks and charging operations must verify incoming idempotency headers in Redis before processing transactions.', updated_at: '2026-09-15' },
-      { id: 'kb-3', title: 'Code Quality: Mandatory Test Assertions on Non-Happy-Path Branches', content: 'Every pull request modifying domain business logic must include automated test coverage for failure modes and error rejections.', updated_at: '2026-09-16' }
+  // Knowledge Base – list
+  if (path === '/api/knowledge' && (!options.method || options.method === 'GET')) {
+    const KB_ITEMS = [
+      {
+        id: 'kb-1',
+        title: 'Security: Zero-Trust Parameterized Queries & ORM Sanitation',
+        source: 'manual',
+        updatedAt: '2026-09-14T09:00:00.000Z',
+        sizeChars: 312
+      },
+      {
+        id: 'kb-2',
+        title: 'Architecture: Distributed Idempotency Keys for Payment Handlers',
+        source: 'manual',
+        updatedAt: '2026-09-15T11:30:00.000Z',
+        sizeChars: 428
+      },
+      {
+        id: 'kb-3',
+        title: 'Code Quality: Mandatory Test Coverage on Non-Happy-Path Branches',
+        source: 'manual',
+        updatedAt: '2026-09-16T14:00:00.000Z',
+        sizeChars: 275
+      },
+      {
+        id: 'kb-4',
+        title: 'Deployment: Blue-Green Release Strategy with Feature Flags',
+        source: 'file',
+        updatedAt: '2026-09-17T08:15:00.000Z',
+        sizeChars: 510
+      },
+      {
+        id: 'kb-5',
+        title: 'GitLab: Merge Request Checklist and Review SLA Policies',
+        source: 'manual',
+        updatedAt: '2026-09-18T10:00:00.000Z',
+        sizeChars: 389
+      }
     ];
+    return KB_ITEMS;
   }
+
+  // Knowledge Base – single item body (fetched when user opens an entry)
+  const kbDetailMatch = path.match(/^\/api\/knowledge\/([^\/]+)$/);
+  if (kbDetailMatch && (!options.method || options.method === 'GET')) {
+    const bodies = {
+      'kb-1': 'Never concatenate raw client inputs into SQL or NoSQL database queries.\n\nAlways use parameterized queries or strongly-typed ORM query builders. Apply input validation at the controller boundary and never trust user-supplied data inside raw query strings.\n\nThis rule applies to: Postgres, MongoDB, Elasticsearch, Redis EVAL scripts.',
+      'kb-2': 'All financial webhooks and charging operations must verify incoming idempotency headers in Redis before processing transactions.\n\nStore a SHA-256 hash of the payload as the idempotency key with a TTL of 24 hours. Return 200 without re-processing on duplicate hits. Log every replay attempt for audit purposes.',
+      'kb-3': 'Every pull request modifying domain business logic must include automated test coverage for failure modes and error rejections.\n\nTest structure: Arrange → Act → Assert. Minimum coverage: 80% branch coverage on changed files. Non-happy-path tests must be labelled with @edge-case or @error-path annotations.',
+      'kb-4': 'Use blue-green deployments combined with feature flags for all production releases.\n\n1. Deploy to green environment\n2. Run smoke tests against green\n3. Toggle feature flag for 5% canary traffic\n4. Monitor error rate / p99 latency for 30 min\n5. Full rollout or instant rollback via flag toggle',
+      'kb-5': 'Every MR must:\n- Have a linked Jira ticket in the branch name (e.g. feature/AUTH-1042-...)\n- Pass CI/CD pipeline before review request\n- Receive at least one approval from a maintainer\n- Be merged within 48 hours of approval or go back to In Progress\n- Include test evidence for bug fixes'
+    };
+    const content = bodies[kbDetailMatch[1]] || 'محتوای این یادداشت در دسترس نیست.';
+    return { content };
+  }
+
+  // Knowledge Base – create / edit
+  if (path === '/api/knowledge' && options.method === 'POST') {
+    return { ok: true, id: 'kb-' + Date.now() };
+  }
+
+  // Knowledge Base – delete
+  const kbDeleteMatch = path.match(/^\/api\/knowledge\/([^\/]+)$/);
+  if (kbDeleteMatch && options.method === 'DELETE') {
+    return { ok: true };
+  }
+
+
 
   return { ok: true };
 }
