@@ -1580,6 +1580,51 @@
 
   .dev-rail .empty { padding: 12px 0; font-size: 12px; }
 
+  /* ---- Edition banner --------------------------------------------------
+     Fixed to the physical bottom-right. The page is dir="rtl", so an
+     inset-inline-end here would land on the left; "right" is what was asked
+     for and what is meant. The banner's own text is English, so it carries
+     dir="ltr" in the markup to keep the arrow and the em dash in place. */
+  .edition-banner {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 90;
+    max-width: min(320px, calc(100vw - 32px));
+    padding: 8px 12px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: rgba(26, 26, 26, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #d4d4d4;
+    font-size: 11px;
+    line-height: 1.6;
+    box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5);
+    /* It floats over the page, so it must never swallow a click meant for
+       whatever sits underneath it. */
+    pointer-events: none;
+    user-select: none;
+  }
+  .edition-banner .eb-title { font-weight: 500; color: #e5e5e5; }
+  .edition-banner .eb-sub { color: var(--muted-foreground); }
+
+  /* Not on paper. */
+  @media print {
+    .edition-banner { display: none !important; }
+  }
+
+  /* Not while a dialog is open either: at z-index 90 it would otherwise sit
+     on top of the modal overlay (50) and its dialog. `:has` is already how
+     this stylesheet drives the date-picker's open state. */
+  body:has(.modal-overlay:not([hidden])) .edition-banner { display: none; }
+
+  /* On a phone the banner would cover the bottom of the content it is
+     supposed to sit beside; it is a footnote, not a fixture. */
+  @media (max-width: 620px) {
+    .edition-banner { display: none; }
+  }
+
   @keyframes flash-ring {
     0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.55); }
     100% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
@@ -2280,6 +2325,12 @@
   </div><!-- /.app-main -->
 
 </div><!-- /.app-layout -->
+
+<!-- ---- edition banner ---- -->
+<aside class="edition-banner" dir="ltr" aria-hidden="true">
+  <div class="eb-title">Powered by Business Analyzer — Free Community Edition</div>
+  <div class="eb-sub">Commercial license available → contact Javid Sattar</div>
+</aside>
 
 <!-- ---- model picker modal ---- -->
 <div class="modal-overlay" id="modelOverlay" hidden>

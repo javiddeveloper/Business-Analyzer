@@ -1,5 +1,7 @@
 # 🚀 Business Analyzer
 
+> **Note**: This project is actively maintained by Javid Sattar. First public release and continuous development history is available in the Git commit history of this repository.
+
 <div align="center">
 
 **Autonomous AI Code Review & Engineering Team Intelligence for GitLab, Jira, and Sentry.**  
@@ -8,7 +10,7 @@
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0%20npm%20packages-blue.svg)](package.json)
 [![Tests Passing](https://img.shields.io/badge/tests-226%20passing-success.svg)](tests/)
 [![Architecture](https://img.shields.io/badge/architecture-Pure%20Node.js%20%7C%20Vanilla%20JS-orange.svg)](docs/ARCHITECTURE.md)
-[![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey.svg)](package.json)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
 [**Explore Interactive Demo**](#-try-it-in-60-seconds-demo-mode) • [**Visual Tour**](docs/VISUAL_TOUR.md) • [**Architecture**](docs/ARCHITECTURE.md) • [**Product Strategy**](docs/PRODUCT_STRATEGY.md) • [**Commercial Advisory**](#-creator--commercial-advisory)
@@ -224,13 +226,15 @@ If your organization requires:
 - **Repository**: [Business-Analyzer](https://github.com/javiddeveloper/Business-Analyzer)
 - **LinkedIn**: [Javid Sattar](https://www.linkedin.com/in/javid-sattar/) *(reach out via GitHub issue or LinkedIn message for enterprise licensing and consulting)*
 
-## License
+## License & Commercial Use
 
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
 
-- Free for personal, internal, and open-source use.
-- If you modify the software and run it as a network service (SaaS), you must make the source code of your modified version available to users.
-- Commercial licenses are available for organizations that need closed-source use, professional support, custom features, or enterprise deployment.
+- Free for personal, internal company use, and open-source projects.
+- If you modify the software and offer it as a network service (SaaS), you must publish your modified source code.
+- For commercial licensing, closed-source use, professional support, custom features, or enterprise deployment, contact the author.
 
-For commercial licensing and consulting, contact:  
-**Javid Sattar** → [LinkedIn](https://www.linkedin.com/in/javid-sattar/) or open a GitHub Issue.
+**Contact for commercial inquiries:**
+- GitHub: [@javiddeveloper](https://github.com/javiddeveloper)
+- LinkedIn: [Javid Sattar](https://www.linkedin.com/in/javid-sattar/)
+- Or open a [GitHub Issue](https://github.com/javiddeveloper/Business-Analyzer/issues)
