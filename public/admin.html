@@ -1671,6 +1671,102 @@
     #settingsBody > .field.wide, .engine-group > .field.wide { grid-column: span 2; }
   }
 
+  /* ── Knowledge Base accordion ─────────────────────────────────────── */
+  #kbList { display: flex; flex-direction: column; gap: 8px; }
+
+  .kb-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    overflow: hidden;
+    transition: box-shadow .18s ease, border-color .18s ease;
+  }
+  .kb-item:hover { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 12%, transparent); }
+
+  .kb-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: default;
+  }
+
+  .kb-title {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    cursor: pointer;
+    user-select: none;
+    min-width: 0;
+  }
+  .kb-title strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color .15s;
+  }
+  .kb-title:hover strong { color: var(--primary); }
+  .kb-title .meta {
+    font-size: 10.5px;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    direction: ltr;
+    text-align: right;
+  }
+
+  .kb-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* smooth accordion body */
+  .kb-body-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .25s cubic-bezier(.4,0,.2,1);
+  }
+  .kb-body-wrap.open { grid-template-rows: 1fr; }
+  .kb-body-inner {
+    overflow: hidden;
+  }
+  .kb-body {
+    padding: 10px 14px 14px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--muted-foreground);
+    border-top: 1px solid var(--border);
+    white-space: pre-wrap;
+    word-break: break-word;
+    direction: ltr;
+    text-align: left;
+  }
+  /* loading spinner inside body */
+  .kb-body-loading {
+    padding: 10px 14px 14px;
+    border-top: 1px solid var(--border);
+    color: var(--dim);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .kb-body-loading::before {
+    content: '';
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    flex-shrink: 0;
+  }
+  /* ──────────────────────────────────────────────────────────────────── */
+
+
+
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 11.5px; font-weight: 500; color: var(--muted-foreground); }
   .field .hint { font-size: 10px; color: var(--dim); line-height: 1.5; }
@@ -4332,21 +4428,26 @@ async function loadKb() {
 
 function renderKb() {
   const box = document.getElementById('kbList');
-  if (!S.kb.length) { box.innerHTML = '<div class="empty">هنوز یادداشتی اضافه نشده.</div>'; return; }
+  if (!S.kb || !S.kb.length) { box.innerHTML = '<div class="empty">هنوز یادداشتی اضافه نشده.</div>'; return; }
   box.innerHTML = S.kb.map((it) => {
     const open = S.kbOpen === it.id;
-    const body = open ? '<div class="kb-body">' + esc(S.kbBodies[it.id] || 'در حال بارگذاری…') + '</div>' : '';
-    return '<div class="kb-item">' +
+    const bodyContent = S.kbBodies[it.id]
+      ? '<div class="kb-body">' + esc(S.kbBodies[it.id]) + '</div>'
+      : '<div class="kb-body-loading">در حال بارگذاری…</div>';
+    return '<div class="kb-item" data-kb-id="' + esc(it.id) + '">' +
       '<div class="kb-head">' +
         '<div class="kb-title" data-id="' + esc(it.id) + '">' +
           '<strong>' + (open ? '▾ ' : '▸ ') + esc(it.title) + '</strong>' +
-          '<span class="meta">' + esc(it.source) + ' · ' + esc(new Date(it.updatedAt).toLocaleString('fa-IR')) + ' · ' + esc(it.sizeChars) + ' کاراکتر</span>' +
+          '<span class="meta">' + esc(it.source) + ' · ' + esc(new Date(it.updatedAt).toLocaleString('fa-IR')) + ' · ' + esc(String(it.sizeChars)) + ' کاراکتر</span>' +
         '</div>' +
         '<div class="kb-actions">' +
           '<button class="ghost" data-edit="' + esc(it.id) + '">ویرایش</button>' +
           '<button class="danger" data-del="' + esc(it.id) + '">حذف</button>' +
         '</div>' +
-      '</div>' + body +
+      '</div>' +
+      '<div class="kb-body-wrap' + (open ? ' open' : '') + '">' +
+        '<div class="kb-body-inner">' + bodyContent + '</div>' +
+      '</div>' +
     '</div>';
   }).join('');
 
@@ -4363,11 +4464,50 @@ async function fetchKbBody(id) {
 }
 
 async function toggleKb(id) {
-  if (S.kbOpen === id) { S.kbOpen = null; renderKb(); return; }
+  const box = document.getElementById('kbList');
+
+  // Close currently open item (animate out)
+  if (S.kbOpen && S.kbOpen !== id) {
+    const prev = box.querySelector('[data-kb-id="' + S.kbOpen + '"] .kb-body-wrap');
+    const prevTitle = box.querySelector('[data-kb-id="' + S.kbOpen + '"] .kb-title strong');
+    if (prev) prev.classList.remove('open');
+    if (prevTitle) prevTitle.textContent = prevTitle.textContent.replace('▾', '▸');
+  }
+
+  // Toggle current item
+  if (S.kbOpen === id) {
+    // Close
+    S.kbOpen = null;
+    const wrap = box.querySelector('[data-kb-id="' + id + '"] .kb-body-wrap');
+    const titleEl = box.querySelector('[data-kb-id="' + id + '"] .kb-title strong');
+    if (wrap) wrap.classList.remove('open');
+    if (titleEl) titleEl.textContent = titleEl.textContent.replace('▾ ', '▸ ');
+    return;
+  }
+
+  // Open
   S.kbOpen = id;
-  renderKb();
+  const wrap = box.querySelector('[data-kb-id="' + id + '"] .kb-body-wrap');
+  const inner = box.querySelector('[data-kb-id="' + id + '"] .kb-body-inner');
+  const titleEl = box.querySelector('[data-kb-id="' + id + '"] .kb-title strong');
+  if (titleEl) titleEl.textContent = titleEl.textContent.replace('▸ ', '▾ ');
+
+  if (wrap && inner) {
+    // Show loading spinner immediately, then animate open
+    if (!S.kbBodies[id]) {
+      inner.innerHTML = '<div class="kb-body-loading">در حال بارگذاری…</div>';
+    }
+    // Trigger animation on next frame so browser paints the loading state first
+    requestAnimationFrame(() => wrap.classList.add('open'));
+  }
+
+  // Fetch body content
   await fetchKbBody(id);
-  renderKb();
+
+  // Fill in content (still inside the same DOM node — no re-render, animation stays intact)
+  if (S.kbOpen === id && inner) {
+    inner.innerHTML = '<div class="kb-body">' + esc(S.kbBodies[id]) + '</div>';
+  }
 }
 
 async function editKb(id) {
