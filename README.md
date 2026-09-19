@@ -221,4 +221,4 @@ If your organization requires:
 **Contact**:
 - **GitHub**: [@javiddeveloper](https://github.com/javiddeveloper)
 - **Repository**: [Business-Analyzer](https://github.com/javiddeveloper/Business-Analyzer)
-- **LinkedIn**: [Javid Sattar](https://www.linkedin.com) *(reach out via GitHub issue or LinkedIn message for enterprise licensing and consulting)*
+- **LinkedIn**: [Javid Sattar](https://www.linkedin.com/in/javid-sattar/) *(reach out via GitHub issue or LinkedIn message for enterprise licensing and consulting)*
