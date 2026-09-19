@@ -7,15 +7,21 @@
 **Autonomous AI Code Review & Engineering Team Intelligence for GitLab, Jira, and Sentry.**  
 *Self-hosted. Zero external npm dependencies. 100% private to your infrastructure.*
 
+### 🟢 [**→ Live Demo — Try it now, no install needed**](https://javiddeveloper.github.io/Business-Analyzer/public/admin.html?demo=1)
+
+[![Live Demo](https://img.shields.io/badge/demo-live%20on%20GitHub%20Pages-2ea44f?style=for-the-badge&logo=github)](https://javiddeveloper.github.io/Business-Analyzer/public/admin.html?demo=1)
+
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-0%20npm%20packages-blue.svg)](package.json)
 [![Tests Passing](https://img.shields.io/badge/tests-226%20passing-success.svg)](tests/)
 [![Architecture](https://img.shields.io/badge/architecture-Pure%20Node.js%20%7C%20Vanilla%20JS-orange.svg)](docs/ARCHITECTURE.md)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
-[**Explore Interactive Demo**](#-try-it-in-60-seconds-demo-mode) • [**Visual Tour**](docs/VISUAL_TOUR.md) • [**Architecture**](docs/ARCHITECTURE.md) • [**Product Strategy**](docs/PRODUCT_STRATEGY.md) • [**Commercial Advisory**](#-creator--commercial-advisory)
+[**Explore Interactive Demo**](https://javiddeveloper.github.io/Business-Analyzer/public/admin.html?demo=1) • [**Visual Tour**](docs/VISUAL_TOUR.md) • [**Architecture**](docs/ARCHITECTURE.md) • [**Product Strategy**](docs/PRODUCT_STRATEGY.md) • [**Commercial Advisory**](#-creator--commercial-advisory)
 
 </div>
+
+
 
 
 ---
@@ -59,7 +65,18 @@ Senior engineers and Tech Leads spend **15+ hours every week** manually reviewin
 
 ## ⏱️ Try It in 60 Seconds (Demo Mode)
 
-You can explore the complete Business Analyzer platform immediately with rich, realistic synthetic enterprise data—**no GitLab or Jira credentials required**:
+### 🟢 Instant Online Demo — No Install
+
+> **[→ Open Live Demo on GitHub Pages](https://javiddeveloper.github.io/Business-Analyzer/public/admin.html?demo=1)**  
+> Runs entirely in your browser. No server, no credentials, no setup.
+
+Explore the full platform with realistic Iranian engineering team data: active MRs, AI code review findings, developer scorecards, Sentry crash triage, and the knowledge base.
+
+---
+
+### 🖥️ Run Locally (Full Mode with Real Data)
+
+You can also self-host the complete engine and connect it to your own GitLab, Jira, and Sentry:
 
 ```bash
 # 1. Clone the repository
