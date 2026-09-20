@@ -1760,6 +1760,84 @@
     background: transparent;
   }
 
+  /* ---- Icons -------------------------------------------------------------
+     One family (Lucide), one weight, drawn as a CSS mask so the glyph is
+     painted with `currentColor` and therefore takes a colour exactly the way
+     text does. The path data lives here once instead of being inlined at each
+     of the ~175 call sites, which keeps those sites to a single short tag.
+
+     Emoji were never icons: they render from the host OS's font, so they
+     differ per platform, ignore the theme, cannot be tinted, and sit on the
+     text baseline instead of aligning with the label beside them. */
+  .ico {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+    vertical-align: -0.14em;
+    background-color: currentColor;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  /* Tones carry meaning, not decoration: green is an outcome that is fine,
+     red one that is not, amber is time and attention, cyan is code movement,
+     violet is machine and knowledge, muted is a noun with no verdict. */
+  .ico-green { color: #4ade9f; }
+  .ico-red { color: #fb7185; }
+  .ico-amber { color: #fbbf24; }
+  .ico-cyan { color: #38bdf8; }
+  .ico-violet { color: #a78bfa; }
+  .ico-muted { color: var(--muted-foreground); }
+
+  .i-activity { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M22%2012h-2.48a2%202%200%200%200-1.93%201.46l-2.35%208.36a.25.25%200%200%201-.48%200L9.24%202.18a.25.25%200%200%200-.48%200l-2.35%208.36A2%202%200%200%201%204.49%2012H2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M22%2012h-2.48a2%202%200%200%200-1.93%201.46l-2.35%208.36a.25.25%200%200%201-.48%200L9.24%202.18a.25.25%200%200%200-.48%200l-2.35%208.36A2%202%200%200%201%204.49%2012H2'/%3E%3C/svg%3E"); }
+  .i-alert { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='m21.73%2018-8-14a2%202%200%200%200-3.48%200l-8%2014A2%202%200%200%200%204%2021h16a2%202%200%200%200%201.73-3Z'/%3E%3Cpath%20d='M12%209v4'/%3E%3Cpath%20d='M12%2017h.01'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='m21.73%2018-8-14a2%202%200%200%200-3.48%200l-8%2014A2%202%200%200%200%204%2021h16a2%202%200%200%200%201.73-3Z'/%3E%3Cpath%20d='M12%209v4'/%3E%3Cpath%20d='M12%2017h.01'/%3E%3C/svg%3E"); }
+  .i-alert-circle { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='10'/%3E%3Cpath%20d='M12%208v4'/%3E%3Cpath%20d='M12%2016h.01'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='10'/%3E%3Cpath%20d='M12%208v4'/%3E%3Cpath%20d='M12%2016h.01'/%3E%3C/svg%3E"); }
+  .i-book { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%2019.5v-15A2.5%202.5%200%200%201%206.5%202H19a1%201%200%200%201%201%201v18a1%201%200%200%201-1%201H6.5a1%201%200%200%201%200-5H20'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%2019.5v-15A2.5%202.5%200%200%201%206.5%202H19a1%201%200%200%201%201%201v18a1%201%200%200%201-1%201H6.5a1%201%200%200%201%200-5H20'/%3E%3C/svg%3E"); }
+  .i-bot { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12%208V4H8'/%3E%3Crect%20width='16'%20height='12'%20x='4'%20y='8'%20rx='2'/%3E%3Cpath%20d='M2%2014h2'/%3E%3Cpath%20d='M20%2014h2'/%3E%3Cpath%20d='M15%2013v2'/%3E%3Cpath%20d='M9%2013v2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12%208V4H8'/%3E%3Crect%20width='16'%20height='12'%20x='4'%20y='8'%20rx='2'/%3E%3Cpath%20d='M2%2014h2'/%3E%3Cpath%20d='M20%2014h2'/%3E%3Cpath%20d='M15%2013v2'/%3E%3Cpath%20d='M9%2013v2'/%3E%3C/svg%3E"); }
+  .i-calendar { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M8%202v4'/%3E%3Cpath%20d='M16%202v4'/%3E%3Crect%20width='18'%20height='18'%20x='3'%20y='4'%20rx='2'/%3E%3Cpath%20d='M3%2010h18'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M8%202v4'/%3E%3Cpath%20d='M16%202v4'/%3E%3Crect%20width='18'%20height='18'%20x='3'%20y='4'%20rx='2'/%3E%3Cpath%20d='M3%2010h18'/%3E%3C/svg%3E"); }
+  .i-chart { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3%203v16a2%202%200%200%200%202%202h16'/%3E%3Cpath%20d='M18%2017V9'/%3E%3Cpath%20d='M13%2017V5'/%3E%3Cpath%20d='M8%2017v-3'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3%203v16a2%202%200%200%200%202%202h16'/%3E%3Cpath%20d='M18%2017V9'/%3E%3Cpath%20d='M13%2017V5'/%3E%3Cpath%20d='M8%2017v-3'/%3E%3C/svg%3E"); }
+  .i-check { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%206%209%2017l-5-5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%206%209%2017l-5-5'/%3E%3C/svg%3E"); }
+  .i-check-circle { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='10'/%3E%3Cpath%20d='m9%2012%202%202%204-4'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='10'/%3E%3Cpath%20d='m9%2012%202%202%204-4'/%3E%3C/svg%3E"); }
+  .i-clipboard { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20width='8'%20height='4'%20x='8'%20y='2'%20rx='1'/%3E%3Cpath%20d='M16%204h2a2%202%200%200%201%202%202v14a2%202%200%200%201-2%202H6a2%202%200%200%201-2-2V6a2%202%200%200%201%202-2h2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20width='8'%20height='4'%20x='8'%20y='2'%20rx='1'/%3E%3Cpath%20d='M16%204h2a2%202%200%200%201%202%202v14a2%202%200%200%201-2%202H6a2%202%200%200%201-2-2V6a2%202%200%200%201%202-2h2'/%3E%3C/svg%3E"); }
+  .i-clock { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='10'/%3E%3Cpath%20d='M12%206v6l4%202'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='10'/%3E%3Cpath%20d='M12%206v6l4%202'/%3E%3C/svg%3E"); }
+  .i-cpu { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20width='16'%20height='16'%20x='4'%20y='4'%20rx='2'/%3E%3Crect%20width='6'%20height='6'%20x='9'%20y='9'%20rx='1'/%3E%3Cpath%20d='M15%202v2'/%3E%3Cpath%20d='M15%2020v2'/%3E%3Cpath%20d='M2%2015h2'/%3E%3Cpath%20d='M2%209h2'/%3E%3Cpath%20d='M20%2015h2'/%3E%3Cpath%20d='M20%209h2'/%3E%3Cpath%20d='M9%202v2'/%3E%3Cpath%20d='M9%2020v2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20width='16'%20height='16'%20x='4'%20y='4'%20rx='2'/%3E%3Crect%20width='6'%20height='6'%20x='9'%20y='9'%20rx='1'/%3E%3Cpath%20d='M15%202v2'/%3E%3Cpath%20d='M15%2020v2'/%3E%3Cpath%20d='M2%2015h2'/%3E%3Cpath%20d='M2%209h2'/%3E%3Cpath%20d='M20%2015h2'/%3E%3Cpath%20d='M20%209h2'/%3E%3Cpath%20d='M9%202v2'/%3E%3Cpath%20d='M9%2020v2'/%3E%3C/svg%3E"); }
+  .i-eye { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%2012s3-7%2010-7%2010%207%2010%207-3%207-10%207-10-7-10-7Z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%2012s3-7%2010-7%2010%207%2010%207-3%207-10%207-10-7-10-7Z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3C/svg%3E"); }
+  .i-file-text { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M15%202H6a2%202%200%200%200-2%202v16a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V7Z'/%3E%3Cpath%20d='M14%202v4a2%202%200%200%200%202%202h4'/%3E%3Cpath%20d='M16%2013H8'/%3E%3Cpath%20d='M16%2017H8'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M15%202H6a2%202%200%200%200-2%202v16a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V7Z'/%3E%3Cpath%20d='M14%202v4a2%202%200%200%200%202%202h4'/%3E%3Cpath%20d='M16%2013H8'/%3E%3Cpath%20d='M16%2017H8'/%3E%3C/svg%3E"); }
+  .i-folder { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2020a2%202%200%200%200%202-2V8a2%202%200%200%200-2-2h-7.9a2%202%200%200%201-1.69-.9L9.6%203.9A2%202%200%200%200%207.93%203H4a2%202%200%200%200-2%202v13a2%202%200%200%200%202%202Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M20%2020a2%202%200%200%200%202-2V8a2%202%200%200%200-2-2h-7.9a2%202%200%200%201-1.69-.9L9.6%203.9A2%202%200%200%200%207.93%203H4a2%202%200%200%200-2%202v13a2%202%200%200%200%202%202Z'/%3E%3C/svg%3E"); }
+  .i-git-branch { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%203v12'/%3E%3Ccircle%20cx='18'%20cy='6'%20r='3'/%3E%3Ccircle%20cx='6'%20cy='18'%20r='3'/%3E%3Cpath%20d='M18%209a9%209%200%200%201-9%209'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%203v12'/%3E%3Ccircle%20cx='18'%20cy='6'%20r='3'/%3E%3Ccircle%20cx='6'%20cy='18'%20r='3'/%3E%3Cpath%20d='M18%209a9%209%200%200%201-9%209'/%3E%3C/svg%3E"); }
+  .i-git-pull { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='18'%20cy='18'%20r='3'/%3E%3Ccircle%20cx='6'%20cy='6'%20r='3'/%3E%3Cpath%20d='M13%206h3a2%202%200%200%201%202%202v7'/%3E%3Cpath%20d='M6%209v12'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='18'%20cy='18'%20r='3'/%3E%3Ccircle%20cx='6'%20cy='6'%20r='3'/%3E%3Cpath%20d='M13%206h3a2%202%200%200%201%202%202v7'/%3E%3Cpath%20d='M6%209v12'/%3E%3C/svg%3E"); }
+  .i-hourglass { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M5%2022h14'/%3E%3Cpath%20d='M5%202h14'/%3E%3Cpath%20d='M17%2022v-4.17a2%202%200%200%200-.59-1.41L12%2012l-4.41%204.41A2%202%200%200%200%207%2017.83V22'/%3E%3Cpath%20d='M7%202v4.17a2%202%200%200%200%20.59%201.41L12%2012l4.41-4.41A2%202%200%200%200%2017%206.17V2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M5%2022h14'/%3E%3Cpath%20d='M5%202h14'/%3E%3Cpath%20d='M17%2022v-4.17a2%202%200%200%200-.59-1.41L12%2012l-4.41%204.41A2%202%200%200%200%207%2017.83V22'/%3E%3Cpath%20d='M7%202v4.17a2%202%200%200%200%20.59%201.41L12%2012l4.41-4.41A2%202%200%200%200%2017%206.17V2'/%3E%3C/svg%3E"); }
+  .i-key { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='m15.5%207.5%202.3%202.3a1%201%200%200%200%201.4%200l2.1-2.1a1%201%200%200%200%200-1.4L19%204'/%3E%3Cpath%20d='m21%202-9.6%209.6'/%3E%3Ccircle%20cx='7.5'%20cy='15.5'%20r='5.5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='m15.5%207.5%202.3%202.3a1%201%200%200%200%201.4%200l2.1-2.1a1%201%200%200%200%200-1.4L19%204'/%3E%3Cpath%20d='m21%202-9.6%209.6'/%3E%3Ccircle%20cx='7.5'%20cy='15.5'%20r='5.5'/%3E%3C/svg%3E"); }
+  .i-layers { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12.83%202.18a2%202%200%200%200-1.66%200L2.6%206.08a1%201%200%200%200%200%201.83l8.58%203.91a2%202%200%200%200%201.66%200l8.58-3.9a1%201%200%200%200%200-1.83Z'/%3E%3Cpath%20d='m6.08%209.5-3.48%201.59a1%201%200%200%200%200%201.81l8.6%203.91a2%202%200%200%200%201.65%200l8.58-3.9a1%201%200%200%200%200-1.83L18.92%209.5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12.83%202.18a2%202%200%200%200-1.66%200L2.6%206.08a1%201%200%200%200%200%201.83l8.58%203.91a2%202%200%200%200%201.66%200l8.58-3.9a1%201%200%200%200%200-1.83Z'/%3E%3Cpath%20d='m6.08%209.5-3.48%201.59a1%201%200%200%200%200%201.81l8.6%203.91a2%202%200%200%200%201.65%200l8.58-3.9a1%201%200%200%200%200-1.83L18.92%209.5'/%3E%3C/svg%3E"); }
+  .i-message { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M22%2017a2%202%200%200%201-2%202H6l-4%204V5a2%202%200%200%201%202-2h16a2%202%200%200%201%202%202z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M22%2017a2%202%200%200%201-2%202H6l-4%204V5a2%202%200%200%201%202-2h16a2%202%200%200%201%202%202z'/%3E%3C/svg%3E"); }
+  .i-package { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M11%2021.73a2%202%200%200%200%202%200l7-4A2%202%200%200%200%2021%2016V8a2%202%200%200%200-1-1.73l-7-4a2%202%200%200%200-2%200l-7%204A2%202%200%200%200%203%208v8a2%202%200%200%200%201%201.73z'/%3E%3Cpath%20d='M12%2022V12'/%3E%3Cpath%20d='m3.3%207%208.7%205%208.7-5'/%3E%3Cpath%20d='m7.5%204.27%209%205.15'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M11%2021.73a2%202%200%200%200%202%200l7-4A2%202%200%200%200%2021%2016V8a2%202%200%200%200-1-1.73l-7-4a2%202%200%200%200-2%200l-7%204A2%202%200%200%200%203%208v8a2%202%200%200%200%201%201.73z'/%3E%3Cpath%20d='M12%2022V12'/%3E%3Cpath%20d='m3.3%207%208.7%205%208.7-5'/%3E%3Cpath%20d='m7.5%204.27%209%205.15'/%3E%3C/svg%3E"); }
+  .i-pencil { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M21.17%206.81a1%201%200%200%200-3.98-3.99L3.84%2016.17a2%202%200%200%200-.5.83l-1.32%204.35a.5.5%200%200%200%20.62.62l4.35-1.32a2%202%200%200%200%20.83-.5z'/%3E%3Cpath%20d='m15%205%204%204'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M21.17%206.81a1%201%200%200%200-3.98-3.99L3.84%2016.17a2%202%200%200%200-.5.83l-1.32%204.35a.5.5%200%200%200%20.62.62l4.35-1.32a2%202%200%200%200%20.83-.5z'/%3E%3Cpath%20d='m15%205%204%204'/%3E%3C/svg%3E"); }
+  .i-play { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M5%204.5v15a1%201%200%200%200%201.52.86l12-7.5a1%201%200%200%200%200-1.72l-12-7.5A1%201%200%200%200%205%204.5Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M5%204.5v15a1%201%200%200%200%201.52.86l12-7.5a1%201%200%200%200%200-1.72l-12-7.5A1%201%200%200%200%205%204.5Z'/%3E%3C/svg%3E"); }
+  .i-receipt { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%202v20l2-1%202%201%202-1%202%201%202-1%202%201%202-1%202%201V2l-2%201-2-1-2%201-2-1-2%201-2-1-2%201Z'/%3E%3Cpath%20d='M16%208h-6a2%202%200%201%200%200%204h4a2%202%200%201%201%200%204H8'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%202v20l2-1%202%201%202-1%202%201%202-1%202%201%202-1%202%201V2l-2%201-2-1-2%201-2-1-2%201-2-1-2%201Z'/%3E%3Cpath%20d='M16%208h-6a2%202%200%201%200%200%204h4a2%202%200%201%201%200%204H8'/%3E%3C/svg%3E"); }
+  .i-refresh { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3%2012a9%209%200%200%201%209-9%209.75%209.75%200%200%201%206.74%202.74L21%208'/%3E%3Cpath%20d='M21%203v5h-5'/%3E%3Cpath%20d='M21%2012a9%209%200%200%201-9%209%209.75%209.75%200%200%201-6.74-2.74L3%2016'/%3E%3Cpath%20d='M8%2016H3v5'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M3%2012a9%209%200%200%201%209-9%209.75%209.75%200%200%201%206.74%202.74L21%208'/%3E%3Cpath%20d='M21%203v5h-5'/%3E%3Cpath%20d='M21%2012a9%209%200%200%201-9%209%209.75%209.75%200%200%201-6.74-2.74L3%2016'/%3E%3Cpath%20d='M8%2016H3v5'/%3E%3C/svg%3E"); }
+  .i-save { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M15.2%203a2%202%200%200%201%201.4.6l3.8%203.8a2%202%200%200%201%20.6%201.4V19a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2V5a2%202%200%200%201%202-2z'/%3E%3Cpath%20d='M17%2021v-7a1%201%200%200%200-1-1H8a1%201%200%200%200-1%201v7'/%3E%3Cpath%20d='M7%203v4a1%201%200%200%200%201%201h7'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M15.2%203a2%202%200%200%201%201.4.6l3.8%203.8a2%202%200%200%201%20.6%201.4V19a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2V5a2%202%200%200%201%202-2z'/%3E%3Cpath%20d='M17%2021v-7a1%201%200%200%200-1-1H8a1%201%200%200%200-1%201v7'/%3E%3Cpath%20d='M7%203v4a1%201%200%200%200%201%201h7'/%3E%3C/svg%3E"); }
+  .i-search { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='11'%20cy='11'%20r='8'/%3E%3Cpath%20d='m21%2021-4.3-4.3'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='11'%20cy='11'%20r='8'/%3E%3Cpath%20d='m21%2021-4.3-4.3'/%3E%3C/svg%3E"); }
+  .i-settings { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12.22%202h-.44a2%202%200%200%200-2%202v.18a2%202%200%200%201-1%201.73l-.43.25a2%202%200%200%201-2%200l-.15-.08a2%202%200%200%200-2.73.73l-.22.38a2%202%200%200%200%20.73%202.73l.15.1a2%202%200%200%201%201%201.72v.51a2%202%200%200%201-1%201.74l-.15.09a2%202%200%200%200-.73%202.73l.22.38a2%202%200%200%200%202.73.73l.15-.08a2%202%200%200%201%202%200l.43.25a2%202%200%200%201%201%201.73V20a2%202%200%200%200%202%202h.44a2%202%200%200%200%202-2v-.18a2%202%200%200%201%201-1.73l.43-.25a2%202%200%200%201%202%200l.15.08a2%202%200%200%200%202.73-.73l.22-.39a2%202%200%200%200-.73-2.73l-.15-.08a2%202%200%200%201-1-1.74v-.5a2%202%200%200%201%201-1.74l.15-.09a2%202%200%200%200%20.73-2.73l-.22-.38a2%202%200%200%200-2.73-.73l-.15.08a2%202%200%200%201-2%200l-.43-.25a2%202%200%200%201-1-1.73V4a2%202%200%200%200-2-2z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M12.22%202h-.44a2%202%200%200%200-2%202v.18a2%202%200%200%201-1%201.73l-.43.25a2%202%200%200%201-2%200l-.15-.08a2%202%200%200%200-2.73.73l-.22.38a2%202%200%200%200%20.73%202.73l.15.1a2%202%200%200%201%201%201.72v.51a2%202%200%200%201-1%201.74l-.15.09a2%202%200%200%200-.73%202.73l.22.38a2%202%200%200%200%202.73.73l.15-.08a2%202%200%200%201%202%200l.43.25a2%202%200%200%201%201%201.73V20a2%202%200%200%200%202%202h.44a2%202%200%200%200%202-2v-.18a2%202%200%200%201%201-1.73l.43-.25a2%202%200%200%201%202%200l.15.08a2%202%200%200%200%202.73-.73l.22-.39a2%202%200%200%200-.73-2.73l-.15-.08a2%202%200%200%201-1-1.74v-.5a2%202%200%200%201%201-1.74l.15-.09a2%202%200%200%200%20.73-2.73l-.22-.38a2%202%200%200%200-2.73-.73l-.15.08a2%202%200%200%201-2%200l-.43-.25a2%202%200%200%201-1-1.73V4a2%202%200%200%200-2-2z'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='3'/%3E%3C/svg%3E"); }
+  .i-sparkles { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M9.94%2015.5A2%202%200%200%200%208.5%2014.06l-6.14-1.58a.5.5%200%200%201%200-.96L8.5%209.94A2%202%200%200%200%209.94%208.5l1.58-6.14a.5.5%200%200%201%20.96%200L14.06%208.5A2%202%200%200%200%2015.5%209.94l6.14%201.58a.5.5%200%200%201%200%20.96L15.5%2014.06a2%202%200%200%200-1.44%201.44l-1.58%206.14a.5.5%200%200%201-.96%200z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M9.94%2015.5A2%202%200%200%200%208.5%2014.06l-6.14-1.58a.5.5%200%200%201%200-.96L8.5%209.94A2%202%200%200%200%209.94%208.5l1.58-6.14a.5.5%200%200%201%20.96%200L14.06%208.5A2%202%200%200%200%2015.5%209.94l6.14%201.58a.5.5%200%200%201%200%20.96L15.5%2014.06a2%202%200%200%200-1.44%201.44l-1.58%206.14a.5.5%200%200%201-.96%200z'/%3E%3C/svg%3E"); }
+  .i-sprint { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='13'%20cy='4'%20r='1'/%3E%3Cpath%20d='m4%2017%205-1%201-4%203%203%204%201'/%3E%3Cpath%20d='m7%2021%202-4'/%3E%3Cpath%20d='m16%2021-1-5-3-3%201-4%202%203%203%201'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='13'%20cy='4'%20r='1'/%3E%3Cpath%20d='m4%2017%205-1%201-4%203%203%204%201'/%3E%3Cpath%20d='m7%2021%202-4'/%3E%3Cpath%20d='m16%2021-1-5-3-3%201-4%202%203%203%201'/%3E%3C/svg%3E"); }
+  .i-stop { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20width='14'%20height='14'%20x='5'%20y='5'%20rx='2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20width='14'%20height='14'%20x='5'%20y='5'%20rx='2'/%3E%3C/svg%3E"); }
+  .i-target { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='10'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='6'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Ccircle%20cx='12'%20cy='12'%20r='10'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='6'/%3E%3Ccircle%20cx='12'%20cy='12'%20r='2'/%3E%3C/svg%3E"); }
+  .i-thumbs-down { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M17%2014V2'/%3E%3Cpath%20d='M9%2018.12%2010%2014H4.17a2%202%200%200%201-1.92-2.56l2.33-8A2%202%200%200%201%206.5%202H20a2%202%200%200%201%202%202v8a2%202%200%200%201-2%202h-2.76a2%202%200%200%200-1.79%201.11L12%2022a3.13%203.13%200%200%201-3-3.88Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M17%2014V2'/%3E%3Cpath%20d='M9%2018.12%2010%2014H4.17a2%202%200%200%201-1.92-2.56l2.33-8A2%202%200%200%201%206.5%202H20a2%202%200%200%201%202%202v8a2%202%200%200%201-2%202h-2.76a2%202%200%200%200-1.79%201.11L12%2022a3.13%203.13%200%200%201-3-3.88Z'/%3E%3C/svg%3E"); }
+  .i-thumbs-up { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M7%2010v12'/%3E%3Cpath%20d='M15%205.88%2014%2010h5.83a2%202%200%200%201%201.92%202.56l-2.33%208A2%202%200%200%201%2017.5%2022H4a2%202%200%200%201-2-2v-8a2%202%200%200%201%202-2h2.76a2%202%200%200%200%201.79-1.11L12%202a3.13%203.13%200%200%201%203%203.88Z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M7%2010v12'/%3E%3Cpath%20d='M15%205.88%2014%2010h5.83a2%202%200%200%201%201.92%202.56l-2.33%208A2%202%200%200%201%2017.5%2022H4a2%202%200%200%201-2-2v-8a2%202%200%200%201%202-2h2.76a2%202%200%200%200%201.79-1.11L12%202a3.13%203.13%200%200%201%203%203.88Z'/%3E%3C/svg%3E"); }
+  .i-ticket { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%209a3%203%200%200%201%200%206v2a2%202%200%200%200%202%202h16a2%202%200%200%200%202-2v-2a3%203%200%200%201%200-6V7a2%202%200%200%200-2-2H4a2%202%200%200%200-2%202Z'/%3E%3Cpath%20d='M13%205v2'/%3E%3Cpath%20d='M13%2017v2'/%3E%3Cpath%20d='M13%2011v2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M2%209a3%203%200%200%201%200%206v2a2%202%200%200%200%202%202h16a2%202%200%200%200%202-2v-2a3%203%200%200%201%200-6V7a2%202%200%200%200-2-2H4a2%202%200%200%200-2%202Z'/%3E%3Cpath%20d='M13%205v2'/%3E%3Cpath%20d='M13%2017v2'/%3E%3Cpath%20d='M13%2011v2'/%3E%3C/svg%3E"); }
+  .i-truck { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M14%2018V6a2%202%200%200%200-2-2H4a2%202%200%200%200-2%202v11a1%201%200%200%200%201%201h2'/%3E%3Cpath%20d='M15%2018H9'/%3E%3Cpath%20d='M19%2018h2a1%201%200%200%200%201-1v-3.65a1%201%200%200%200-.22-.62l-3.48-4.35A1%201%200%200%200%2017.52%208H14'/%3E%3Ccircle%20cx='17'%20cy='18'%20r='2'/%3E%3Ccircle%20cx='7'%20cy='18'%20r='2'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M14%2018V6a2%202%200%200%200-2-2H4a2%202%200%200%200-2%202v11a1%201%200%200%200%201%201h2'/%3E%3Cpath%20d='M15%2018H9'/%3E%3Cpath%20d='M19%2018h2a1%201%200%200%200%201-1v-3.65a1%201%200%200%200-.22-.62l-3.48-4.35A1%201%200%200%200%2017.52%208H14'/%3E%3Ccircle%20cx='17'%20cy='18'%20r='2'/%3E%3Ccircle%20cx='7'%20cy='18'%20r='2'/%3E%3C/svg%3E"); }
+  .i-upload { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M21%2015v4a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2v-4'/%3E%3Cpath%20d='m17%208-5-5-5%205'/%3E%3Cpath%20d='M12%203v12'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M21%2015v4a2%202%200%200%201-2%202H5a2%202%200%200%201-2-2v-4'/%3E%3Cpath%20d='m17%208-5-5-5%205'/%3E%3Cpath%20d='M12%203v12'/%3E%3C/svg%3E"); }
+  .i-user { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M19%2021v-2a4%204%200%200%200-4-4H9a4%204%200%200%200-4%204v2'/%3E%3Ccircle%20cx='12'%20cy='7'%20r='4'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M19%2021v-2a4%204%200%200%200-4-4H9a4%204%200%200%200-4%204v2'/%3E%3Ccircle%20cx='12'%20cy='7'%20r='4'/%3E%3C/svg%3E"); }
+  .i-users { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M16%2021v-2a4%204%200%200%200-4-4H6a4%204%200%200%200-4%204v2'/%3E%3Ccircle%20cx='9'%20cy='7'%20r='4'/%3E%3Cpath%20d='M22%2021v-2a4%204%200%200%200-3-3.87'/%3E%3Cpath%20d='M16%203.13a4%204%200%200%201%200%207.75'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M16%2021v-2a4%204%200%200%200-4-4H6a4%204%200%200%200-4%204v2'/%3E%3Ccircle%20cx='9'%20cy='7'%20r='4'/%3E%3Cpath%20d='M22%2021v-2a4%204%200%200%200-3-3.87'/%3E%3Cpath%20d='M16%203.13a4%204%200%200%201%200%207.75'/%3E%3C/svg%3E"); }
+  .i-wrench { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M14.7%206.3a1%201%200%200%200%200%201.4l1.6%201.6a1%201%200%200%200%201.4%200l3.77-3.77a6%206%200%200%201-7.94%207.94l-6.91%206.91a2.12%202.12%200%200%201-3-3l6.91-6.91a6%206%200%200%201%207.94-7.94l-3.76%203.76z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M14.7%206.3a1%201%200%200%200%200%201.4l1.6%201.6a1%201%200%200%200%201.4%200l3.77-3.77a6%206%200%200%201-7.94%207.94l-6.91%206.91a2.12%202.12%200%200%201-3-3l6.91-6.91a6%206%200%200%201%207.94-7.94l-3.76%203.76z'/%3E%3C/svg%3E"); }
+  .i-x { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M18%206%206%2018'/%3E%3Cpath%20d='m6%206%2012%2012'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M18%206%206%2018'/%3E%3Cpath%20d='m6%206%2012%2012'/%3E%3C/svg%3E"); }
+  .i-zap { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%2014a1%201%200%200%201-.78-1.63l9.9-10.2a.5.5%200%200%201%20.86.46l-1.92%206.02A1%201%200%200%200%2013%2010h7a1%201%200%200%201%20.78%201.63l-9.9%2010.2a.5.5%200%200%201-.86-.46l1.92-6.02A1%201%200%200%200%2011%2014z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%2014a1%201%200%200%201-.78-1.63l9.9-10.2a.5.5%200%200%201%20.86.46l-1.92%206.02A1%201%200%200%200%2013%2010h7a1%201%200%200%201%20.78%201.63l-9.9%2010.2a.5.5%200%200%201-.86-.46l1.92-6.02A1%201%200%200%200%2011%2014z'/%3E%3C/svg%3E"); }
+
   /* ---- Handoff report */
   .handoff-block {
     border: 1px solid var(--border);
@@ -2511,7 +2589,7 @@
     </header>
 
     <div id="pathBanner" class="banner" hidden>
-      ⚠️ مسیر پروژه‌ی محلی تنظیم نشده — بدون آن هیچ ریویویی اجرا نمی‌شود (نه دیف کامل دیده می‌شود، نه گزارش در <code>review/</code> نوشته می‌شود).
+      <i class="ico i-alert ico-amber"></i> مسیر پروژه‌ی محلی تنظیم نشده — بدون آن هیچ ریویویی اجرا نمی‌شود (نه دیف کامل دیده می‌شود، نه گزارش در <code>review/</code> نوشته می‌شود).
       <button id="bannerSettingsBtn">تنظیم مسیر پروژه</button>
     </div>
 
@@ -2537,9 +2615,9 @@
         <div class="row" style="justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px">
           <label class="switch-badge" id="autoReviewLabel" title="با روشن بودن این، هر MR باز به‌صورت خودکار (بدون کلیک دستی) ریویو می‌شود">
             <span class="switch"><input type="checkbox" id="autoReview" /><span class="track"></span><span class="thumb"></span></span>
-            🔁 ریویوی خودکار
+            <i class="ico i-refresh ico-cyan"></i> ریویوی خودکار
           </label>
-          <button class="btn-refresh" id="refreshBtn">🔄 بروزرسانی لیست MRها</button>
+          <button class="btn-refresh" id="refreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی لیست MRها</button>
         </div>
         <div class="settings-group">
           <p class="settings-group-title">تنظیمات ریویو</p>
@@ -2547,9 +2625,9 @@
             <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
             <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
             <label class="check"><input type="checkbox" id="setAutoPost" title="پیش‌فرض خاموش — بدون این، ریویوی خودکار/وب‌هوک فقط review/MR-<iid>.md را می‌نویسد و چیزی روی خود MR نمی‌گذارد" /> کامنت روی گیت‌لب در حالت خودکار/وب‌هوک هم ثبت شود</label>
-            <label class="check"><input type="checkbox" id="setAutoApprove" /> ✅ Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
-            <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> 🤖 ریویوی کل پروژه با ایجنت (claude-cli)</label>
-            <label class="check"><input type="checkbox" id="setPushReport" title="بعد از هر ریویو، فایل review/MR-<iid>.md را با API گیت‌لب مستقیم روی شاخه‌ی خودِ همان MR کامیت می‌کند (نه روی چک‌اوت محلی). بدون این، فایل فقط در کپی محلی نوشته می‌شود و به MR نمی‌رسد مگر دستی کامیتش کنی." /> 📤 پوش گزارش روی شاخه‌ی MR</label>
+            <label class="check"><input type="checkbox" id="setAutoApprove" /> <i class="ico i-check-circle ico-green"></i> Approve خودکار طبق ترتیب merge (هرگز Merge نمی‌کند)</label>
+            <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> <i class="ico i-bot ico-violet"></i> ریویوی کل پروژه با ایجنت (claude-cli)</label>
+            <label class="check"><input type="checkbox" id="setPushReport" title="بعد از هر ریویو، فایل review/MR-<iid>.md را با API گیت‌لب مستقیم روی شاخه‌ی خودِ همان MR کامیت می‌کند (نه روی چک‌اوت محلی). بدون این، فایل فقط در کپی محلی نوشته می‌شود و به MR نمی‌رسد مگر دستی کامیتش کنی." /> <i class="ico i-upload ico-cyan"></i> پوش گزارش روی شاخه‌ی MR</label>
           </div>
         </div>
         <div id="mrError"></div>
@@ -2574,7 +2652,7 @@
               <option value="30d">۳۰ روز اخیر</option>
               <option value="90d">۹۰ روز اخیر</option>
             </select>
-            <button class="btn-refresh" id="sentryRefreshBtn">🔄 بروزرسانی</button>
+            <button class="btn-refresh" id="sentryRefreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی</button>
           </div>
         </div>
         <div class="card" id="sentryBody"><div class="empty">در حال بارگذاری…</div></div>
@@ -2593,7 +2671,7 @@
           <aside class="card dev-rail">
             <div class="dev-rail-head">
               <span class="dev-rail-title">تیم</span>
-              <button class="btn-refresh" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب">🔄</button>
+              <button class="btn-refresh" id="devRosterRefreshBtn" title="بروزرسانی لیست از گیت‌لب"><i class="ico i-refresh ico-cyan"></i></button>
             </div>
             <span class="tag" id="devRosterCacheNote"></span>
             <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
@@ -2617,11 +2695,11 @@
           </div>
           <div class="panel-tabs" style="margin-bottom:0">
             <button class="panel-tab active" id="stEnv">secrets.env</button>
-            <button class="panel-tab" id="stKb">📚 پایگاه دانش</button>
-            <button class="panel-tab" id="stProjects">📁 پروژه‌ها</button>
-            <button class="panel-tab" id="stMaintainers">👤 Maintainerها</button>
-            <button class="panel-tab" id="stEpics">🗂 اپیک‌ها</button>
-            <button class="panel-tab" id="stAudit">🧾 لاگ تغییرات</button>
+            <button class="panel-tab" id="stKb"><i class="ico i-book ico-violet"></i> پایگاه دانش</button>
+            <button class="panel-tab" id="stProjects"><i class="ico i-folder ico-muted"></i> پروژه‌ها</button>
+            <button class="panel-tab" id="stMaintainers"><i class="ico i-user ico-muted"></i> Maintainerها</button>
+            <button class="panel-tab" id="stEpics"><i class="ico i-layers ico-violet"></i> اپیک‌ها</button>
+            <button class="panel-tab" id="stAudit"><i class="ico i-receipt ico-muted"></i> لاگ تغییرات</button>
           </div>
           <div class="settings-panel" id="settingsBody"><div class="empty">در حال بارگذاری…</div></div>
           <div class="settings-panel" id="kbPanel" hidden>
@@ -2655,8 +2733,8 @@
           </div>
           <div class="settings-panel" id="maintainersPanel" hidden>
             <div class="row" style="justify-content:space-between;align-items:center">
-              <div class="group-title" style="margin:0">👤 maintainerهای گیت‌لب</div>
-              <button class="btn-refresh" id="maintRefreshBtn" title="بروزرسانی از گیت‌لب">🔄</button>
+              <div class="group-title" style="margin:0"><i class="ico i-user ico-muted"></i> maintainerهای گیت‌لب</div>
+              <button class="btn-refresh" id="maintRefreshBtn" title="بروزرسانی از گیت‌لب"><i class="ico i-refresh ico-cyan"></i></button>
             </div>
             <p class="meta">
               این لیست از خود گیت‌لب خوانده می‌شود (نقش Maintainer یا Owner) و قابل ویرایش از اینجا نیست —
@@ -2676,37 +2754,37 @@
               خاموش که باشد (پیش‌فرض)، فقط اعضای با نقش Developer در لیست می‌آیند، چون در حالت معمول maintainer ریویوکننده است نه ریویوشونده.
             </p>
             <p class="meta" style="margin-top:6px;color:var(--amber)">
-              ⚠ یک نکته که محاسبه‌اش واقعاً فرق دارد: امضای ریویو (sign-off). فایل <code>review/MR-&lt;iid&gt;.md</code> فقط وقتی
+              <i class="ico i-alert ico-amber"></i> یک نکته که محاسبه‌اش واقعاً فرق دارد: امضای ریویو (sign-off). فایل <code>review/MR-&lt;iid&gt;.md</code> فقط وقتی
               «تأییدشده» حساب می‌شود که یک maintainer آن را کامیت کرده باشد — پس یک maintainer می‌تواند ریویوی MR خودش را امضا کند،
               کاری که یک دولوپر نمی‌تواند.
             </p>
             <span class="save-state" id="maintSaveState"></span>
           </div>
           <div class="settings-panel" id="epicsPanel" hidden>
-            <div class="group-title">🗂 اپیک‌های جیرا</div>
+            <div class="group-title"><i class="ico i-layers ico-violet"></i> اپیک‌های جیرا</div>
             <p class="meta">
               اپیک‌های پروژه‌ی جیرایی که این ریپازیتوری در آن تسک ثبت می‌کند. همین لیست در فرم «ساخت تسک از خطای Sentry» هم می‌آید.
               فقط خواندنی است — ساخت و ویرایش اپیک در خود جیرا انجام می‌شود. یک ساعت کش می‌شود.
             </p>
             <div class="row" style="margin-bottom:10px">
-              <button class="btn-refresh" id="epicsRefreshBtn">🔄 خواندن دوباره از جیرا</button>
+              <button class="btn-refresh" id="epicsRefreshBtn"><i class="ico i-refresh ico-cyan"></i> خواندن دوباره از جیرا</button>
               <span class="meta" id="epicsNote"></span>
             </div>
             <div id="epicsList"><div class="empty">در حال بارگذاری…</div></div>
           </div>
           <div class="settings-panel" id="auditPanel" hidden>
-            <div class="group-title">💾 پشتیبان‌گیری از data/</div>
+            <div class="group-title"><i class="ico i-save ico-muted"></i> پشتیبان‌گیری از data/</div>
             <p class="meta">
               data/ تنها نسخه‌ی تاریخچه‌ی امتیاز، فعالیت، لاگ‌ها و secrets.env است — هر روز خودکار در <code>backups/</code> کپی می‌شود
               (۱۴ نسخه‌ی آخر نگه داشته می‌شود). این کپی روی همین دیسک است، نه یک مکان جدا — برای محافظت واقعی در برابر خرابی دیسک،
               خودت هم پوشه‌ی <code>backups/</code> را جای دیگری کپی کن.
             </p>
             <div class="row" style="align-items:center;gap:10px;margin-bottom:14px">
-              <button class="ghost" id="backupNowBtn">📦 پشتیبان‌گیری همین حالا</button>
+              <button class="ghost" id="backupNowBtn"><i class="ico i-package ico-muted"></i> پشتیبان‌گیری همین حالا</button>
               <span class="meta" id="lastBackupNote"></span>
             </div>
             <hr class="section-divider" />
-            <div class="group-title" style="margin-top:14px">🧾 لاگ تغییرات</div>
+            <div class="group-title" style="margin-top:14px"><i class="ico i-receipt ico-muted"></i> لاگ تغییرات</div>
             <p class="meta">
               چه کسی تنظیمات/secrets.env/پروژه‌ها را عوض کرده و هر approve خودکار — این پروژه حساب کاربری ندارد
               (یک ADMIN_TOKEN مشترک، یا هیچ‌کدام روی localhost)، پس «چه کسی» یعنی آدرس IP درخواست، نه هویت یک فرد.
@@ -2740,7 +2818,7 @@
         <h2>موتور هوش مصنوعی</h2>
         <p class="modal-sub">کدام موتور فعال باشد؛ کلید/آدرس هر موتور جدا در secrets.env می‌ماند، پس جابه‌جایی هیچ‌کدام را پاک نمی‌کند.</p>
       </div>
-      <button class="modal-close" id="modelCloseBtn">✕</button>
+      <button class="modal-close" id="modelCloseBtn"><i class="ico i-x ico-muted"></i></button>
     </div>
     <div class="modal-body">
       <div class="engine-list" id="engineList"><div class="empty">در حال بارگذاری…</div></div>
@@ -3086,7 +3164,7 @@ const MOCK_JOBS = [
     mrIid: 104,
     status: 'done',
     decision: 'APPROVE',
-    summary: 'Decision: APPROVE ✅ (Score: 91/100)\nAll 5 deterministic security checks passed. Zero high-severity findings.',
+    summary: 'Decision: APPROVE <i class="ico i-check-circle ico-green"></i> (Score: 91/100)\nAll 5 deterministic security checks passed. Zero high-severity findings.',
     findings: [
       { severity: 'medium', title: 'Implement token refresh expiry jitter', filePath: 'src/auth/tokenService.ts', line: 142, suggestion: 'Add ±180 seconds random jitter to avoid thundering herd on auth servers.' },
       { severity: 'low', title: 'Use constant-time comparison for secret hash validation', filePath: 'src/auth/crypto.ts', line: 58, suggestion: 'Prefer crypto.timingSafeEqual over direct string equality.' }
@@ -3103,7 +3181,7 @@ const MOCK_JOBS = [
     mrIid: 103,
     status: 'done',
     decision: 'APPROVE',
-    summary: 'Decision: APPROVE ✅\nIdempotency header validation verified in Redis cache before charge dispatch.',
+    summary: 'Decision: APPROVE <i class="ico i-check-circle ico-green"></i>\nIdempotency header validation verified in Redis cache before charge dispatch.',
     findings: [],
     posted: true,
     approved: true,
@@ -3115,7 +3193,7 @@ const MOCK_JOBS = [
     mrIid: 102,
     status: 'done',
     decision: 'REQUEST_CHANGES',
-    summary: 'Decision: REQUEST_CHANGES 🔴\n1 high severity finding blocking merge: potential distributed lock release race condition.',
+    summary: 'Decision: REQUEST_CHANGES <i class="ico i-alert-circle ico-red"></i>\n1 high severity finding blocking merge: potential distributed lock release race condition.',
     findings: [
       { severity: 'high', title: 'Race condition in distributed lock release without Lua script validation', filePath: 'src/cache/redisLock.ts', line: 87, suggestion: 'Ensure lock release uses atomic Lua script verifying lock owner token.' }
     ],
@@ -3278,10 +3356,10 @@ async function handleMockApi(path, options = {}) {
 
   if (path === '/api/engines') {
     const engines = [
-      { id: 'claude-cli',         label: 'Claude Code CLI',   icon: '🤖', state: 'ready', active: true,  isCurrent: true,  model: 'claude-3-7-sonnet' },
-      { id: 'openai-compatible',  label: 'OpenAI / GapGPT',   icon: '⚡', state: 'ready', active: false, isCurrent: false, model: 'gpt-4o-mini' },
-      { id: '9router',            label: '9Router Gateway',    icon: '🔀', state: 'ready', active: false, isCurrent: false, model: 'combo' },
-      { id: 'gemini',             label: 'Google Gemini',      icon: '✨', state: 'ready', active: false, isCurrent: false, model: 'gemini-2.0-flash' }
+      { id: 'claude-cli',         label: 'Claude Code CLI',   icon: '<i class="ico i-bot ico-violet"></i>', state: 'ready', active: true,  isCurrent: true,  model: 'claude-3-7-sonnet' },
+      { id: 'openai-compatible',  label: 'OpenAI / GapGPT',   icon: '<i class="ico i-zap ico-amber"></i>', state: 'ready', active: false, isCurrent: false, model: 'gpt-4o-mini' },
+      { id: '9router',            label: '9Router Gateway',    icon: '<i class="ico i-git-branch ico-cyan"></i>', state: 'ready', active: false, isCurrent: false, model: 'combo' },
+      { id: 'gemini',             label: 'Google Gemini',      icon: '<i class="ico i-sparkles ico-violet"></i>', state: 'ready', active: false, isCurrent: false, model: 'gemini-2.0-flash' }
     ];
     return { engines, current: 'claude-cli' };
   }
@@ -3569,18 +3647,18 @@ async function handleMockApi(path, options = {}) {
     const iid = parseInt(mrContextMatch[2], 10);
     const reportMd = "# Review for MR !" + iid + "\n\n" +
       "## Summary & Decision\n" +
-      "**Decision**: APPROVE ✅ (Score: 91/100)\n" +
+      "**Decision**: APPROVE <i class='ico i-check-circle ico-green'></i> (Score: 91/100)\n" +
       "- **High Severity**: 0\n" +
       "- **Medium Severity**: 1\n" +
       "- **Low Severity**: 1\n" +
       "- **Blocking Items**: None\n\n" +
       "---\n\n" +
-      "## Positive Observations ✨\n" +
+      "## Positive Observations <i class='ico i-sparkles ico-violet'></i>\n" +
       "1. **Clean Architectural Isolation**: Excellent abstraction of the OAuth2 PKCE challenge generator from the core HTTP transport layer.\n" +
       "2. **Defensive Cryptography**: High-entropy cryptographically random state generator protects against CSRF replay vectors.\n" +
       "3. **Comprehensive Unit Tests**: Complete coverage of edge cases, token expiration boundaries, and invalid PKCE code verifiers.\n\n" +
       "---\n\n" +
-      "## Findings & Recommendations 🔍\n\n" +
+      "## Findings & Recommendations <i class='ico i-search ico-muted'></i>\n\n" +
       "### [Medium] Implement token refresh expiry jitter\n" +
       "- **File**: src/auth/tokenService.ts:142\n" +
       "- **Details**: When a fleet of client workers renews credentials simultaneously at exact 3600-second windows, auth servers experience thundering herd traffic spikes. Adding a random jitter of ±180 seconds prevents synchronized contention.\n\n" +
@@ -3922,7 +4000,7 @@ async function loadUsage() {
 
 // ---- header / accuracy badge -------------------------------------------
 // The only honest answer to "is the AI actually right" this tool has: the
-// share of 👍 among findings someone bothered to vote on. Hidden until
+// share of <i class="ico i-thumbs-up ico-green"></i> among findings someone bothered to vote on. Hidden until
 // there's at least one vote — an "accuracy" figure with zero data behind it
 // would be worse than no figure at all.
 async function loadAccuracy() {
@@ -3932,11 +4010,11 @@ async function loadAccuracy() {
     if (!badge) return;
     if (!acc.total) { badge.hidden = true; return; }
     badge.hidden = false;
-    badge.textContent = '🎯 دقت ' + acc.rate + '٪ (' + acc.total + ' رأی)';
+    badge.innerHTML = '<i class="ico i-target ico-amber"></i> دقت ' + esc(acc.rate) + '٪ (' + esc(acc.total) + ' رأی)';
     const perCat = acc.byCategory
       .sort((a, b) => b.total - a.total)
       .map((c) => '  ' + c.category + ': ' + c.rate + '٪ (' + c.total + ' رأی)');
-    badge.title = 'از ' + acc.total + ' یافته‌ای که کسی 👍/👎 زده، ' + acc.up + ' تا مفید بودند (' + acc.rate + '٪).' +
+    badge.title = 'از ' + acc.total + ' یافته‌ای که کسی <i class="ico i-thumbs-up ico-green"></i>/<i class="ico i-thumbs-down ico-red"></i> زده، ' + acc.up + ' تا مفید بودند (' + acc.rate + '٪).' +
       '\nاین فقط یافته‌های رأی‌خورده را می‌شمارد، نه کل یافته‌های ریویو — یافته‌ای که کسی رویش نظر نداده نه تأیید است نه رد.' +
       (perCat.length ? '\n\nبه تفکیک دسته:\n' + perCat.join('\n') : '');
   } catch (e) {
@@ -4012,10 +4090,10 @@ document.getElementById('modelOverlay').addEventListener('click', (e) => {
 // the CLI is installed but can't know whether `claude login` has been done
 // without spending a real model call.
 const ENGINE_STATE = {
-  ready: { cls: 'ok', text: '✓ کلید تنظیم شده' },
+  ready: { cls: 'ok', text: '<i class="ico i-check ico-green"></i> کلید تنظیم شده' },
   unverified: { cls: 'unknown', text: '↺ نصب‌شده — لاگین چک نشده' },
-  'not-installed': { cls: 'warn', text: '⚠ claude CLI نصب نیست' },
-  'missing-key': { cls: 'warn', text: '⚠ کلید ناقص' },
+  'not-installed': { cls: 'warn', text: '<i class="ico i-alert ico-amber"></i> claude CLI نصب نیست' },
+  'missing-key': { cls: 'warn', text: '<i class="ico i-alert ico-amber"></i> کلید ناقص' },
 };
 
 async function loadEngines() {
@@ -4036,7 +4114,7 @@ async function loadEngines() {
           '<div class="hint">' + esc(e.hint) + (e.model ? ' · ' + esc(e.model) : '') + '</div>' +
         '</div>' +
         '<span class="status ' + esc(ENGINE_STATE[e.state].cls) + '">' + esc(ENGINE_STATE[e.state].text) + '</span>' +
-        '<button type="button" class="test-btn" data-test="' + esc(e.id) + '">▶ تست</button>' +
+        '<button type="button" class="test-btn" data-test="' + esc(e.id) + '"><i class="ico i-play ico-green"></i> تست</button>' +
       '</div>' +
       '<div class="engine-test-result" data-result="' + esc(e.id) + '" hidden></div>' +
     '</div>'
@@ -4062,37 +4140,37 @@ async function selectEngine(id) {
   }
 }
 
-// "▶ تست" on an engine card: fires one small real call at that specific
+// "<i class='ico i-play ico-green'></i> تست" on an engine card: fires one small real call at that specific
 // engine (regardless of which one is active) and shows success/latency or
 // the exact error inline — e.g. a Claude subscription's session-limit
 // message — without switching engines or spending a full MR review to find out.
 async function testEngineUI(id, btn) {
   const resultBox = document.querySelector('[data-result="' + CSS.escape(id) + '"]');
   btn.disabled = true;
-  btn.textContent = '⏳ …';
+  btn.innerHTML = '<i class="ico i-hourglass ico-amber"></i> …';
   resultBox.hidden = true;
   try {
     const r = await api('/api/engines/test', { method: 'POST', body: JSON.stringify({ id }) });
     resultBox.hidden = false;
     resultBox.className = 'engine-test-result ' + (r.ok ? 'ok' : 'err');
     resultBox.textContent = r.ok
-      ? '✓ وصل شد (' + r.ms + 'ms) — پاسخ: «' + (r.text || '(خالی)') + '»'
-      : '✗ ' + r.error + (r.ms ? ' (' + r.ms + 'ms)' : '');
+      ? '<i class="ico i-check ico-green"></i> وصل شد (' + r.ms + 'ms) — پاسخ: «' + (r.text || '(خالی)') + '»'
+      : '<i class="ico i-x ico-red"></i> ' + r.error + (r.ms ? ' (' + r.ms + 'ms)' : '');
   } catch (e) {
     resultBox.hidden = false;
     resultBox.className = 'engine-test-result err';
-    resultBox.textContent = '✗ خطا در فراخوانی: ' + e.message;
+    resultBox.innerHTML = '<i class="ico i-x ico-red"></i> خطا در فراخوانی: ' + esc(e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = '▶ تست';
+    btn.innerHTML = '<i class="ico i-play ico-green"></i> تست';
   }
 }
 
 document.getElementById('refreshBtn').onclick = async () => {
   const btn = document.getElementById('refreshBtn');
-  btn.disabled = true; btn.textContent = '⏳ …';
+  btn.disabled = true; btn.innerHTML = '<i class="ico i-hourglass ico-amber"></i> …';
   await Promise.all([loadStatus(), loadMergeRequests(), loadJobs()]);
-  btn.disabled = false; btn.textContent = '🔄 بروزرسانی';
+  btn.disabled = false; btn.innerHTML = '<i class="ico i-refresh ico-cyan"></i> بروزرسانی';
 };
 
 // ---- settings page (secrets.env + knowledge base + projects) -------------
@@ -4166,7 +4244,7 @@ async function loadMaintainers({ force = false } = {}) {
     // nothing to analyse — saying just "not in the list" would read as the
     // switch being broken.
     const status = m.inRoster
-      ? { cls: 'ok', text: '✓ در لیست آنالیز' }
+      ? { cls: 'ok', text: '<i class="ico i-check ico-green"></i> در لیست آنالیز' }
       : data.includeMaintainers
         ? { cls: '', text: '— هیچ MRای باز نکرده' }
         : { cls: '', text: '— با سوییچ پایین وارد می‌شود' };
@@ -4192,7 +4270,7 @@ document.getElementById('setIncludeMaintainersSettings').onchange = async (ev) =
     const next = await api('/api/settings', { method: 'POST', body: JSON.stringify({ includeMaintainers: el.checked }) });
     if (S.status) S.status.settings = next;
     syncMaintainerSwitches(next.includeMaintainers);
-    note.textContent = '✓ ذخیره شد';
+    note.innerHTML = '<i class="ico i-check ico-green"></i> ذخیره شد';
     await loadDevRoster();
     await loadMaintainers();
   } catch (e) {
@@ -4215,7 +4293,7 @@ function syncMaintainerSwitches(value) {
 }
 
 // ---- audit log tab (settings modal) ----------------------------------------
-const AUDIT_ACTION_LABEL = { settings: '⚙ تنظیمات', env: '🔑 secrets.env', approve: '✅ approve خودکار', project: '📁 پروژه', backup: '💾 پشتیبان‌گیری' };
+const AUDIT_ACTION_LABEL = { settings: '<i class="ico i-settings ico-muted"></i> تنظیمات', env: '<i class="ico i-key ico-amber"></i> secrets.env', approve: '<i class="ico i-check-circle ico-green"></i> approve خودکار', project: '<i class="ico i-folder ico-muted"></i> پروژه', backup: '<i class="ico i-save ico-muted"></i> پشتیبان‌گیری' };
 function auditDetailText(entry) {
   if (entry.action === 'settings') {
     return Object.entries(entry.detail || {}).map(([k, v]) => k + ': ' + JSON.stringify(v.from) + ' → ' + JSON.stringify(v.to)).join('، ');
@@ -4260,7 +4338,7 @@ async function loadLastBackup() {
 document.getElementById('backupNowBtn').onclick = async () => {
   const btn = document.getElementById('backupNowBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ در حال گرفتن نسخه…';
+  btn.innerHTML = '<i class="ico i-hourglass ico-amber"></i> در حال گرفتن نسخه…';
   try {
     await api('/api/backups', { method: 'POST' });
     await loadAudit();
@@ -4268,7 +4346,7 @@ document.getElementById('backupNowBtn').onclick = async () => {
     alert('خطا در پشتیبان‌گیری: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = '📦 پشتیبان‌گیری همین حالا';
+    btn.innerHTML = '<i class="ico i-package ico-muted"></i> پشتیبان‌گیری همین حالا';
   }
 };
 
@@ -4296,7 +4374,7 @@ function renderProjectsPanel() {
         '<div class="tag mono" style="direction:ltr;text-align:start">شناسه: ' + esc(p.id) + (p.path ? ' — ' + esc(p.path) : ' — مسیر تنظیم نشده') + '</div>' +
       '</div>' +
       '<div class="row" style="flex:0 0 auto">' +
-        '<button class="ghost" data-edit-project="' + esc(p.id) + '" style="padding:4px 9px;font-size:12px">✏️ ویرایش</button>' +
+        '<button class="ghost" data-edit-project="' + esc(p.id) + '" style="padding:4px 9px;font-size:12px"><i class="ico i-pencil ico-muted"></i> ویرایش</button>' +
         (p.fromEnv ? '' : '<button class="danger" data-remove-project="' + esc(p.id) + '" style="padding:4px 9px;font-size:12px">حذف</button>') +
       '</div>' +
     '</div>'
@@ -4417,7 +4495,7 @@ function renderSliderField(entry) {
 function renderEnvField(entry, activeModelKey) {
   if (entry.control === 'slider' && entry.levels && entry.levels.length) return renderSliderField(entry);
   const inputType = entry.secret ? 'password' : 'text';
-  const reveal = entry.secret ? '<button type="button" class="reveal" data-reveal="' + esc(entry.key) + '">👁</button>' : '';
+  const reveal = entry.secret ? '<button type="button" class="reveal" data-reveal="' + esc(entry.key) + '"><i class="ico i-eye ico-muted"></i></button>' : '';
   const isActiveModel = entry.key === activeModelKey;
   const hint = isActiveModel
     ? (entry.hint ? entry.hint + ' — ' : '') + 'لیست پیشنهادی از همین موتور (که الان فعال است) خوانده می‌شود؛ اگر مدلت آنجا نبود دستی تایپ کن.'
@@ -4500,7 +4578,7 @@ document.getElementById('settingsSaveBtn').onclick = async () => {
   state_.textContent = 'در حال ذخیره…';
   try {
     await api('/api/env', { method: 'POST', body: JSON.stringify({ values: S.envDirty }) });
-    state_.textContent = '✅ ذخیره شد.';
+    state_.innerHTML = '<i class="ico i-check-circle ico-green"></i> ذخیره شد.';
     S.envDirty = {};
     await loadEnv();
     await loadStatus();
@@ -4548,7 +4626,7 @@ function jobStatusWord(job) {
   if (job.status === 'running') return 'در حال اجرا…';
   if (job.status === 'error') return 'خطا';
   if (job.status === 'stopped') return 'متوقف شد';
-  return job.decision === 'REQUEST_CHANGES' ? '🔴 REQUEST_CHANGES' : job.decision === 'APPROVE' ? '✅ APPROVE' : 'انجام شد';
+  return job.decision === 'REQUEST_CHANGES' ? '<i class="ico i-alert-circle ico-red"></i> REQUEST_CHANGES' : job.decision === 'APPROVE' ? '<i class="ico i-check-circle ico-green"></i> APPROVE' : 'انجام شد';
 }
 
 // Green when the MR targets develop (the normal path); orange for anything
@@ -4574,7 +4652,7 @@ function renderTabs() {
         '<span class="dot ' + jobDotClass(job, mr) + '"></span>' +
         '<span class="label">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</span>' +
       '</div>' +
-      '<div class="tab-meta">' + esc(mr.author) + (mr.draft ? ' · Draft' : '') + (mr.approved ? ' · ✅ approved' : '') + '</div>' +
+      '<div class="tab-meta">' + esc(mr.author) + (mr.draft ? ' · Draft' : '') + (mr.approved ? ' · <i class="ico i-check-circle ico-green"></i> approved' : '') + '</div>' +
       '<div class="tab-meta">' + branchPill(mr) + '</div>' +
       (statusWord ? '<div class="tab-meta">' + esc(statusWord) + (findingCount != null ? ' · ' + findingCount + ' یافته' : '') + '</div>' : '') +
     '</div>';
@@ -4636,11 +4714,11 @@ function renderMrContext(ctx) {
             esc(j.summary || '(بدون عنوان)') + '</a>' +
         '</div>' +
         '<div class="task-meta">' +
-          (j.status ? '<span class="jira-badge">🧩 ' + esc(j.status) + '</span>' : '') +
+          (j.status ? '<span class="jira-badge"><i class="ico i-ticket ico-violet"></i> ' + esc(j.status) + '</span>' : '') +
           (j.type ? '<span class="tag">' + esc(j.type) + '</span>' : '') +
-          '<span class="tag">⏱ تخمین: ' + esc(est) + ' · ثبت‌شده: ' + esc(spent) + '</span>' +
-          (j.dueDate ? '<span class="chip-quiet">📅 سررسید: ' + esc(faDate(j.dueDate)) + '</span>' : '') +
-          (j.assignee ? '<span class="tag">👤 ' + esc(j.assignee) + '</span>' : '') +
+          '<span class="tag"><i class="ico i-clock ico-amber"></i> تخمین: ' + esc(est) + ' · ثبت‌شده: ' + esc(spent) + '</span>' +
+          (j.dueDate ? '<span class="chip-quiet"><i class="ico i-calendar ico-amber"></i> سررسید: ' + esc(faDate(j.dueDate)) + '</span>' : '') +
+          (j.assignee ? '<span class="tag"><i class="ico i-user ico-muted"></i> ' + esc(j.assignee) + '</span>' : '') +
           (j.priority ? '<span class="tag">' + esc(j.priority) + '</span>' : '') +
         '</div>' +
         (j.description && j.description.trim() && j.description.trim() !== (j.summary || '').trim()
@@ -4707,26 +4785,26 @@ function renderMrPanel() {
   else if (job && job.status === 'error') statusLine = '<div class="error-box">خطا: ' + esc(job.error) + '</div>';
   else if (job && job.status === 'stopped') statusLine = '<div class="error-box" style="background:rgba(255,179,71,.1);border-color:rgba(255,179,71,.35);color:#ffd8a8">متوقف شد قبل از پایان.</div>';
   else if (job && job.status === 'done') {
-    const v = job.decision === 'APPROVE' ? '<span class="verdict approve">✅ APPROVE</span>'
-      : job.decision === 'REQUEST_CHANGES' ? '<span class="verdict changes">🔴 REQUEST_CHANGES</span>'
+    const v = job.decision === 'APPROVE' ? '<span class="verdict approve"><i class="ico i-check-circle ico-green"></i> APPROVE</span>'
+      : job.decision === 'REQUEST_CHANGES' ? '<span class="verdict changes"><i class="ico i-alert-circle ico-red"></i> REQUEST_CHANGES</span>'
       : '<span class="verdict">بدون تصمیم مشخص</span>';
     const st = job.stats || {};
     const pub = job.publishResult || {};
     const bits = [
       job.reviewMode === 'agent'
-        ? '🤖 ایجنت کل پروژه' + (st.turns ? ' (' + esc(st.turns) + ' گام)' : '')
-        : '📄 فقط دیف' + (st.batches ? ' (' + esc(st.batches) + ' دسته)' : '') +
+        ? '<i class="ico i-bot ico-violet"></i> ایجنت کل پروژه' + (st.turns ? ' (' + esc(st.turns) + ' گام)' : '')
+        : '<i class="ico i-file-text ico-muted"></i> فقط دیف' + (st.batches ? ' (' + esc(st.batches) + ' دسته)' : '') +
           (job.fallbackEngine ? ' — با موتور جایگزین «' + esc(job.fallbackEngine) + '»' : ''),
       esc(st.files || 0) + ' فایل بررسی شد',
       st.skipped ? esc(st.skipped) + ' فایل رد شد' : '',
       (job.findings || []).length + ' یافته',
       job.posted ? (pub.inline ? esc(pub.inline) + ' کامنت خطی ثبت شد' : 'خلاصه روی گیت‌لب ثبت شد') : 'روی گیت‌لب ثبت نشده',
       pub.skippedDuplicate ? esc(pub.skippedDuplicate) + ' مورد تکراری رد شد' : '',
-      job.approved ? '✅ روی گیت‌لب approve شد' : '',
+      job.approved ? '<i class="ico i-check-circle ico-green"></i> روی گیت‌لب approve شد' : '',
       job.approveError ? 'approve نشد: ' + esc(job.approveError) : '',
-      job.reportPath ? '📄 گزارش نوشته شد در review/' : '',
+      job.reportPath ? '<i class="ico i-file-text ico-muted"></i> گزارش نوشته شد در review/' : '',
       job.reportError ? 'خطای نوشتن گزارش: ' + esc(job.reportError) : '',
-      job.reportPushed ? '📤 روی شاخه‌ی ' + esc(job.reportPushed) + ' کامیت شد' : '',
+      job.reportPushed ? '<i class="ico i-upload ico-cyan"></i> روی شاخه‌ی ' + esc(job.reportPushed) + ' کامیت شد' : '',
       job.reportPushError ? 'گزارش پوش نشد: ' + esc(job.reportPushError) : '',
       st.promptTokens || st.completionTokens ? 'توکن: ' + esc(st.promptTokens) + '+' + esc(st.completionTokens) : '',
       esc(job.trigger),
@@ -4747,16 +4825,16 @@ function renderMrPanel() {
       '<div class="meta">نویسنده: <b>' + esc(mr.author) + '</b>' + (mr.draft ? ' · <b>Draft</b>' : '') + '</div>' +
       '<div class="meta">کامیت فعلی: <span class="mono">' + esc((mr.sha || '').slice(0, 8)) + '</span>' +
         (isStale ? ' <b style="color:var(--orange)">(بعد از آخرین ریویو تغییر کرده)</b>' : '') + '</div>' +
-      '<div class="meta">ترتیب merge: <b style="color:var(--violet)">#' + esc(mr.mergeOrder) + '</b>' + (mr.approved ? ' · ✅ approved' : '') + '</div>' +
+      '<div class="meta">ترتیب merge: <b style="color:var(--violet)">#' + esc(mr.mergeOrder) + '</b>' + (mr.approved ? ' · <i class="ico i-check-circle ico-green"></i> approved' : '') + '</div>' +
     '</div>' +
     renderMrContext(S.mrContext[key]) +
-    (!pathReady ? '<div class="error-box" style="margin-top:10px;margin-bottom:10px">مسیر پروژه‌ی محلی تنظیم نشده — از دکمه‌ی ⚙ بالای صفحه تنظیمش کن.</div>' : '') +
+    (!pathReady ? '<div class="error-box" style="margin-top:10px;margin-bottom:10px">مسیر پروژه‌ی محلی تنظیم نشده — از دکمه‌ی <i class="ico i-settings ico-muted"></i> بالای صفحه تنظیمش کن.</div>' : '') +
     '<hr class="section-divider" />' +
     '<div class="row">' +
-      '<button id="runBtn" ' + (running || !pathReady ? 'disabled' : '') + '>' + (running ? '⏳ در حال اجرا…' : '▶ اجرای ریویو') + '</button>' +
-      (running ? '<button class="danger" id="stopBtn">⏹ توقف</button>' : '') +
+      '<button id="runBtn" ' + (running || !pathReady ? 'disabled' : '') + '>' + (running ? '<i class="ico i-hourglass ico-amber"></i> در حال اجرا…' : '<i class="ico i-play ico-green"></i> اجرای ریویو') + '</button>' +
+      (running ? '<button class="danger" id="stopBtn"><i class="ico i-stop ico-red"></i> توقف</button>' : '') +
       '<label class="check"><input type="checkbox" id="postChk" ' + (S.postToGitlab ? 'checked' : '') + ' /> کامنت روی گیت‌لب ثبت شود</label>' +
-      (job && job.status === 'done' && !job.posted ? '<button class="ghost" id="postBtn">💬 ثبت این نتیجه روی MR</button>' : '') +
+      (job && job.status === 'done' && !job.posted ? '<button class="ghost" id="postBtn"><i class="ico i-message ico-cyan"></i> ثبت این نتیجه روی MR</button>' : '') +
     '</div>' +
     '<div style="margin-top:12px">' + statusLine + '</div>' +
     streamBlock +
@@ -4779,7 +4857,7 @@ function renderMrPanel() {
   bindFindingFeedback(job, mr);
 }
 
-// 👍/👎 per finding — the tool's only honest accuracy signal (lib/feedback.js).
+// <i class="ico i-thumbs-up ico-green"></i>/<i class="ico i-thumbs-down ico-red"></i> per finding — the tool's only honest accuracy signal (lib/feedback.js).
 // Votes already cast are fetched once per MR (S.feedbackVotes, keyed like the
 // job map) so re-opening a tab shows buttons already pressed instead of
 // resetting them; a vote not yet loaded just renders with neither button lit.
@@ -4799,8 +4877,8 @@ function renderFindings(job, mr) {
         '<span class="tag">' + esc(f.category) + (f.source === 'auto' ? ' · بررسی خودکار' : '') +
           (f.postedInline ? ' · روی خط ثبت شد' : '') + '</span>' +
         (f.fingerprint ? '<span class="finding-feedback" data-fp="' + esc(f.fingerprint) + '" data-category="' + esc(f.category) + '" data-severity="' + esc(f.severity) + '" data-source="' + esc(f.source || '') + '" title="این یافته واقعاً درست بود؟">' +
-          '<button class="fb-btn fb-up' + (vote === 'up' ? ' active' : '') + '" data-vote="up">👍</button>' +
-          '<button class="fb-btn fb-down' + (vote === 'down' ? ' active' : '') + '" data-vote="down">👎</button>' +
+          '<button class="fb-btn fb-up' + (vote === 'up' ? ' active' : '') + '" data-vote="up"><i class="ico i-thumbs-up ico-green"></i></button>' +
+          '<button class="fb-btn fb-down' + (vote === 'down' ? ' active' : '') + '" data-vote="down"><i class="ico i-thumbs-down ico-red"></i></button>' +
         '</span>' : '') +
       '</div>' +
       '<div class="finding-loc">' + esc(loc) + (f.lineUnverified ? ' (خط ادعایی مدل: ' + esc(f.claimedLine) + ' — در دیف نبود)' : '') + '</div>' +
@@ -5041,7 +5119,7 @@ async function deleteKb(id) {
 
 
 // ---- developer analytics page ----------------------------------------------
-// A full page (not a tab) behind the toolbar's "📊 آنالیز دولوپرها" button:
+// A full page (not a tab) behind the toolbar's "<i class="ico i-chart ico-cyan"></i> آنالیز دولوپرها" button:
 // roster on the right (RTL start side), selected developer's chart/stats/
 // task-list in the main area. Fields here are deliberately per-record (see
 // lib/devAnalytics.js) so a later added metric is just another column/badge,
@@ -5381,7 +5459,7 @@ function renderTeam() {
   main.innerHTML =
     '<div class="card">' +
       '<div class="row" style="justify-content:space-between; margin-bottom:14px">' +
-        '<strong>&#128101; نمای تیم — ' + DEV.roster.length + ' نفر</strong>' +
+        '<strong><i class="ico i-users ico-cyan"></i> نمای تیم — ' + DEV.roster.length + ' نفر</strong>' +
         '<span class="tag">' + (DEV.teamPending > 0 ? 'در حال خواندن ' + DEV.teamPending + ' نفر…' : 'کامل') + '</span>' +
       '</div>' +
       '<div class="date-filter">' +
@@ -5389,7 +5467,7 @@ function renderTeam() {
         renderDatePicker('teamUntil', DEV.until, 'تا تاریخ') +
         '<button id="teamFilterApply">اعمال فیلتر</button>' +
         '<button class="ghost" id="teamFilterClear">پاک کردن</button>' +
-        '<button class="btn-refresh" id="teamRefreshBtn">🔄 محاسبه‌ی دوباره</button>' +
+        '<button class="btn-refresh" id="teamRefreshBtn"><i class="ico i-refresh ico-cyan"></i> محاسبه‌ی دوباره</button>' +
       '</div>' +
     '</div>' +
     '<div>' +
@@ -5407,7 +5485,7 @@ function renderTeam() {
       '<div class="band"><h4>نفر به نفر</h4>' +
         '<span class="band-note">روی هر ردیف کلیک کن تا صفحه‌ی کامل همان فرد باز شود. ستون‌ها قابل مرتب‌سازی‌اند؛ پیش‌فرض روی «اولویت رسیدگی» است.</span></div>' +
       '<div style="overflow-x:auto"><table class="team-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
-      '<div class="muted" style="font-size:11px;margin-top:10px">⚠️ ستون امتیاز ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی — فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده.</div>' +
+      '<div class="muted" style="font-size:11px;margin-top:10px"><i class="ico i-alert ico-amber"></i> ستون امتیاز ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی — فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده.</div>' +
     '</div>';
 
   main.querySelectorAll('[data-open]').forEach((el) => activate(el, () => selectDeveloper(el.dataset.open)));
@@ -5472,8 +5550,8 @@ function allTeamTasks() {
 
 function reasonChips(t) {
   const chips = [];
-  if (t.overdueDays != null) chips.push('<span class="rt-badge yes">&#128197; ' + t.overdueDays + ' روز تأخیر</span>');
-  else if (t.dueDate) chips.push('<span class="chip-quiet">&#128197; سررسید ' + esc(faDate(t.dueDate)) + '</span>');
+  if (t.overdueDays != null) chips.push('<span class="rt-badge yes"><i class="ico i-calendar ico-amber"></i> ' + t.overdueDays + ' روز تأخیر</span>');
+  else if (t.dueDate) chips.push('<span class="chip-quiet"><i class="ico i-calendar ico-amber"></i> سررسید ' + esc(faDate(t.dueDate)) + '</span>');
   if (t.reasons.includes('no-mr')) chips.push('<span class="rt-badge unk">بدون MR</span>');
   if (t.reasons.includes('no-worklog')) chips.push('<span class="rt-badge unk">بدون ثبت زمان</span>');
   return chips.join('');
@@ -5484,7 +5562,7 @@ function teamTaskCard(t) {
     : t.statusCategory === 'indeterminate' ? 'st-doing' : 'st-todo';
   const mrs = (t.mrs || []).map((m) => (
     '<a class="mr-link' + (m.state === 'merged' ? ' merged' : '') + '" href="' + esc(m.webUrl) +
-      '" target="_blank" rel="noreferrer">' + (m.state === 'merged' ? '&#10004; ' : '') + '!' + esc(m.iid) + '</a>'
+      '" target="_blank" rel="noreferrer">' + (m.state === 'merged' ? '<i class="ico i-check ico-green"></i> ' : '') + '!' + esc(m.iid) + '</a>'
   )).join('');
   return '<div class="task-card' + (t.reasons.includes('no-worklog') ? ' needs-worklog' : '') + '">' +
     '<div class="task-head">' +
@@ -5498,8 +5576,8 @@ function teamTaskCard(t) {
       mrs + reasonChips(t) +
     '</div>' +
     '<div class="task-foot">' +
-      (t.project ? '<span>&#128193; ' + esc(t.project) + '</span>' : '') +
-      (t.sprint ? '<span>&#127939; ' + esc(t.sprint) + '</span>' : '') +
+      (t.project ? '<span><i class="ico i-folder ico-muted"></i> ' + esc(t.project) + '</span>' : '') +
+      (t.sprint ? '<span><i class="ico i-sprint ico-cyan"></i> ' + esc(t.sprint) + '</span>' : '') +
       (t.estimateHours != null ? '<span>تخمین ' + esc(t.estimateHours) + ' ساعت</span>' : '') +
       (t.spentHours != null ? '<span>ثبت‌شده ' + esc(t.spentHours) + ' ساعت</span>' : '') +
     '</div>' +
@@ -5593,6 +5671,10 @@ const KPI_PILL_ICON = {
   warn: '<path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>',
   good: '<path d="M20 6 9 17l-5-5"></path>',
 };
+// Emits the mask-based icon tag. Kept as a helper for code that picks an
+// icon at runtime; static sites write the tag directly.
+const ico = (name, tone) => '<i class="ico i-' + name + (tone ? ' ico-' + tone : '') + '"></i>';
+
 const lucide = (paths) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" ' +
   'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
 
@@ -5689,7 +5771,7 @@ function renderDevMain() {
   const attnItems = attentionItems(a);
   const attentionChip = attnItems.length
     ? '<span class="score-badge score-bad" id="heroAttentionChip" style="cursor:pointer" title="رفتن به فهرست موارد نیازمند رسیدگی">&#9888; ' + attnItems.length + ' مورد رسیدگی</span>'
-    : '<span class="score-badge score-good">&#10003; موردی برای رسیدگی نیست</span>';
+    : '<span class="score-badge score-good"><i class="ico i-check ico-green"></i> موردی برای رسیدگی نیست</span>';
 
   const cacheNote = a.cachedAt
     ? '<span class="tag">' + (a.fromCache ? 'کش‌شده — ' : 'همین الان محاسبه شد — ') + esc(relativeTime(a.cachedAt)) + '</span>'
@@ -5734,11 +5816,11 @@ function renderDevMain() {
         '<div class="hero-chips">' + attentionChip + manualBadge + coverageChip(a) + '</div>' +
       '</div>' +
       '<div class="hero-actions">' + cacheNote +
-        '<button class="btn-refresh" id="devRefreshBtn">🔄 بروزرسانی این فرد</button>' +
-        '<button class="ghost" id="devExportBtn" title="خروجی اکسل عملکرد ماهانه، همراه با نمودار">📊 خروجی اکسل</button>' +
+        '<button class="btn-refresh" id="devRefreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی این فرد</button>' +
+        '<button class="ghost" id="devExportBtn" title="خروجی اکسل عملکرد ماهانه، همراه با نمودار"><i class="ico i-chart ico-cyan"></i> خروجی اکسل</button>' +
       '</div>' +
       '<div class="hero-caveat">' +
-        '<b>⚠️ این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی.</b> ' +
+        '<b><i class="ico i-alert ico-amber"></i> این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی.</b> ' +
         'فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده — ' +
         '<a id="heroBreakdownLink">تفکیک کامل شش مؤلفه‌اش را ببین ←</a>' +
       '</div>' +
@@ -6212,7 +6294,7 @@ function renderNowBand(a) {
   const d = a.delivery || {};
   const sp = a.latestSprint;
 
-  return '<div class="band"><h4>&#128064; همین حالا روی چه چیزی است</h4>' +
+  return '<div class="band"><h4><i class="ico i-eye ico-cyan"></i> همین حالا روی چه چیزی است</h4>' +
       '<span class="band-note">شمارش زنده، نه میانگین تاریخی — این بخش به سؤالی جواب می‌دهد که واقعاً پرسیده می‌شود.</span></div>' +
     '<div class="kpi-row">' +
       kpi(open.length, 'Merge Request باز',
@@ -6241,7 +6323,7 @@ function attentionItems(a) {
   for (const { t, days } of overdueTasks(a)) {
     items.push({
       level: days > 14 ? 'high' : 'mid',
-      icon: '&#128197;',
+      icon: '<i class="ico i-calendar ico-amber"></i>',
       text: '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer">' + esc(t.key) + ' — ' + esc(t.summary || '') + '</a>',
       why: days + ' روز از سررسید گذشته و هنوز بسته نشده' + (t.status ? ' · ' + t.status : ''),
     });
@@ -6250,7 +6332,7 @@ function attentionItems(a) {
   for (const { mr, hours } of staleOpenMrs(a)) {
     items.push({
       level: hours > 24 * 7 ? 'high' : 'mid',
-      icon: '&#128260;',
+      icon: '<i class="ico i-git-branch ico-cyan"></i>',
       text: '<a class="task-title" href="' + esc(mr.webUrl) + '" target="_blank" rel="noreferrer">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</a>',
       why: humanHours(hours) + ' است که باز مانده' + (mr.targetBranch ? ' · به ' + mr.targetBranch : ''),
     });
@@ -6260,7 +6342,7 @@ function attentionItems(a) {
   if (noWorklog.length) {
     items.push({
       level: 'mid',
-      icon: '&#9201;',
+      icon: '<i class="ico i-clock ico-amber"></i>',
       text: '<b>' + noWorklog.length + ' تسک به Review/Done رسیده ولی زمان ثبت‌شده ندارد</b>',
       why: 'تا این پر نشود، دقت تخمین برای این تسک‌ها اصلاً قابل محاسبه نیست — سوراخِ بقیه‌ی اعداد همین است. فهرستشان در تب‌های پایین با حاشیه‌ی نارنجی مشخص شده.',
     });
@@ -6285,7 +6367,7 @@ function renderAttentionBand(a) {
           '<span class="why">' + esc(i.why) + '</span>' +
         '</div>'
       )).join('') + (rest > 0 ? '<div class="attn-item mid"><span class="grow">و ' + rest + ' مورد دیگر</span></div>' : '') + '</div>'
-    : '<div class="attn-empty">&#10003; هیچ تسک عقب‌افتاده، MR راکد یا worklog جاافتاده‌ای در این بازه نیست.</div>';
+    : '<div class="attn-empty"><i class="ico i-check ico-green"></i> هیچ تسک عقب‌افتاده، MR راکد یا worklog جاافتاده‌ای در این بازه نیست.</div>';
 
   // A fold, like the coverage section — but one that carries its whole
   // headline on the summary line: how many items, and how many of them are
@@ -6299,10 +6381,10 @@ function renderAttentionBand(a) {
   const chip = items.length
     ? '<span class="cover-chip ' + (high ? 'bad' : 'warn') + '">' + items.length + ' مورد' +
         (high ? ' · ' + high + ' مورد جدی' : '') + '</span>'
-    : '<span class="cover-chip ok">&#10003; چیزی نیست</span>';
+    : '<span class="cover-chip ok"><i class="ico i-check ico-green"></i> چیزی نیست</span>';
 
   return '<details class="fold" id="attentionFold"' + (items.length ? ' open' : '') + '>' +
-      '<summary>&#9888; نیازمند رسیدگی ' + chip +
+      '<summary><i class="ico i-alert ico-amber"></i> نیازمند رسیدگی ' + chip +
       '<span class="band-note">فقط چیزهایی که همین حالا اشکال دارند، هرکدام با لینک خودش' +
       (rest > 0 ? '؛ ' + shown.length + ' مورد اول نمایش داده شده' : '') + '.</span></summary>' +
     body + '</details>';
@@ -6454,7 +6536,7 @@ function handoffText(report, which) {
 const HANDOFF_ROWS = 12;
 
 function renderHandoffList(items, emptyText) {
-  if (!items.length) return '<div class="attn-empty">&#10003; ' + esc(emptyText) + '</div>';
+  if (!items.length) return '<div class="attn-empty"><i class="ico i-check ico-green"></i> ' + esc(emptyText) + '</div>';
   const shown = items.slice(0, HANDOFF_ROWS);
   const rest = items.length - shown.length;
   return '<div class="attn">' + shown.map(({ t, late }) => {
@@ -6481,27 +6563,27 @@ function renderHandoffBand(a, displayName) {
   const devCount = report.dev.overdue.length + report.dev.noMr.length + report.dev.noWorklog.length;
 
   return '<details class="fold"' + (devCount || report.lead.length ? ' open' : '') + ' id="handoffFold">' +
-    '<summary>&#128203; تعیین تکلیف ' +
-      '<span class="cover-chip ' + (devCount ? 'warn' : 'ok') + '">' + (devCount ? devCount + ' مورد با دولوپر' : '&#10003; چیزی با دولوپر نیست') + '</span>' +
-      '<span class="cover-chip ' + (report.lead.length ? 'bad' : 'ok') + '">' + (report.lead.length ? report.lead.length + ' مورد با تو' : '&#10003; صف ریویو خالی') + '</span>' +
+    '<summary><i class="ico i-clipboard ico-muted"></i> تعیین تکلیف ' +
+      '<span class="cover-chip ' + (devCount ? 'warn' : 'ok') + '">' + (devCount ? devCount + ' مورد با دولوپر' : '<i class="ico i-check ico-green"></i> چیزی با دولوپر نیست') + '</span>' +
+      '<span class="cover-chip ' + (report.lead.length ? 'bad' : 'ok') + '">' + (report.lead.length ? report.lead.length + ' مورد با تو' : '<i class="ico i-check ico-green"></i> صف ریویو خالی') + '</span>' +
       '<span class="band-note">دو فهرست جدا، چون دو نفر متفاوت باید کاری بکنند.</span>' +
     '</summary>' +
 
     '<div class="handoff-block">' +
       '<div class="handoff-head">' +
-        '<b>&#128100; با ' + esc(displayName) + ' — تعیین تکلیف کند</b>' +
+        '<b><i class="ico i-user ico-muted"></i> با ' + esc(displayName) + ' — تعیین تکلیف کند</b>' +
         '<button class="ghost" data-copy="dev" title="همه‌ی بخش‌ها در یک متن — عقب‌افتاده، بدون MR، بدون ثبت زمان، و صف ریویو (جدا و برچسب‌خورده)">&#128203; کپی کل فهرست</button>' +
       '</div>' +
-      (report.dev.overdue.length ? '<div class="handoff-group">⏰ از سررسید گذشته (' + report.dev.overdue.length + ')</div>' + renderHandoffList(report.dev.overdue, '') : '') +
-      (report.dev.noMr.length ? '<div class="handoff-group">🔀 در جریان، بدون MR (' + report.dev.noMr.length + ')</div>' + renderHandoffList(report.dev.noMr, '') : '') +
-      (report.dev.noWorklog.length ? '<div class="handoff-group">⏱ بدون ثبت زمان (' + report.dev.noWorklog.length + ')</div>' + renderHandoffList(report.dev.noWorklog, '') : '') +
-      (devCount ? '' : '<div class="attn-empty">&#10003; چیزی برای تعیین تکلیف نیست.</div>') +
+      (report.dev.overdue.length ? '<div class="handoff-group"><i class="ico i-clock ico-red"></i> از سررسید گذشته (' + report.dev.overdue.length + ')</div>' + renderHandoffList(report.dev.overdue, '') : '') +
+      (report.dev.noMr.length ? '<div class="handoff-group"><i class="ico i-git-branch ico-cyan"></i> در جریان، بدون MR (' + report.dev.noMr.length + ')</div>' + renderHandoffList(report.dev.noMr, '') : '') +
+      (report.dev.noWorklog.length ? '<div class="handoff-group"><i class="ico i-clock ico-amber"></i> بدون ثبت زمان (' + report.dev.noWorklog.length + ')</div>' + renderHandoffList(report.dev.noWorklog, '') : '') +
+      (devCount ? '' : '<div class="attn-empty"><i class="ico i-check ico-green"></i> چیزی برای تعیین تکلیف نیست.</div>') +
     '</div>' +
 
     '<div class="handoff-block">' +
       '<div class="handoff-head">' +
-        '<b>&#128064; با تو — در صف ریویو مانده</b>' +
-        '<button class="ghost" data-copy="lead">&#128203; کپی این فهرست</button>' +
+        '<b><i class="ico i-eye ico-cyan"></i> با تو — در صف ریویو مانده</b>' +
+        '<button class="ghost" data-copy="lead"><i class="ico i-clipboard ico-muted"></i> کپی این فهرست</button>' +
       '</div>' +
       '<div class="band-note" style="margin-bottom:6px">کار تحویل‌شده که منتظر ریویو است. این‌ها هم «تحویل به‌موقع» و هم «تکمیل تسک‌ها» را پایین می‌آورند، در حالی که دست دولوپر نیست.</div>' +
       renderHandoffList(report.lead, 'هیچ تسکی در صف ریویو گیر نکرده.') +
@@ -6535,7 +6617,7 @@ async function copyHandoff(which, btn) {
       document.body.removeChild(ta);
     } catch (e2) { ok = false; }
   }
-  btn.textContent = ok ? '✓ کپی شد' : '✗ کپی نشد — دستی انتخاب کن';
+  btn.innerHTML = ok ? '<i class="ico i-check ico-green"></i> کپی شد' : '<i class="ico i-x ico-red"></i> کپی نشد — دستی انتخاب کن';
   setTimeout(() => { btn.textContent = label; }, 2000);
 }
 
@@ -6549,7 +6631,7 @@ function renderDeliveredBand(a) {
   const drift = est > 0 ? Math.round(((spent - est) / est) * 100) : null;
   const onTime = (a.autoScore && a.autoScore.components || []).find((c) => c.key === 'onTime');
 
-  return '<div class="band"><h4>&#128666; تحویل در این بازه</h4>' +
+  return '<div class="band"><h4><i class="ico i-truck ico-green"></i> تحویل در این بازه</h4>' +
       '<span class="band-note">معیارهای گیت‌لبی این بخش به پر کردن هیچ فیلدی توسط کسی وابسته نیستند؛ معیارهای جیرایی به آن وابسته‌اند و حجم نمونه‌شان نوشته شده.</span></div>' +
     '<div class="kpi-row">' +
       (a.jiraConfigured ? kpi(done.length, 'تسک به Done رسیده', '', '', tasks.length) : '') +
@@ -6579,7 +6661,7 @@ function renderCoverageFold(a) {
         a.reportedMRs + ' از ' + a.totalMRs + ' MR ریویو شده' + (pct == null ? '' : ' · ' + pct + '٪') +
       '</span>'
     : '';
-  return '<details class="fold"><summary>&#128295; پوشش ابزار ریویو و کیفیت داده ' + cover +
+  return '<details class="fold"><summary><i class="ico i-wrench ico-muted"></i> پوشش ابزار ریویو و کیفیت داده ' + cover +
       '<span class="band-note">چقدر از کار این فرد اصلاً ریویو شده و کدام اعداد پایه‌ی محکمی ندارند</span></summary>' +
     '<div class="kpi-row" style="margin-top:12px">' +
       kpi(a.totalMRs, 'کل Merge Requestها', 'همه‌ی پروژه‌های تنظیم‌شده، مستقیم از گیت‌لب', '') +
@@ -6630,7 +6712,7 @@ function renderDeliveryMetrics(a) {
     { label: 'میانه‌ی تعداد کامنت روی هر MR', value: d.medianNotes == null ? '—' : String(d.medianNotes), extra: '', n: d.notesSample },
   ];
   return '<div class="card">' +
-    '<div class="band"><h4>🚚 معیارهای تحویل (مستقیم از گیت‌لب)</h4>' +
+    '<div class="band"><h4><i class="ico i-truck ico-green"></i> معیارهای تحویل (مستقیم از گیت‌لب)</h4>' +
       '<span class="band-note">این اعداد به پر کردن هیچ فیلدی توسط کسی وابسته نیستند، پس برای همه‌ی MRها کامل‌اند — برخلاف معیارهای جیرا که روی دیتای ناقص می‌ایستند. میانه گزارش می‌شود نه میانگین: یک MR که روی تعطیلات باز مانده، میانگین را از هر چیزی که تیم «معمول» بداند دور می‌کند.</span></div>' +
     '<div class="table-wrap"><table class="score-table"><tbody>' +
     rows.map((r) => '<tr>' +
@@ -6655,7 +6737,7 @@ function missingTimeLog(t) {
 // the same answer from the other side.
 function projectBadge(t) {
   const name = t.project || (t.mrs && t.mrs.length ? t.mrs[0].projectName : null);
-  return name ? '<span class="chip-quiet">📁 ' + esc(name) + '</span>' : '';
+  return name ? '<span class="chip-quiet"><i class="ico i-folder ico-muted"></i> ' + esc(name) + '</span>' : '';
 }
 
 // Status carries the most meaning on the card, so it is the one chip that
@@ -6682,7 +6764,7 @@ function mrLinks(t) {
     const merged = m.state === 'merged';
     const title = 'وضعیت: ' + (m.state || '?') + (m.targetBranch ? ' — به ' + m.targetBranch : '') + (m.projectName ? ' — ' + m.projectName : '');
     return '<a class="mr-link' + (merged ? ' merged' : '') + '" href="' + esc(m.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(title) + '">' +
-      (merged ? '✔ ' : '') + '!' + esc(m.iid) + '</a>';
+      (merged ? '<i class="ico i-check ico-green"></i> ' : '') + '!' + esc(m.iid) + '</a>';
   }).join('');
 }
 
@@ -6981,13 +7063,13 @@ function faMonthShort(monthKey) {
 function estimateBadge(t) {
   if (!(t.estimateHours > 0)) return '';
   if (!(t.spentHours > 0)) {
-    return '<span class="chip-quiet" title="زمان صرف‌شده در جیرا ثبت نشده، پس دقت تخمین برای این تسک قابل محاسبه نیست">⏱ تخمین ' + esc(t.estimateHours) + ' ساعت · بدون ثبت زمان</span>';
+    return '<span class="chip-quiet" title="زمان صرف‌شده در جیرا ثبت نشده، پس دقت تخمین برای این تسک قابل محاسبه نیست"><i class="ico i-clock ico-amber"></i> تخمین ' + esc(t.estimateHours) + ' ساعت · بدون ثبت زمان</span>';
   }
   const drift = Math.abs(Math.log2(t.spentHours / t.estimateHours));
   const cls = drift <= 0.32 ? 'no' : (drift <= 1 ? 'unk' : 'yes'); // ≤25% off / ≤2× / worse
   const pct = Math.round(((t.spentHours - t.estimateHours) / t.estimateHours) * 100);
   return '<span class="rt-badge ' + cls + '" title="تخمین ' + esc(t.estimateHours) + ' ساعت، واقعی ' + esc(t.spentHours) + ' ساعت">' +
-    '⏱ ' + esc(t.estimateHours) + '→' + esc(t.spentHours) + 'س (' + (pct > 0 ? '+' : '') + pct + '٪)</span>';
+    '<i class="ico i-clock ico-amber"></i> ' + esc(t.estimateHours) + '→' + esc(t.spentHours) + 'س (' + (pct > 0 ? '+' : '') + pct + '٪)</span>';
 }
 
 // Due date, and whether it was actually met. An unresolved task inside its
@@ -7002,14 +7084,14 @@ function dueBadge(t) {
     // "با تأخیر" alone can't be acted on — two days over and two months over
     // are different problems, and the score already grades them differently.
     return daysLate > 0
-      ? '<span class="rt-badge yes" title="' + title + '">📅 ' + daysLate + ' روز تأخیر</span>'
-      : '<span class="rt-badge no" title="' + title + '">📅 به‌موقع' + (daysLate < 0 ? ' (' + Math.abs(daysLate) + ' روز زودتر)' : '') + '</span>';
+      ? '<span class="rt-badge yes" title="' + title + '"><i class="ico i-calendar ico-red"></i> ' + daysLate + ' روز تأخیر</span>'
+      : '<span class="rt-badge no" title="' + title + '"><i class="ico i-calendar ico-green"></i> به‌موقع' + (daysLate < 0 ? ' (' + Math.abs(daysLate) + ' روز زودتر)' : '') + '</span>';
   }
   if (Date.now() > due) {
     const days = Math.floor((Date.now() - due) / 86400000);
-    return '<span class="rt-badge yes" title="سررسید ' + esc(faDate(t.dueDate)) + ' گذشته و تسک هنوز بسته نشده">📅 ' + days + ' روز عقب</span>';
+    return '<span class="rt-badge yes" title="سررسید ' + esc(faDate(t.dueDate)) + ' گذشته و تسک هنوز بسته نشده"><i class="ico i-calendar ico-red"></i> ' + days + ' روز عقب</span>';
   }
-  return '<span class="chip-quiet">📅 سررسید ' + esc(faDate(t.dueDate)) + '</span>';
+  return '<span class="chip-quiet"><i class="ico i-calendar ico-amber"></i> سررسید ' + esc(faDate(t.dueDate)) + '</span>';
 }
 
 // The composite score, with every component and its weight on screen. The
@@ -7020,7 +7102,7 @@ function renderAutoScore(a) {
   const s = a.autoScore;
   if (!s) return '';
   if (s.score == null) {
-    return '<div class="card"><div class="band"><h4 id="autoScoreSection">🎯 امتیاز خودکار</h4></div>' +
+    return '<div class="card"><div class="band"><h4 id="autoScoreSection"><i class="ico i-target ico-amber"></i> امتیاز خودکار</h4></div>' +
       '<div class="empty">' + esc(s.reason) + '</div></div>';
   }
   const rows = s.components.map((c) => {
@@ -7039,7 +7121,7 @@ function renderAutoScore(a) {
     '</tr>';
   }).join('');
   return '<div class="card">' +
-    '<div class="band"><h4 id="autoScoreSection">🎯 امتیاز خودکار — ' + s.score + ' از ۱۰۰</h4>' +
+    '<div class="band"><h4 id="autoScoreSection"><i class="ico i-target ico-amber"></i> امتیاز خودکار — ' + s.score + ' از ۱۰۰</h4>' +
       '<span class="band-note">' + esc(s.reason) + '</span></div>' +
     renderScoreGovernanceBanner() +
     '<div class="table-wrap"><table class="score-table"><thead><tr><th>مؤلفه</th><th>امتیاز</th><th>وزن مؤثر</th><th></th><th>بر چه اساسی</th></tr></thead><tbody>' +
@@ -7054,7 +7136,7 @@ function renderAutoScore(a) {
 // verdict; this is the caveat.
 function renderScoreGovernanceBanner() {
   return '<div class="score-governance-banner">' +
-    '⚠️ این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی. فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده — ' +
+    '<i class="ico i-alert ico-amber"></i> این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی. فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده — ' +
     'هیچ ادعایی درباره‌ی مهارت واقعی، کیفیت کد در جاهایی که ریویو نشده، یا مسائل تیمی/غیرکدی ندارد.' +
     '</div>';
 }
@@ -7063,7 +7145,7 @@ function renderJiraTasks(a) {
   if (!a.jiraConfigured) return ''; // Jira not set up — no empty section, no noise
   const tasks = a.jiraTasks || [];
   if (!tasks.length) {
-    return '<div class="card"><div class="band"><h4>🧩 تسک‌های جیرا</h4></div>' +
+    return '<div class="card"><div class="band"><h4><i class="ico i-ticket ico-violet"></i> تسک‌های جیرا</h4></div>' +
       '<div class="empty">هیچ تسکی در جیرا برای این نام کاربری پیدا نشد — ممکن است نام کاربری‌اش در جیرا با گیت‌لب فرق داشته باشد.</div></div>';
   }
   const withoutMr = tasks.filter((t) => !t.hasMr).length;
@@ -7102,7 +7184,7 @@ function renderJiraTasks(a) {
           '<div class="task-foot">' +
             (t.type ? '<span>' + esc(t.type) + '</span>' : '') +
             (t.priority ? '<span>' + esc(t.priority) + '</span>' : '') +
-            (t.sprint ? '<span>🏃 ' + esc(t.sprint) + '</span>' : '') +
+            (t.sprint ? '<span><i class="ico i-sprint ico-cyan"></i> ' + esc(t.sprint) + '</span>' : '') +
             (t.storyPoints != null ? '<span>SP ' + esc(t.storyPoints) + '</span>' : '') +
             (t.updated ? '<span>آخرین تغییر: ' + esc(faDate(t.updated)) + '</span>' : '') +
           '</div>' +
@@ -7152,7 +7234,7 @@ function renderJiraTasks(a) {
   )).join('');
 
   return '<div class="card">' +
-    '<div class="band"><h4>🧩 تسک‌های جیرا — ' + tasks.length + ' تسک</h4>' +
+    '<div class="band"><h4><i class="ico i-ticket ico-violet"></i> تسک‌های جیرا — ' + tasks.length + ' تسک</h4>' +
       '<span class="band-note">' +
         (withoutMr ? withoutMr + ' تا از همین‌ها هنوز هیچ MRی ندارند. ' : '') +
         'گروه‌بندی بر اساس وضعیت جیرا؛ کارتِ حاشیه‌نارنجی یعنی به Review/Done رسیده ولی زمان ثبت‌شده ندارد.' +
@@ -7210,8 +7292,8 @@ function renderMrTaskCard(t) {
   // up for real) simply gets no badge, not an error.
   const jiraBadge = t.jiraStatus
     ? (t.jiraUrl
-        ? '<a class="jira-badge" href="' + esc(t.jiraUrl) + '" target="_blank" rel="noreferrer">🧩 ' + esc(t.jiraStatus) + '</a>'
-        : '<span class="jira-badge">🧩 ' + esc(t.jiraStatus) + '</span>')
+        ? '<a class="jira-badge" href="' + esc(t.jiraUrl) + '" target="_blank" rel="noreferrer"><i class="ico i-ticket ico-violet"></i> ' + esc(t.jiraStatus) + '</a>'
+        : '<span class="jira-badge"><i class="ico i-ticket ico-violet"></i> ' + esc(t.jiraStatus) + '</span>')
     : '';
   return '<div class="task-card">' +
     '<div class="task-head">' +
@@ -7227,8 +7309,8 @@ function renderMrTaskCard(t) {
     '</div>' +
     '<div class="task-foot">' +
       '<span>' + esc(t.state) + '</span>' +
-      (t.projectName ? '<span>📁 ' + esc(t.projectName) + '</span>' : '') +
-      (t.jiraAssignee ? '<span>👤 ' + esc(t.jiraAssignee) + ' (جیرا)</span>' : '') +
+      (t.projectName ? '<span><i class="ico i-folder ico-muted"></i> ' + esc(t.projectName) + '</span>' : '') +
+      (t.jiraAssignee ? '<span><i class="ico i-user ico-muted"></i> ' + esc(t.jiraAssignee) + ' (جیرا)</span>' : '') +
     '</div>' +
   '</div>';
 }
@@ -7290,7 +7372,7 @@ function renderRatingSection(scoreData) {
   const params = scoreData.ratingParams || [];
   const month = DEV.ratingMonth || scoreData.month;
   const monthOptions = recentMonthOptions(scoreData.availableMonths)
-    .map((m) => '<option value="' + esc(m) + '" ' + (m === month ? 'selected' : '') + '>' + esc(faMonth(m)) + (scoreData.availableMonths && scoreData.availableMonths.includes(m) ? ' ✓' : '') + '</option>')
+    .map((m) => '<option value="' + esc(m) + '" ' + (m === month ? 'selected' : '') + '>' + esc(faMonth(m)) + (scoreData.availableMonths && scoreData.availableMonths.includes(m) ? ' <i class="ico i-check ico-green"></i>' : '') + '</option>')
     .join('');
   const rows = params.map((p) => {
     const current = (scoreData.rating && scoreData.rating.scores[p.key]) || 3;
@@ -7300,12 +7382,12 @@ function renderRatingSection(scoreData) {
   // Closed by default. It is a manager's own judgement — an input to keep
   // beside the data, not a headline; open, it pushed the actual numbers below
   // the fold every time the page loaded.
-  return '<details class="fold dev-rating"><summary>&#9997; امتیازدهی دستی (بر اساس ماه) ' +
+  return '<details class="fold dev-rating"><summary><i class="ico i-pencil ico-muted"></i> امتیازدهی دستی (بر اساس ماه) ' +
     '<span class="band-note">— قضاوت خودت، جدا از عدد خودکار و بدون قاطی شدن با آن</span></summary>' +
     '<div class="row" style="margin:10px 0 4px">' +
       '<label style="font-size:12px;color:var(--muted-foreground)">ماه:</label>' +
       '<select id="ratingMonthSelect" style="width:140px;margin-bottom:0">' + monthOptions + '</select>' +
-      (scoreData.availableMonths && scoreData.availableMonths.length ? '<span class="tag">✓ یعنی برای آن ماه قبلاً امتیاز ثبت شده</span>' : '') +
+      (scoreData.availableMonths && scoreData.availableMonths.length ? '<span class="tag"><i class="ico i-check ico-green"></i> یعنی برای آن ماه قبلاً امتیاز ثبت شده</span>' : '') +
     '</div>' +
     '<div class="rating-grid">' + rows + '</div>' +
     '<textarea data-note placeholder="یادداشت (اختیاری)" style="min-height:60px;margin-top:8px">' + esc((scoreData.rating && scoreData.rating.note) || '') + '</textarea>' +
@@ -7378,7 +7460,7 @@ function renderSentry() {
   // errors, all good".
   if (!d.configured) {
     box.innerHTML = '<div class="banner" style="margin:0">' +
-      '⚙️ Sentry هنوز تنظیم نشده. در ⚙ تنظیمات → بخش «سنتری» این چهار مقدار را وارد کن: ' +
+      '<i class="ico i-settings ico-muted"></i> Sentry هنوز تنظیم نشده. در <i class="ico i-settings ico-muted"></i> تنظیمات → بخش «سنتری» این چهار مقدار را وارد کن: ' +
       '<code>SENTRY_URL</code>، <code>SENTRY_ORG</code>، <code>SENTRY_PROJECT</code>، <code>SENTRY_AUTH_TOKEN</code>' +
       ' — توکن فقط به اسکوپ‌های خواندنی <code>org:read</code>، <code>project:read</code>، <code>event:read</code> نیاز دارد.' +
       '<button id="sentrySettingsBtn">رفتن به تنظیمات</button></div>';
@@ -7394,7 +7476,7 @@ function renderSentry() {
   // as current is worse than no count at all.
   const staleBanner = d.stale
     ? '<div class="banner" style="margin:0 0 10px">' +
-        '📦 Sentry در دسترس نیست — این نسخه‌ی <b>ذخیره‌شده</b> از ' + esc(relativeTime(d.staleAt)) + ' است، نه وضعیت الان.' +
+        '<i class="ico i-package ico-muted"></i> Sentry در دسترس نیست — این نسخه‌ی <b>ذخیره‌شده</b> از ' + esc(relativeTime(d.staleAt)) + ' است، نه وضعیت الان.' +
         (d.staleReason ? '<span class="meta"> (' + esc(d.staleReason) + ')</span>' : '') +
       '</div>'
     : '';
@@ -7415,7 +7497,7 @@ function renderSentry() {
     : '';
 
   if (!issues.length) {
-    box.innerHTML = head + failures + '<div class="attn-empty">✓ هیچ خطای بازی در این بازه نیست.</div>';
+    box.innerHTML = head + failures + '<div class="attn-empty"><i class="ico i-check ico-green"></i> هیچ خطای بازی در این بازه نیست.</div>';
     return;
   }
 
@@ -7429,15 +7511,15 @@ function renderSentryIssue(issue) {
   const isOpen = SENTRY.openForm === issue.id;
 
   const action = task
-    ? '<a class="jira-badge" href="' + esc(task.url) + '" target="_blank" rel="noreferrer" title="تسک ساخته‌شده برای این خطا">🎫 ' + esc(task.key) + '</a>'
-    : '<button class="ghost sentry-make" data-issue="' + esc(issue.id) + '">🎫 ساخت تسک در جیرا</button>';
+    ? '<a class="jira-badge" href="' + esc(task.url) + '" target="_blank" rel="noreferrer" title="تسک ساخته‌شده برای این خطا"><i class="ico i-ticket ico-violet"></i> ' + esc(task.key) + '</a>'
+    : '<button class="ghost sentry-make" data-issue="' + esc(issue.id) + '"><i class="ico i-ticket ico-violet"></i> ساخت تسک در جیرا</button>';
   const expanded = SENTRY.openDetail === issue.id;
 
   return '<div class="sentry-item lvl-' + esc(issue.level || 'unknown') + (issue.resolved ? ' is-resolved' : '') + '">' +
     '<div class="sentry-head">' +
       '<span class="sentry-level lvl-' + esc(issue.level || 'unknown') + '">' + esc(lvl) + '</span>' +
       '<a class="sentry-title" href="' + esc(issue.permalink) + '" target="_blank" rel="noreferrer">' + esc(issue.title) + '</a>' +
-      (issue.resolved ? '<span class="sentry-level" style="background:rgba(65,224,138,.16);color:var(--green)">✓ فیکس شد</span>' : '') +
+      (issue.resolved ? '<span class="sentry-level" style="background:rgba(65,224,138,.16);color:var(--green)"><i class="ico i-check ico-green"></i> فیکس شد</span>' : '') +
       '<button class="ghost sentry-detail-btn" data-issue="' + esc(issue.id) + '">' + (expanded ? '▲ بستن' : '▼ جزئیات و لاگ') + '</button>' +
       action +
     '</div>' +
@@ -7465,14 +7547,14 @@ function renderSentryDetail(issueId) {
   const a = d.analysis;
   let analysisHtml;
   if (!a) {
-    analysisHtml = '<button class="ghost sentry-analyze" data-issue="' + esc(issueId) + '">🧠 تفسیر فارسی این خطا</button>';
+    analysisHtml = '<button class="ghost sentry-analyze" data-issue="' + esc(issueId) + '"><i class="ico i-cpu ico-violet"></i> تفسیر فارسی این خطا</button>';
   } else if (a.error) {
     analysisHtml = '<div class="error-box">تفسیر ساخته نشد: ' + esc(a.error) + '</div>' +
       '<button class="ghost sentry-analyze" data-issue="' + esc(issueId) + '">تلاش دوباره</button>';
   } else {
     analysisHtml =
       '<div class="sentry-analysis">' +
-        '<div class="sentry-analysis-tag">🧠 تفسیر خودکار — خروجی مدل روی همین استک‌تریس. راهنماست، نه تشخیص قطعی.</div>' +
+        '<div class="sentry-analysis-tag"><i class="ico i-cpu ico-violet"></i> تفسیر خودکار — خروجی مدل روی همین استک‌تریس. راهنماست، نه تشخیص قطعی.</div>' +
         (a.summary ? '<p><b>چه اتفاقی می‌افتد:</b> ' + esc(a.summary) + '</p>' : '') +
         (a.cause ? '<p><b>علت محتمل:</b> ' + esc(a.cause) + '</p>' : '') +
         (a.where ? '<p><b>از کجا شروع کن:</b> <span class="mono">' + esc(a.where) + '</span></p>' : '') +
@@ -7485,14 +7567,14 @@ function renderSentryDetail(issueId) {
 
   return '<div class="sentry-detail">' +
     (d.stale
-      ? '<div class="banner" style="margin:0 0 10px">📦 این جزئیات از نسخه‌ی ذخیره‌شده‌ی ' +
+      ? '<div class="banner" style="margin:0 0 10px"><i class="ico i-package ico-muted"></i> این جزئیات از نسخه‌ی ذخیره‌شده‌ی ' +
           esc(relativeTime(d.staleAt)) + ' است — Sentry الان در دسترس نیست، پس «فیکس شد» هم کار نمی‌کند.</div>'
       : '') +
     '<div class="row" style="gap:8px; margin-bottom:10px; flex-wrap:wrap">' +
       '<span class="tag">اولویت پیشنهادی جیرا: <b>' + esc(d.priority) + '</b></span>' +
       (d.issue.release ? '<span class="tag">نسخه: ' + esc(d.issue.release) + '</span>' : '') +
       (d.issue.environment ? '<span class="tag">محیط: ' + esc(d.issue.environment) + '</span>' : '') +
-      '<button class="ghost sentry-resolve" data-issue="' + esc(issueId) + '">✓ فیکس شد (در Sentry بسته شود)</button>' +
+      '<button class="ghost sentry-resolve" data-issue="' + esc(issueId) + '"><i class="ico i-check ico-green"></i> فیکس شد (در Sentry بسته شود)</button>' +
       '<span class="sentry-resolve-status meta"></span>' +
     '</div>' +
     analysisHtml +
@@ -7681,7 +7763,7 @@ async function loadSentryDetail(issueId, { analyze = false, refresh = false } = 
     SENTRY.details[issueId] = { ...(SENTRY.details[issueId] || {}), analysis: null, analyzing: true };
     renderSentry();
     const box = document.querySelector('.sentry-detail');
-    if (box) box.insertAdjacentHTML('afterbegin', '<div class="meta" id="sentryAnalyzing">🧠 در حال تفسیر… (چند ثانیه طول می‌کشد)</div>');
+    if (box) box.insertAdjacentHTML('afterbegin', '<div class="meta" id="sentryAnalyzing"><i class="ico i-cpu ico-violet"></i> در حال تفسیر… (چند ثانیه طول می‌کشد)</div>');
   }
   try {
     const qs = new URLSearchParams();
@@ -7738,7 +7820,7 @@ async function submitSentryTask(btn) {
   statusEl.textContent = 'در حال ساخت…';
   try {
     const out = await api('/api/sentry/task', { method: 'POST', body: JSON.stringify(payload) });
-    statusEl.textContent = '✓ ساخته شد: ' + out.task.key;
+    statusEl.innerHTML = '<i class="ico i-check ico-green"></i> ساخته شد: ' + esc(out.task.key);
     SENTRY.openForm = null;
     // Reflect the new link locally rather than refetching every issue from
     // Sentry just to learn something this client already knows.
