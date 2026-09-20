@@ -10,6 +10,7 @@ const reviewer = require('./lib/reviewer');
 const knowledge = require('./lib/knowledge');
 const jobs = require('./lib/jobs');
 const usage = require('./lib/usage');
+const contextBudget = require('./lib/contextBudget');
 const feedback = require('./lib/feedback');
 const audit = require('./lib/audit');
 const backup = require('./lib/backup');
@@ -459,10 +460,22 @@ async function handleStatus(req, res) {
   // Same source of truth as the toolbar's engine picker, so the header badge
   // and that list can never disagree about whether an engine is configured.
   const status = engineStatus(provider);
+  // The same numbers contextBudget actually enforces when it trims a prompt,
+  // read from the same module — so the header can never advertise a window
+  // the trimmer isn't using. budgetFor honours the per-engine
+  // *_CONTEXT_TOKENS / *_MAX_OUTPUT_TOKENS overrides, so this is deliberately
+  // not a lookup in the limits table.
+  const budget = contextBudget.budgetFor(provider);
   const ai = {
     provider,
     model: status.model || '(پیش‌فرض CLI)',
     state: status.state,
+    effort: secret('CLAUDE_EFFORT') || '',
+    context: {
+      windowTokens: budget.contextTokens,
+      promptTokens: budget.promptTokens,
+      maxOutputTokens: budget.maxOutputTokens,
+    },
   };
   const activeProject = projects.getProject(projects.getActiveProjectId());
   const projectPath = (activeProject && activeProject.path) || '';

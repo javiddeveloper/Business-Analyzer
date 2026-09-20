@@ -1559,6 +1559,207 @@
   .fold > summary .band-note { flex-basis: 100%; font-size: 12px; font-weight: 400; color: var(--muted-foreground); line-height: 1.6; }
   .fold[open] > summary { margin-bottom: 14px; }
 
+  /* ---- Discrete slider (shadcn Slider), used by CLAUDE_EFFORT ------------
+     The page is dir="rtl", and a range input inherits that: without the
+     override below the track would run right-to-left while the tick labels
+     under it read left-to-right, so the thumb would sit under the wrong
+     word. The control is a scale, not prose — it stays LTR and the labels
+     follow it. */
+  input[type=range].slider {
+    direction: ltr;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 18px;
+    margin: 4px 0 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    outline: none;
+  }
+  input[type=range].slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--muted);
+    border: 1px solid var(--border);
+  }
+  input[type=range].slider::-moz-range-track {
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--muted);
+    border: 1px solid var(--border);
+  }
+  input[type=range].slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;           /* centres a 16px thumb on a 6px track */
+    border-radius: 50%;
+    background: var(--foreground);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    transition: transform 0.12s;
+  }
+  input[type=range].slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--foreground);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+  input[type=range].slider:hover::-webkit-slider-thumb { transform: scale(1.12); }
+  input[type=range].slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(138, 138, 138, 0.35);
+  }
+
+  /* Tick labels, spread to match the stops. justify-content:space-between
+     lines the first and last label up with the ends of the track; the thumb
+     has its own width, so the outermost two get nudged back into place. */
+  .slider-ticks {
+    direction: ltr;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 10.5px;
+    color: var(--muted-foreground);
+    font-variant-numeric: tabular-nums;
+  }
+  .slider-ticks span { flex: 1; text-align: center; }
+  .slider-ticks span:first-child { text-align: left; }
+  .slider-ticks span:last-child { text-align: right; }
+
+  /* The live read-out beside the field name — a slider with no current value
+     printed makes you count stops to know where you are. */
+  .slider-value {
+    margin-inline-start: 8px;
+    padding: 1px 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--muted);
+    color: var(--foreground);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* ---- Usage panel (sidebar) --------------------------------------------
+     Moved out of the header: the toolbar already scrolled sideways, and a
+     progress bar in a row of pills is a bar nobody can read. */
+  .usage-panel {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    font-size: 11px;
+  }
+  .usage-panel[hidden] { display: none !important; }
+  /* The user card below already claims margin-top:auto; with both set the
+     two split the slack, which is what keeps them together at the bottom. */
+  .usage-panel + .sidebar-footer { margin-top: 0; }
+
+  .usage-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .usage-label { color: var(--muted-foreground); font-size: 10.5px; }
+  .usage-figure {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--foreground);
+    direction: ltr;
+  }
+
+  .usage-bar {
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--muted);
+    overflow: hidden;
+  }
+  .usage-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--chart-1);
+    transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .usage-bar > span.warn { background: var(--amber); }
+  .usage-bar > span.bad  { background: var(--red); }
+
+  .usage-meta { color: var(--muted-foreground); font-size: 10px; line-height: 1.5; }
+
+  .usage-split {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .usage-split > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .usage-split b { font-size: 12px; font-variant-numeric: tabular-nums; direction: ltr; }
+
+  /* On the phone layout the sidebar is a horizontal strip; a stats panel in
+     it would push the nav off screen. */
+  @media (max-width: 860px) { .usage-panel { display: none; } }
+
+  /* ---- Live review stream ------------------------------------------------
+     Shown only while a job is running. One pane per batch, because batches
+     run BATCH_CONCURRENCY at a time and their deltas are independent. */
+  .stream-wrap {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card-subtle);
+  }
+  .stream-title { font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
+  .stream-idle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted-foreground); }
+
+  .stream-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+  }
+  .stream-batch {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--background);
+    overflow: hidden;
+    min-width: 0;
+  }
+  .stream-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: var(--muted-foreground);
+    border-bottom: 1px solid var(--border);
+  }
+  .stream-chars { margin-inline-start: auto; font-variant-numeric: tabular-nums; direction: ltr; }
+
+  /* The model writes English JSON; forcing LTR keeps braces and quotes from
+     being reordered by the RTL page around them. */
+  .stream-text {
+    margin: 0;
+    padding: 8px 10px;
+    max-height: 190px;
+    overflow: auto;
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: isolate;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--muted-foreground);
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: transparent;
+  }
+
   /* ---- Handoff report */
   .handoff-block {
     border: 1px solid var(--border);
@@ -1606,7 +1807,13 @@
      dir="ltr" in the markup to keep the arrow and the em dash in place. */
   .edition-banner {
     position: fixed;
-    right: 16px;
+    /* Left, not right. The page is dir="rtl" so the sidebar owns the right
+       256px, and a 320px banner pinned to the right edge sat squarely on the
+       sidebar's footer — which is where the usage panel and the user card
+       live. Moving it up would only trade that for covering the nav items;
+       the left corner is over the content panel, which scrolls away under it
+       rather than being permanently hidden by it. */
+    left: 16px;
     bottom: 16px;
     z-index: 90;
     max-width: min(320px, calc(100vw - 32px));
@@ -2242,6 +2449,23 @@
       </button>
     </div>
 
+    <!-- Usage panel. Lives here rather than in the header: the toolbar was
+         already overflowing into a horizontal scroll, and these are numbers
+         you glance at, not controls you reach for. -->
+    <div class="usage-panel" id="usagePanel" hidden>
+      <div class="usage-row">
+        <span class="usage-label">context آخرین ریویو</span>
+        <span class="usage-figure" id="ctxFigure">—</span>
+      </div>
+      <div class="usage-bar"><span id="ctxBar" style="width:0%"></span></div>
+      <div class="usage-meta" id="ctxMeta"></div>
+      <div class="usage-split">
+        <div><span class="usage-label">امروز</span><b id="usageToday">—</b></div>
+        <div><span class="usage-label">۷ روز</span><b id="usageWeek">—</b></div>
+        <div><span class="usage-label">۳۰ روز</span><b id="usageMonth">—</b></div>
+      </div>
+    </div>
+
     <!-- Sidebar Bottom User Profile Card -->
     <div class="sidebar-footer">
       <div class="user-profile-card">
@@ -2282,7 +2506,6 @@
         <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
         <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
         <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
-        <span class="badge" id="usageBadge" title="مصرف توکن مدل — برای جزئیات هر موتور، اینجا را نگه‌دار"></span>
         <span class="badge" id="accuracyBadge" hidden title="از یافته‌هایی که کسی رویشان 👍/👎 زده — نه از کل یافته‌ها"></span>
       </div>
     </header>
@@ -2811,6 +3034,53 @@ const MOCK_TEAM_ROWS = {
 
 const MOCK_JOBS = [
   {
+    // A review caught mid-flight. Batches run BATCH_CONCURRENCY at a time, so
+    // two panes filling at once is the normal picture, not an edge case — and
+    // the third batch has not started, which is why it is absent rather than
+    // present and empty.
+    key: 'nexus/core-platform!106',
+    projectId: 'nexus/core-platform',
+    mrIid: 106,
+    title: 'Split checkout saga into compensating steps',
+    status: 'running',
+    trigger: 'manual',
+    startedAt: Date.now() - 38 * 1000,
+    finishedAt: null,
+    decision: null,
+    summary: null,
+    findings: [],
+    stats: null,
+    reviewMode: 'batch',
+    posted: false,
+    approved: false,
+    stream: {
+      updatedAt: Date.now(),
+      batches: [
+        {
+          index: 0,
+          count: 3,
+          chars: 1840,
+          text: '{"summary":"The saga now emits a compensating event per step, but the '
+            + 'refund branch re-reads order state after the cancel event has already '
+            + 'been published.","findings":[{"file":"src/checkout/saga.ts","line":211,'
+            + '"severity":"Medium","category":"logic","title":"Refund step reads order '
+            + 'state after cancellation is published","note":"compensateRefund() loads '
+            + 'the order through orderRepo.findById after publishOrderCancelled() has '
+            + 'already fired, so a concurrent consumer that marks the order CANCELLED '
+            + 'makes the refund amount read back as 0'
+        },
+        {
+          index: 1,
+          count: 3,
+          chars: 720,
+          text: '{"summary":"Retry policy is configured but never attached to the '
+            + 'compensation handlers.","findings":[{"file":"src/checkout/retry.ts",'
+            + '"line":46,"severity":"Low","category":"reliab'
+        }
+      ]
+    }
+  },
+  {
     key: 'nexus/core-platform!104',
     projectId: 'nexus/core-platform',
     mrIid: 104,
@@ -2948,7 +3218,16 @@ async function handleMockApi(path, options = {}) {
       ],
       projectPath: { set: true, value: '/repos/nexus-core-platform' },
       gitlab: { url: 'https://gitlab.example.com', ok: true, user: 'ali.rezaei', name: 'علی رضایی (تکنیکال لید)', bot: false, error: null },
-      ai: { provider: 'claude-cli', model: 'claude-3-7-sonnet', state: 'ready' },
+      // `context` is what the sidebar's progress bar measures against, and
+      // `effort` is what the settings slider reads. Both were added after these
+      // fixtures were written, so the demo showed an empty panel without them.
+      ai: {
+        provider: 'claude-cli',
+        model: 'claude-sonnet-5',
+        state: 'ready',
+        effort: 'high',
+        context: { windowTokens: 200000, promptTokens: 132000, maxOutputTokens: 8000 }
+      },
       settings: { autoReview: true, autoApprove: true, skipDrafts: true, inlineComments: true, autoPost: true, pollSeconds: 120 }
     };
   }
@@ -2956,8 +3235,17 @@ async function handleMockApi(path, options = {}) {
   if (path.startsWith('/api/usage')) {
     return {
       days: 30,
-      today: { totalTokens: 184500, reviews: 14 },
+      weekIsWholeWindow: false,
+      today: { totalTokens: 184500, promptTokens: 121400, completionTokens: 63100, reviews: 14 },
+      week: { totalTokens: 1284300, promptTokens: 842900, completionTokens: 441400, reviews: 91 },
+      // Drives the context progress bar: one review's prompt against one
+      // request's allowance. 78400/132000 lands at 59%, inside the plain band
+      // so the demo shows the normal colour rather than a warning.
+      lastReview: { at: Date.now() - 22 * 60 * 1000, promptTokens: 78400, completionTokens: 9100, provider: 'claude-cli' },
+      reviews: 142,
       reviewsCount: 142,
+      promptTokens: 3610200,
+      completionTokens: 1852400,
       totalTokens: 5462600,
       byProvider: [
         { provider: 'claude-cli', totalTokens: 4310000, reviews: 98 },
@@ -3405,7 +3693,9 @@ async function handleMockApi(path, options = {}) {
       { key: 'OPENAI_MODEL',      value: 'gpt-4o-mini',                       group: 'OpenAI / GapGPT', engine: 'openai-compatible', secret: false, required: false, hint: 'مدل پیش‌فرض' },
       { key: 'GEMINI_API_KEY',    value: 'AIzaSyXXXXXXXXXXXXXXXXXXXXXX',     group: 'Google Gemini',   engine: 'gemini',            secret: true,  required: false, hint: 'کلید API Google AI Studio' },
       { key: 'GEMINI_MODEL',      value: 'gemini-2.0-flash',                  group: 'Google Gemini',   engine: 'gemini',            secret: false, required: false, hint: 'مدل Gemini' },
-      { key: 'CLAUDE_MODEL',      value: 'claude-3-7-sonnet',                 group: 'Claude CLI',      engine: 'claude-cli',        secret: false, required: false, hint: 'مدل Claude (claude-cli از محیط می‌خواند)' }
+      { key: 'CLAUDE_MODEL',      value: 'claude-sonnet-5',                   group: 'Claude CLI',      engine: 'claude-cli',        secret: false, required: false, hint: 'خالی = مدل پیش‌فرض CLI. نام کوتاه (sonnet / opus / haiku) آخرین نسخه‌ی همان خانواده را می‌گیرد؛ نام کامل نسخه را قفل می‌کند.' },
+      // Carries control/levels so the demo renders the slider, not a text box.
+      { key: 'CLAUDE_EFFORT',     value: 'high',                              group: 'Claude CLI',      engine: 'claude-cli',        secret: false, required: false, control: 'slider', levels: ['', 'low', 'medium', 'high', 'xhigh', 'max'], hint: 'سطح تلاش مدل، از چپ به راست کم به زیاد. اولین حالت یعنی فلگ پاس داده نشود و خود CLI تصمیم بگیرد.' }
     ];
   }
 
@@ -3582,15 +3872,48 @@ function formatTokenCount(n) {
 async function loadUsage() {
   try {
     const u = await api('/api/usage?days=30');
-    const badge = document.getElementById('usageBadge');
-    if (!badge) return;
-    badge.textContent = '📊 امروز ' + formatTokenCount(u.today.totalTokens) + ' توکن (' + u.today.reviews + ' ریویو)';
+    const panel = document.getElementById('usagePanel');
+    if (!panel) return;
+    panel.hidden = false;
+
+    const ctx = (S.status && S.status.ai && S.status.ai.context) || null;
+    const last = u.lastReview;
+
+    // The bar measures one request against one request's allowance. Anything
+    // else here — a day's tokens over a window size — would be comparing two
+    // quantities that have no relationship.
+    if (ctx && last) {
+      const pct = Math.min(100, Math.round((last.promptTokens / ctx.promptTokens) * 100));
+      document.getElementById('ctxFigure').textContent =
+        formatTokenCount(last.promptTokens) + ' / ' + formatTokenCount(ctx.promptTokens);
+      const bar = document.getElementById('ctxBar');
+      bar.style.width = Math.max(2, pct) + '%';
+      bar.className = pct >= 90 ? 'bad' : pct >= 70 ? 'warn' : '';
+      document.getElementById('ctxMeta').textContent =
+        pct + '٪ از سقف ورودی — کل پنجره ' + formatTokenCount(ctx.windowTokens) + ' توکن';
+    } else {
+      document.getElementById('ctxFigure').textContent = ctx ? 'هنوز ریویویی نشده' : '—';
+      document.getElementById('ctxMeta').textContent =
+        ctx ? 'سقف ورودی ' + formatTokenCount(ctx.promptTokens) + ' از پنجره‌ی ' + formatTokenCount(ctx.windowTokens) : '';
+    }
+
+    document.getElementById('usageToday').textContent = formatTokenCount(u.today.totalTokens);
+    document.getElementById('usageWeek').textContent = formatTokenCount(u.week.totalTokens);
+    document.getElementById('usageMonth').textContent = formatTokenCount(u.totalTokens);
+
     const byProviderLines = u.byProvider
       .sort((a, b) => b.totalTokens - a.totalTokens)
       .map((p) => '  ' + p.provider + ': ' + formatTokenCount(p.totalTokens) + ' توکن، ' + p.reviews + ' ریویو');
-    badge.title = 'مصرف ۳۰ روز اخیر: ' + formatTokenCount(u.totalTokens) + ' توکن در ' + u.reviews + ' ریویو' +
-      (byProviderLines.length ? '\nبه تفکیک موتور:\n' + byProviderLines.join('\n') : '') +
-      '\n\nفقط شمارش توکن است، نه هزینه‌ی ریالی — claude-cli از اشتراک استفاده می‌کند و به‌ازای توکن صورتحساب نمی‌شود.';
+    panel.title = [
+      'امروز: ' + formatTokenCount(u.today.totalTokens) + ' توکن در ' + u.today.reviews + ' ریویو',
+      '۷ روز اخیر: ' + formatTokenCount(u.week.totalTokens) + ' توکن در ' + u.week.reviews + ' ریویو',
+      '۳۰ روز اخیر: ' + formatTokenCount(u.totalTokens) + ' توکن در ' + u.reviews + ' ریویو',
+    ].concat(
+      byProviderLines.length ? ['', 'به تفکیک موتور (۳۰ روز):'].concat(byProviderLines) : []
+    ).concat([
+      '',
+      'فقط شمارش توکن است، نه هزینه‌ی ریالی — claude-cli از اشتراک استفاده می‌کند و به‌ازای توکن صورتحساب نمی‌شود.',
+    ]).join('\n');
   } catch (e) {
     // Usage is informational — a failure here must never block the rest of
     // the header (GitLab/model status) from rendering.
@@ -4069,7 +4392,30 @@ const ENGINE_MODEL_KEY = {
   'claude-cli': 'CLAUDE_MODEL',
 };
 
+// A discrete slider for fields that declare `control: 'slider'`. The range
+// input carries data-key like every other field, so the existing dirty-tracking
+// and save path pick it up untouched — the only extra is data-levels, which
+// tells that handler to record the level *name* rather than the slider index.
+function renderSliderField(entry) {
+  const levels = entry.levels || [];
+  const idx = Math.max(0, levels.indexOf(entry.value || ''));
+  const label = (v) => (v === '' ? 'پیش‌فرض' : v);
+  return '<div class="field wide">' +
+    '<label>' + esc(entry.key) +
+      '<span class="slider-value" data-out="' + esc(entry.key) + '">' + esc(label(levels[idx])) + '</span>' +
+    '</label>' +
+    '<input class="slider" type="range" min="0" max="' + (levels.length - 1) + '" step="1"' +
+      ' value="' + idx + '" data-key="' + esc(entry.key) + '"' +
+      ' data-levels="' + esc(levels.join(',')) + '" />' +
+    '<div class="slider-ticks">' +
+      levels.map((v) => '<span>' + esc(label(v)) + '</span>').join('') +
+    '</div>' +
+    (entry.hint ? '<div class="hint">' + esc(entry.hint) + '</div>' : '') +
+  '</div>';
+}
+
 function renderEnvField(entry, activeModelKey) {
+  if (entry.control === 'slider' && entry.levels && entry.levels.length) return renderSliderField(entry);
   const inputType = entry.secret ? 'password' : 'text';
   const reveal = entry.secret ? '<button type="button" class="reveal" data-reveal="' + esc(entry.key) + '">👁</button>' : '';
   const isActiveModel = entry.key === activeModelKey;
@@ -4127,10 +4473,17 @@ function renderEnv() {
   }
 
   body.querySelectorAll('input[data-key]').forEach((input) => {
-    const original = input.value;
+    // A slider's DOM value is its index; what gets saved is the level it
+    // points at. Everything else reads its value straight through.
+    const levels = input.dataset.levels ? input.dataset.levels.split(',') : null;
+    const readValue = () => (levels ? (levels[Number(input.value)] || '') : input.value);
+    const out = body.querySelector('[data-out="' + input.dataset.key + '"]');
+    const original = readValue();
     input.oninput = () => {
-      if (input.value === original) delete S.envDirty[input.dataset.key];
-      else S.envDirty[input.dataset.key] = input.value;
+      const v = readValue();
+      if (out) out.textContent = v === '' ? 'پیش‌فرض' : v;
+      if (v === original) delete S.envDirty[input.dataset.key];
+      else S.envDirty[input.dataset.key] = v;
     };
   });
   body.querySelectorAll('[data-reveal]').forEach((btn) => {
@@ -4301,6 +4654,34 @@ function renderMrContext(ctx) {
   return (rows.length ? '<div class="meta-grid">' + rows.join('') + '</div>' : '') + jiraBlock;
 }
 
+// One block per batch that has produced output. Batches run
+// BATCH_CONCURRENCY at a time, so several fill at once — merging them into a
+// single pane would interleave six models into nonsense, and showing only the
+// newest would hide five of them working.
+function renderStream(job) {
+  const st = job && job.stream;
+  const batches = (st && st.batches ? st.batches : []).filter(Boolean);
+  if (!batches.length) {
+    return '<div class="stream-wrap"><div class="stream-idle">' +
+      '<span class="dot run"></span> در حال آماده‌سازی دیف و ارسال به مدل…</div></div>';
+  }
+  const total = batches[0].count || batches.length;
+  const body = batches.map((b) => (
+    '<div class="stream-batch">' +
+      '<div class="stream-head">' +
+        '<span class="dot run"></span>' +
+        '<span>دسته‌ی ' + (b.index + 1) + ' از ' + total + '</span>' +
+        '<span class="stream-chars">' + formatTokenCount(b.chars) + ' نویسه</span>' +
+      '</div>' +
+      '<pre class="stream-text" data-streamtail="' + b.index + '">' + esc(b.text) + '</pre>' +
+    '</div>'
+  )).join('');
+  return '<div class="stream-wrap">' +
+    '<div class="stream-title">خروجی زنده‌ی مدل</div>' +
+    '<div class="stream-grid">' + body + '</div>' +
+  '</div>';
+}
+
 function renderMrPanel() {
   const panel = document.getElementById('mrPanel');
   if (!S.mrs.length) {
@@ -4315,6 +4696,11 @@ function renderMrPanel() {
   const running = job && job.status === 'running';
   const isStale = mr.lastReviewedSha && mr.sha && mr.lastReviewedSha !== mr.sha;
   const pathReady = S.status && S.status.projectPath && S.status.projectPath.set;
+
+  // Live model output. Only while running: once the job is done the findings
+  // below say the same thing in a form worth keeping, and leaving the raw
+  // stream up would be two renderings of one answer.
+  const streamBlock = running ? renderStream(job) : '';
 
   let statusLine = '<span class="meta">هنوز ریویو نشده.</span>';
   if (running) statusLine = '<span class="meta"><span class="dot run"></span> در حال ریویو… (' + esc(job.trigger) + ')</span>';
@@ -4373,8 +4759,11 @@ function renderMrPanel() {
       (job && job.status === 'done' && !job.posted ? '<button class="ghost" id="postBtn">💬 ثبت این نتیجه روی MR</button>' : '') +
     '</div>' +
     '<div style="margin-top:12px">' + statusLine + '</div>' +
+    streamBlock +
     (job && job.status === 'done' ? '<hr class="section-divider" />' : '') +
     renderFindings(job, mr);
+
+  for (const pre of panel.querySelectorAll('[data-streamtail]')) pre.scrollTop = pre.scrollHeight;
 
   const ctx = S.mrContext[key];
   if (!ctx || (ctx.sha !== mr.sha && !ctx.loading)) loadMrContext(mr);
