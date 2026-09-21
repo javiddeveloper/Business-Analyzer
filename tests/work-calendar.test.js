@@ -19,18 +19,19 @@ function freshCalendar(workingDaysEnv) {
 
 const DAY = 86400000;
 
-test('unset WORKING_DAYS means every day counts — workingDayIndices is null, isWorkingDay is always true', () => {
+test('unset WORKING_DAYS defaults to Iran\'s standard week, not "every day counts"', () => {
   const wc = freshCalendar('');
-  assert.equal(wc.workingDayIndices(), null);
-  assert.equal(wc.isWorkingDay('2026-09-19'), true); // a Saturday
-  assert.equal(wc.isWorkingDay('2026-09-18'), true); // a Friday
+  assert.deepEqual(wc.workingDayIndices().sort(), wc.DEFAULT_WORKING_DAYS.slice().sort());
+  assert.equal(wc.isWorkingDay('2026-09-19'), true);  // a Saturday
+  assert.equal(wc.isWorkingDay('2026-09-18'), false); // a Friday
 });
 
-test('unset WORKING_DAYS: workingDaysBetween is exactly the flat calendar-day span', () => {
-  const wc = freshCalendar('');
+test('an explicit null override still gets the old "every day counts" behaviour, as an escape hatch', () => {
+  const wc = freshCalendar('شنبه,یکشنبه,دوشنبه,سه‌شنبه,چهارشنبه');
+  assert.equal(wc.isWorkingDay('2026-09-18', null), true, 'Friday, but the override forces every day to count');
   const from = Date.parse('2026-09-10T00:00:00Z');
   const to = Date.parse('2026-09-17T12:00:00Z'); // 7.5 calendar days later
-  assert.equal(wc.workingDaysBetween(from, to), 7.5);
+  assert.equal(wc.workingDaysBetween(from, to, null), 7.5);
 });
 
 test('parses Persian weekday names and recognises Iran\'s standard weekend (Thu/Fri off)', () => {

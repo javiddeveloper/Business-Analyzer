@@ -306,3 +306,55 @@ test('a done Story with no logged time neither counts against nor drops the samp
   assert.equal(out.sampleSize, 1, 'the Story is not evidence either way, not a counted failure');
   assert.equal(out.score, 100, 'one logged Task, zero misses');
 });
+
+// ---- lateness counted in working days, not calendar days ------------------
+test('onTime measures lateness in working days — a weekend does not count against the deadline', () => {
+  // Due Thursday 2026-09-17 (end of day), delivered Sunday 2026-09-20 10:00.
+  // Calendar span: ~2.42 days. With Thu/Fri off (workCalendar's default),
+  // only Saturday (full) and the first 10h of Sunday actually elapse as
+  // working time: ~1.42 working days.
+  const out = devScore.onTime([{ dueDate: '2026-09-17', resolvedAt: '2026-09-20T10:00:00.000Z' }], NOW);
+  assert.ok(Math.abs(out.avgDaysLate - 1) < 1, 'rounds to about 1 working day, not 2');
+  assert.equal(out.score, Math.round(devScore.lateTaskScore(1.4166666666666667)), 'the score must come from the working-day figure, not the raw calendar gap');
+  assert.notEqual(out.score, Math.round(devScore.lateTaskScore((Date.parse('2026-09-20T10:00:00.000Z') - Date.parse('2026-09-17T23:59:59')) / 86400000)), 'a calendar-day score would land on a different, lower number here');
+});
+
+// ---- workUtilization --------------------------------------------------
+// Logged hours against the working-day capacity of the window — the
+// component the user explicitly asked to keep at a modest, provisional
+// weight rather than a confident one.
+
+test('workUtilization is null (no data) without a real [since, until) window', () => {
+  assert.equal(devScore.workUtilization([{ spentHours: 40 }], null, null), null);
+  assert.equal(devScore.workUtilization([{ spentHours: 40 }], '2026-09-13', null), null);
+  assert.equal(devScore.workUtilization([{ spentHours: 40 }], '2026-09-19', '2026-09-13'), null, 'until before since is not a window');
+});
+
+test('workUtilization scores 100 for logging a full week (5 working days × 8h) in a Sat-Wed week', () => {
+  const out = devScore.workUtilization([{ spentHours: 40 }], '2026-09-13', '2026-09-19');
+  assert.equal(out.sampleSize, 5, 'Sat 13 through Wed 19 is 5 working days, Thu/Fri excluded');
+  assert.equal(out.score, 100);
+});
+
+test('workUtilization is proportional, not pass/fail, and caps at 100 for logging more than capacity', () => {
+  const half = devScore.workUtilization([{ spentHours: 20 }], '2026-09-13', '2026-09-19');
+  assert.equal(half.score, 50);
+  const over = devScore.workUtilization([{ spentHours: 80 }], '2026-09-13', '2026-09-19');
+  assert.equal(over.score, 100, 'overtime is not penalised, but it is not extra credit past 100 either');
+});
+
+test('workUtilization sums spentHours across every task handed to it, treating a missing value as 0', () => {
+  const out = devScore.workUtilization(
+    [{ spentHours: 10 }, { spentHours: null }, { spentHours: 10 }],
+    '2026-09-13', '2026-09-19'
+  );
+  assert.match(out.detail, /20 ساعت/);
+});
+
+test("compute() only scores workUtilization when a window is actually given", () => {
+  const tasks = [{ statusCategory: 'done', dueDate: '2026-09-01', resolvedAt: '2026-08-30T00:00:00Z', estimateHours: 8, spentHours: 8 }];
+  const withWindow = devScore.compute({ tasks, now: NOW, since: '2026-09-13', until: '2026-09-19' });
+  const withoutWindow = devScore.compute({ tasks, now: NOW });
+  assert.equal(withWindow.components.find((c) => c.key === 'workUtilization').available, true);
+  assert.equal(withoutWindow.components.find((c) => c.key === 'workUtilization').available, false);
+});

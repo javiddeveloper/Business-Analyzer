@@ -1070,6 +1070,11 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
       tasks: value.jiraTasks || [],
       analytics: value,
       reviews,
+      // Only meaningful with both bounds — an unfiltered "all time" view has
+      // no fixed weekly capacity to measure logged hours against, so
+      // workUtilization correctly scores null (no data) rather than a
+      // number computed across however many years happen to be in view.
+      since, until,
     });
     // The sprint they were last working in, scored on its own — a quarter's
     // average can look fine while the sprint that just ended did not.
