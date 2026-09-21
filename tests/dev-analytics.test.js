@@ -304,6 +304,30 @@ test('sign-offs are read across all branches, not just the checked-out one', () 
   // The exported source of truth is the argument list handed to git; assert on
   // it rather than on a live repo, which no test should need.
   const src = require('fs').readFileSync(require.resolve('../lib/reviewSignoff'), 'utf8');
-  assert.match(src, /'log', '--all', '--diff-filter=A'/, 'the log must span every branch');
+  // --all is the guarantee this regression is about. The diff filter is
+  // asserted separately below, because it carries a different guarantee and
+  // pinning both in one pattern made this test fail for the right change.
+  assert.match(src, /'log', '--all',/, 'the log must span every branch');
   assert.equal(typeof real.loadSignoffs, 'function');
+});
+
+// Regression: the scan used --diff-filter=A, so it only ever saw the commit
+// that *created* review/MR-<iid>.md. The documented review process updates
+// that same file each round and rewrites the trailing C/L rating every time,
+// so any rating added in round 2 or later was invisible to the scorer. On the
+// real repository that hid 3 of the 12 reports carrying a rating, and for one
+// developer it hid their only rated MR — which made the whole mrSize
+// component vanish from their score with no explanation on screen.
+test('the rating scan sees later rounds, not just the commit that added the file', () => {
+  const src = require('fs').readFileSync(require.resolve('../lib/reviewSignoff'), 'utf8');
+  assert.match(src, /'--diff-filter=AM'/, 'modifications must be walked, not only additions');
+
+  const analytics = require('fs').readFileSync(require.resolve('../lib/devAnalytics'), 'utf8');
+  // The body must come from the newest revision...
+  assert.match(analytics, /added\.latest \|\| added/, 'the rating must be read from the newest revision');
+  // ...but only when that revision is itself maintainer-authored, or a
+  // developer could rate their own merge request by editing the report after
+  // a maintainer created it.
+  assert.match(analytics, /isMaintainerAuthor\(newest, ctx\.maintainers\)/,
+    'the newest revision only counts when a maintainer wrote it');
 });
