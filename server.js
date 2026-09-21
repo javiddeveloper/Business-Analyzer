@@ -595,7 +595,11 @@ async function handleDeveloperExport(req, res, author, query) {
         // sprint. Hour values are formatted here, not left as raw hours —
         // nobody reads "412 ساعت".
         name: 'خلاصه',
-        rows: monthly.summaryRows({ author, analytics, hoursLabel: deliveryMetrics.humanHours }),
+        // The manual rating lives in its own store, not in the analytics
+        // payload — the page fetches it separately too.
+        rows: monthly.summaryRows({
+          author, analytics, manager: ratings.summary(author), hoursLabel: deliveryMetrics.humanHours,
+        }),
         columns: monthly.SUMMARY_COLUMNS,
         autoFilter: false,
         freezeHeader: false,

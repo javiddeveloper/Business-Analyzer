@@ -6158,8 +6158,8 @@ function renderDevMain() {
   const auto = (a && a.autoScore) || {};
   const monthLabel = scoreData.month ? ' (' + esc(faMonth(scoreData.month)) + ')' : '';
   const manualBadge = scoreData.ratingOverall != null
-    ? '<span class="score-badge ' + scoreClass(scoreData.ratingOverall) + '">امتیاز دستی' + monthLabel + ': <span class="num">' + scoreData.ratingOverall + '</span></span>'
-    : '<span class="score-badge">امتیاز دستی' + monthLabel + ': ثبت نشده</span>';
+    ? '<span class="score-badge ' + scoreClass(scoreData.ratingOverall) + '">امتیاز مدیر' + monthLabel + ': <span class="num">' + scoreData.ratingOverall + '</span></span>'
+    : '<span class="score-badge">امتیاز مدیر' + monthLabel + ': ثبت نشده</span>';
 
   // How many things on this page actually need doing — counted from the very
   // list renderAttentionBand draws below, surfaced beside the name so the
@@ -7023,7 +7023,7 @@ function buildReportDocument() {
       kpi('میانه‌ی merge', humanHours(d.medianOpenToMergeHours), d.openToMergeSample ? 'n=' + d.openToMergeSample : '') +
       kpi('میانه‌ی cycle', humanHours(d.medianCycleHours), d.cycleSample ? 'n=' + d.cycleSample : '') +
       kpi('نیازمند رسیدگی', attn.length, attn.filter((i) => i.level === 'high').length + ' مورد جدی') +
-      kpi('امتیاز دستی', scoreData.ratingOverall != null ? scoreData.ratingOverall : '—',
+      kpi('امتیاز مدیر', scoreData.ratingOverall != null ? scoreData.ratingOverall : '—',
           scoreData.month ? faMonth(scoreData.month) : 'ثبت نشده') +
     '</div>' +
 
@@ -8423,7 +8423,7 @@ function renderRatingSection(scoreData) {
   // Closed by default. It is a manager's own judgement — an input to keep
   // beside the data, not a headline; open, it pushed the actual numbers below
   // the fold every time the page loaded.
-  return '<details class="fold dev-rating"><summary><i class="ico i-pencil ico-muted"></i> امتیازدهی دستی (بر اساس ماه) ' +
+  return '<details class="fold dev-rating"><summary><i class="ico i-pencil ico-muted"></i> امتیاز مدیر (بر اساس ماه) ' +
     '<span class="band-note">— قضاوت خودت، جدا از عدد خودکار و بدون قاطی شدن با آن</span></summary>' +
     '<div class="row" style="margin:10px 0 4px">' +
       '<label style="font-size:12px;color:var(--muted-foreground)">ماه:</label>' +

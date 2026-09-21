@@ -254,3 +254,97 @@ test('toSheetRows puts the labels first and lines every row up under them', () =
   assert.equal(sheet[1][0], 'مرداد ۱۴۰۵', 'the first column a reader sees is the Jalali month');
   assert.equal(sheet[1][1], '2026-08', 'with the ISO key kept beside it');
 });
+
+// ---- the manager's score ---------------------------------------------------
+//
+// This is the one number on the summary sheet that is a person's opinion
+// rather than a measurement, and the whole point of it is that the reader
+// cannot miss it. So these tests check the bytes Excel will act on, not just
+// that the row exists.
+
+const STRONG = '5'; // the cellXfs index NAMED_STYLE.strong points at
+
+function summarySheet(manager) {
+  const analytics = {
+    autoScore: { score: 58, reason: 'محاسبه‌شده از ۶ مؤلفه' },
+    delivery: { mrCount: 12, mergedCount: 9, discussedPct: 0 },
+  };
+  const rows = monthly.summaryRows({ author: 's_nami', analytics, manager, hoursLabel: (h) => String(h) });
+  const files = unzip(xlsx.build([{ name: 'خلاصه', rows, columns: monthly.SUMMARY_COLUMNS, autoFilter: false, freezeHeader: false }]));
+  return { rows, xml: files['xl/worksheets/sheet1.xml'], styles: files['xl/styles.xml'] };
+}
+
+const MANAGER = {
+  month: '2026-09', overall: 75, note: 'گزارش پیشرفت دیر می‌رسد.',
+  params: [
+    { key: 'quality', label: 'کیفیت کد', value: 4 },
+    { key: 'speed', label: 'سرعت انجام کار', value: null },
+  ],
+};
+
+test("the manager's score is labelled امتیاز مدیر and sits above the computed one", () => {
+  const { rows } = summarySheet(MANAGER);
+  const labels = rows.map((r) => (r[0] && typeof r[0] === 'object' ? r[0].v : r[0]));
+  const manager = labels.indexOf('امتیاز مدیر');
+  const auto = labels.findIndex((l) => typeof l === 'string' && l.startsWith('امتیاز خودکار'));
+  assert.notEqual(manager, -1, 'no امتیاز مدیر row');
+  assert.notEqual(auto, -1, 'the automatic score lost its row');
+  assert.ok(manager < auto, "the manager's score must come first — it is what the sheet is read for");
+  // Two different scores on one sheet: neither label may imply it contains
+  // the other.
+  assert.ok(!labels.includes('امتیاز کل فعلی'), '"کل" would read as if it included the manual score');
+});
+
+test("the manager's row carries the emphasis style in the sheet Excel opens", () => {
+  const { xml, styles } = summarySheet(MANAGER);
+  // Every cell of the row, not just the label — a bold label beside plain
+  // cells does not read as one emphasised statement.
+  const strong = [...xml.matchAll(new RegExp(`<c r="([A-Z]+)([0-9]+)" s="${STRONG}"`, 'g'))];
+  assert.equal(strong.length, 3, 'expected the label, the value and the note to be emphasised');
+  assert.deepEqual(strong.map((m) => m[1]), ['A', 'B', 'C']);
+  assert.ok(strong.every((m) => m[2] === strong[0][2]), 'all three must be on the same row');
+  // The style has to exist, or Excel falls back and the emphasis silently
+  // disappears — which looks identical to it never being asked for.
+  assert.match(styles, /<cellXfs count="6">/);
+  assert.match(styles, /<xf numFmtId="0" fontId="2" fillId="3"/);
+  assert.match(styles, /<font><b\/><sz val="14"\/>/, 'the emphasis font must be bold and larger');
+  assert.match(xml, new RegExp(`<row r="${strong[0][2]}" ht="[0-9]+" customHeight="1">`), 'the larger font needs the row height to match');
+});
+
+test('the score stays a number, so Excel treats it as one', () => {
+  const { xml } = summarySheet(MANAGER);
+  assert.match(xml, new RegExp(`<c r="B[0-9]+" s="${STRONG}"><v>75</v></c>`),
+    'the headline must not be baked into a string like "۷۵ از ۱۰۰"');
+});
+
+test('each rated parameter is listed, and an unrated one is blank rather than zero', () => {
+  const { rows } = summarySheet(MANAGER);
+  const find = (label) => rows.find((r) => r[0] === '• ' + label);
+  assert.deepEqual(find('کیفیت کد'), ['• کیفیت کد', 4, 'از ۵']);
+  const speed = find('سرعت انجام کار');
+  assert.equal(speed[1], '', 'a parameter nobody scored must not read as a score');
+  assert.match(speed[2], /نداده/);
+  assert.ok(rows.some((r) => r[2] === MANAGER.note), 'the note is the reasoning — it belongs in the sheet');
+});
+
+test('an unrated developer still gets the row, saying so, with nothing to mistake for a score', () => {
+  const { rows, xml } = summarySheet(null);
+  const row = rows.find((r) => r[0] && r[0].v === 'امتیاز مدیر');
+  assert.ok(row, 'the row must not vanish — an absent rating is itself the finding');
+  assert.equal(row[1].v, '', 'a missing rating is blank, never 0');
+  assert.match(row[2].v, /مدیر هنوز/, 'it must name who has not rated, not just that a value is missing');
+  // Emphasis survives the value being empty, so the gap is as visible as a score.
+  assert.match(xml, new RegExp(`<c r="B[0-9]+" s="${STRONG}"/>`));
+});
+
+test('the emphasis follows the cell, not a row number', () => {
+  // A row inserted above must not drag the style onto someone else's row.
+  const rows = [['a', 'b'], ['plain', 1], [{ v: 'loud', s: 'strong' }, 2]];
+  const files = unzip(xlsx.build([{ name: 's', rows }]));
+  const xml = files['xl/worksheets/sheet1.xml'];
+  assert.match(xml, new RegExp(`<c r="A3" s="${STRONG}"`));
+  assert.ok(!new RegExp(`<c r="A2" s="${STRONG}"`).test(xml), 'the plain row must stay plain');
+  // An unknown style name falls back to the column format instead of throwing.
+  const odd = unzip(xlsx.build([{ name: 's', rows: [['a'], [{ v: 'x', s: 'nope' }]] }]));
+  assert.match(odd['xl/worksheets/sheet1.xml'], /<c r="A2" t="inlineStr">/);
+});
