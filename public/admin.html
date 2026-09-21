@@ -1544,6 +1544,31 @@
   .cover-chip.warn { border-color: rgba(240, 180, 41, 0.35); background: rgba(240, 180, 41, 0.10); color: #fbbf24; }
   .cover-chip.bad  { border-color: rgba(244, 63, 94, 0.35);  background: rgba(244, 63, 94, 0.10);  color: #fb7185; }
 
+  /* The activity chip carries its own tones rather than reusing cover-chip's,
+     because it is answering a different question: cover-chip grades how much
+     evidence there is, this grades how fresh it is. Slightly stronger than a
+     coverage chip too — on a person's page this is usually the first thing
+     anyone looks for. */
+  .cover-chip.act-ok {
+    border-color: rgba(45, 212, 167, 0.45);
+    background: rgba(45, 212, 167, 0.14);
+    color: #4ade9f;
+    font-weight: 600;
+  }
+  .cover-chip.act-warn {
+    border-color: rgba(240, 180, 41, 0.45);
+    background: rgba(240, 180, 41, 0.14);
+    color: #fbbf24;
+    font-weight: 600;
+  }
+  .cover-chip.act-bad {
+    border-color: rgba(244, 63, 94, 0.45);
+    background: rgba(244, 63, 94, 0.14);
+    color: #fb7185;
+    font-weight: 600;
+  }
+  .cover-chip.act-ok .ico, .cover-chip.act-warn .ico, .cover-chip.act-bad .ico { color: inherit; }
+
   .score-governance-banner {
     border: 1px solid rgba(240, 180, 41, 0.3);
     background: rgba(240, 180, 41, 0.08);
@@ -5448,7 +5473,29 @@ function relativeTime(ms) {
   const min = Math.round(sec / 60);
   if (min < 60) return min + ' دقیقه پیش';
   const hr = Math.round(min / 60);
-  return hr + ' ساعت پیش';
+  if (hr < 24) return hr + ' ساعت پیش';
+  // Stopping at hours is how "۳۲۸ ساعت پیش" reached the screen. Past a day,
+  // nobody converts that in their head.
+  const day = Math.round(hr / 24);
+  if (day < 14) return day + ' روز پیش';
+  const week = Math.round(day / 7);
+  if (week < 9) return week + ' هفته پیش';
+  return Math.round(day / 30) + ' ماه پیش';
+}
+
+// How warm the trail is. Thresholds are a working day, then a long weekend:
+// inside a day the person is working now, up to three days they are simply
+// between pushes, and beyond that it is worth asking.
+function activityChip(ms) {
+  if (!ms) return '';
+  const hours = (Date.now() - ms) / 3600000;
+  const tone = hours < 24 ? 'ok' : hours < 72 ? 'warn' : 'bad';
+  const icon = hours < 24 ? 'activity' : hours < 72 ? 'clock' : 'alert';
+  return '<span class="cover-chip act-' + tone + '" title="' +
+      esc('از روی کامیت‌ها، باز و merge شدن MRها و تغییر تسک‌های جیرا — در امتیاز تأثیری ندارد') + '">' +
+    '<i class="ico i-' + icon + '"></i>' +
+    'آخرین فعالیت: ' + esc(relativeTime(ms)) +
+  '</span>';
 }
 
 // Counts exactly what attentionItems() will list on that person's page: one
@@ -5987,10 +6034,10 @@ function renderDevMain() {
         '<div class="hero-name">' + esc(displayName) + trendBadge + '</div>' +
         '<div class="hero-meta">' +
           '<span dir="ltr">@' + esc(DEV.selected) + '</span>' +
-          (a.lastActivityMs ? '<span title="آخرین رویداد یا ریویوی ثبت‌شده — در امتیاز تأثیری ندارد">آخرین فعالیت: ' + esc(relativeTime(a.lastActivityMs)) + '</span>' : '') +
+
           (auto.reason ? '<span title="' + esc(auto.reason) + '">چطور حساب شد؟</span>' : '') +
         '</div>' +
-        '<div class="hero-chips">' + attentionChip + manualBadge + coverageChip(a) + '</div>' +
+        '<div class="hero-chips">' + activityChip(a.lastActivityMs) + attentionChip + manualBadge + coverageChip(a) + '</div>' +
       '</div>' +
       '<div class="hero-actions">' + cacheNote +
         '<button class="btn-refresh" id="devRefreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی این فرد</button>' +
