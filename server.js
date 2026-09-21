@@ -33,6 +33,7 @@ const sentry = require('./lib/sentry');
 const sentryTasks = require('./lib/sentryTasks');
 const sentryAnalysis = require('./lib/sentryAnalysis');
 const sentryStore = require('./lib/sentryStore');
+const sentryBlame = require('./lib/sentryBlame');
 
 // Roster changes rarely (someone joins/leaves the project); one developer's
 // analytics can shift sooner (a new commit landing on an open MR's branch),
@@ -337,6 +338,26 @@ async function handleSentryDetail(req, res, issueId, searchParams) {
     }
 
     const stack = sentryAnalysis.renderStack(detail.exceptions);
+
+    // Who wrote the crashing line — git blame on the culprit frame, against
+    // this project's own local checkout. Advisory like the assignee
+    // suggestion above it: a project with no PROJECT_PATH configured, or a
+    // frame git blame can't resolve, still shows the crash — it just says
+    // why the "کی زده" line is missing instead of leaving it out silently.
+    let blame = null;
+    try {
+      const activeProject = projects.getProject(activeId);
+      const roster = await rosterAuthors();
+      blame = await sentryBlame.blameIssueCached({
+        issue: detail,
+        projectPath: activeProject && activeProject.path,
+        roster,
+        force: searchParams.get('refresh') === '1',
+      });
+    } catch (e) {
+      blame = { available: false, reason: e.message, frame: null };
+    }
+
     return sendJson(res, 200, {
       issue: detail,
       stale, staleAt, staleReason,
@@ -344,6 +365,7 @@ async function handleSentryDetail(req, res, issueId, searchParams) {
       priority: sentryAnalysis.priorityFor(detail),
       suggestions,
       stack,
+      blame,
       jiraTask: sentryTasks.linkFor(issueId),
       defaults: sentryTasks.defaultsFor(detail),
       // The full ticket body, with the log and (when present) the Persian
@@ -882,6 +904,59 @@ async function handleDeveloperRoster(req, res, query) {
 // one most worth not re-paying on every click. ?refresh=1 bypasses the cache
 // — someone just pushed a fix-up commit and wants the round-trip count to
 // reflect it right now, not in up to 20 minutes.
+
+// Every currently-tracked Sentry issue, git-blamed once and shared by every
+// developer's score — not rebuilt per person, since it is the same team-wide
+// question ("who does each crash trace to") asked from a different angle
+// each time. `searched` counts every issue blame actually resolved (whether
+// or not it landed on someone on the roster); `byAuthor` only the ones that
+// did. 90 days is a fixed lookback rather than tied to the caller's own
+// since/until: Sentry's own API takes a coarse statsPeriod string, not an
+// arbitrary date range, and this index is shared across every date range
+// anyone's analytics page happens to be viewing.
+const SENTRY_BLAME_INDEX_TTL_MS = 20 * 60 * 1000;
+const SENTRY_BLAME_LOOKBACK = '90d';
+
+async function buildSentryBlameIndex({ force = false } = {}) {
+  const { value } = await cache.cached('sentry-blame-index', 'team', SENTRY_BLAME_INDEX_TTL_MS, async () => {
+    const empty = { searched: 0, byAuthor: {} };
+    if (!sentry.isConfigured()) return empty;
+    const roster = await rosterAuthors();
+    const configured = projects.listProjects();
+    // No configured project still has secrets.env's single PROJECT_PATH/
+    // SENTRY_* to fall back to — getSentryProjects(undefined) already knows
+    // to read the global SENTRY_PROJECT; PROJECT_PATH has to be read
+    // directly, the same fallback lib/jobs.js uses (getProjectPath(undefined)
+    // finds no project id to look up and stops at '', it doesn't know to
+    // reach for the global value on its own).
+    const scopes = configured.length ? configured : [{ id: undefined, path: secret('PROJECT_PATH') }];
+    let searched = 0;
+    const byAuthor = {};
+    for (const proj of scopes) {
+      const slugs = projects.getSentryProjects(proj.id);
+      if (!slugs.length) continue;
+      let issues;
+      try {
+        // Empty query, not the Sentry issues page's default `is:unresolved`
+        // — a crash somebody already fixed still belongs in this history
+        // (sentryReliability discounts it, it does not erase it), and
+        // excluding it would make "resolved" the same as "never happened".
+        const res = await sentry.listIssues({ query: '', statsPeriod: SENTRY_BLAME_LOOKBACK, limit: 100, projects: slugs, projectId: proj.id });
+        issues = res.issues || [];
+      } catch (e) { continue; } // this project's Sentry being unreachable must not blank out the others'
+      for (const issue of issues) {
+        const result = await sentryBlame.blameIssueCached({ issue, projectPath: proj.path, roster, force });
+        if (!result.available) continue;
+        searched++;
+        if (!result.author) continue; // blame worked, but nobody on the roster wrote that line
+        const key = result.author.username;
+        (byAuthor[key] || (byAuthor[key] = [])).push({ level: issue.level, resolved: issue.status === 'resolved' });
+      }
+    }
+    return { searched, byAuthor };
+  }, { force });
+  return value;
+}
 // Builds one developer's full analytics payload — GitLab months, Jira
 // enrichment, the composite score. Split out from the HTTP handler so the
 // Excel export runs the exact same code rather than a parallel
@@ -982,6 +1057,15 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
     for (const e of events) if (Number.isFinite(e.at)) stamps.push(e.at);
     for (const r of reviews) if (Number.isFinite(r.at)) stamps.push(r.at);
     value.lastActivityMs = stamps.length ? Math.max(...stamps) : null;
+
+    // Which currently-tracked Sentry crashes git-blame traces to this
+    // person's own commits — a no-op (never touches devScore's total) when
+    // Sentry isn't configured, since buildSentryBlameIndex then returns
+    // searched: 0 and devScore.compute() reads that as "no evidence either
+    // way", not as a clean record.
+    const blameIndex = await buildSentryBlameIndex({ force });
+    value.sentryBlame = { blamed: blameIndex.byAuthor[author] || [], searched: blameIndex.searched };
+
     value.autoScore = devScore.compute({
       tasks: value.jiraTasks || [],
       analytics: value,

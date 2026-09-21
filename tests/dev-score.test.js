@@ -209,3 +209,69 @@ test('recency is no longer an input to the score', () => {
   assert.equal(fresh.components.some((c) => c.key === 'activity'), false);
   assert.equal(stale.components.some((c) => c.key === 'activity'), false);
 });
+
+// ---- sentryReliability -------------------------------------------------
+// The one component here that is evidence of harm, not evidence of good
+// work — "no data" and "we looked and found nothing" have to mean different
+// things, unlike everywhere else in this file.
+
+test('sentryReliability is null (no data) when nothing was searched at all', () => {
+  assert.equal(devScore.sentryReliability([], 0), null, 'an unconfigured/unreached Sentry must not silently score everyone 100');
+});
+
+test('sentryReliability scores 100 when the search ran and found nothing blamed on this person', () => {
+  const r = devScore.sentryReliability([], 12);
+  assert.equal(r.score, 100);
+  assert.equal(r.sampleSize, 12, "the team-wide evidence base, not this person's zero-length list");
+  assert.match(r.detail, /هیچ‌کدام به کامیت این فرد نرسید/);
+});
+
+test('sentryReliability penalises an unresolved fatal more than an unresolved warning', () => {
+  const fatal = devScore.sentryReliability([{ level: 'fatal', resolved: false }], 5);
+  const warning = devScore.sentryReliability([{ level: 'warning', resolved: false }], 5);
+  assert.ok(fatal.score < warning.score, `fatal (${fatal.score}) should hurt more than warning (${warning.score})`);
+});
+
+test('sentryReliability discounts a resolved crash relative to the same one left open', () => {
+  const open = devScore.sentryReliability([{ level: 'error', resolved: false }], 5);
+  const fixed = devScore.sentryReliability([{ level: 'error', resolved: true }], 5);
+  assert.ok(fixed.score > open.score, 'fixing it should cost less than leaving it broken');
+  assert.equal(open.score, 100 - devScore.blameWeight('error'));
+  assert.equal(fixed.score, 100 - Math.round(devScore.blameWeight('error') * 0.4));
+});
+
+test('sentryReliability never drops below 0 even with many blamed crashes', () => {
+  const many = Array.from({ length: 10 }, () => ({ level: 'fatal', resolved: false }));
+  const r = devScore.sentryReliability(many, 10);
+  assert.equal(r.score, 0);
+});
+
+test('compute() folds sentryReliability into the composite exactly like every other component', () => {
+  const tasks = [
+    { statusCategory: 'done', dueDate: '2026-09-01', resolvedAt: '2026-08-30T00:00:00Z', estimateHours: 8, spentHours: 8 },
+  ];
+  const clean = devScore.compute({ tasks, now: NOW, sentryBlame: { blamed: [], searched: 4 } });
+  const blamed = devScore.compute({ tasks, now: NOW, sentryBlame: { blamed: [{ level: 'fatal', resolved: false }], searched: 4 } });
+  const cleanComp = clean.components.find((c) => c.key === 'sentryReliability');
+  const blamedComp = blamed.components.find((c) => c.key === 'sentryReliability');
+  assert.equal(cleanComp.available, true);
+  assert.equal(cleanComp.score, 100);
+  assert.equal(blamedComp.score, 100 - devScore.blameWeight('fatal'));
+  assert.ok(blamed.score < clean.score, 'a blamed fatal crash must pull the composite score down');
+});
+
+test('compute() leaves sentryReliability out entirely (redistributed, not zeroed) when Sentry blame data is absent', () => {
+  const tasks = [
+    { statusCategory: 'done', dueDate: '2026-09-01', resolvedAt: '2026-08-30T00:00:00Z', estimateHours: 8, spentHours: 8 },
+  ];
+  const withIt = devScore.compute({ tasks, now: NOW, sentryBlame: { blamed: [], searched: 4 } });
+  const withoutIt = devScore.compute({ tasks, now: NOW });
+  const comp = withoutIt.components.find((c) => c.key === 'sentryReliability');
+  assert.equal(comp.available, false);
+  assert.equal(comp.effectiveWeight, 0);
+  // With one fewer component sharing the weight, the other components' own
+  // effective weight must have grown to fill the gap — not vanished with it.
+  const onTimeWith = withIt.components.find((c) => c.key === 'onTime').effectiveWeight;
+  const onTimeWithout = withoutIt.components.find((c) => c.key === 'onTime').effectiveWeight;
+  assert.ok(onTimeWithout > onTimeWith, "dropping sentryReliability must redistribute its weight, not just delete it");
+});

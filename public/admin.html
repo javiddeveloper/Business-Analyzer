@@ -2516,6 +2516,28 @@
     font-size: 12px;
     line-height: 1.8;
   }
+  /* "کی این خط را زده" — git blame on the crashing frame. Red like a real
+     finding (it feeds a negative score component), not just informational;
+     the "unmatched"/"unavailable" variants are quieter since neither one is
+     actually pointing at somebody. */
+  .sentry-blame {
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    margin: 8px 0;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .sentry-blame.found {
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    border-inline-start-width: 3px;
+    border-inline-start-color: var(--red);
+    background: rgba(248, 113, 113, 0.06);
+  }
+  .sentry-blame.unmatched, .sentry-blame.unavailable {
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
+  }
+  .sentry-blame .meta { margin-top: 2px; }
 
   /* Modals: Shadcn Dialog */
   .modal-overlay {
@@ -4224,6 +4246,21 @@ async function handleMockApi(path, options = {}) {
             sampleSize: 5,
             detail: '۴ از ۵ MR به صورت کاملاً مستقل روی برنچ پوش شده',
             available: true
+          },
+          {
+            key: 'sentryReliability',
+            label: 'خطاهای Sentry ردیابی‌شده تا کامیت این فرد (git blame)',
+            baseWeight: 15,
+            effectiveWeight: 13.0,
+            confidence: 50,
+            // علی رضایی همان کسی است که در نمونه‌ی «StripeWebhookHandler»
+            // پایین همین صفحه (mock /api/sentry) به‌عنوان نویسنده شناسایی شده.
+            score: isSara ? 100 : (isAli ? 80 : 100),
+            sampleSize: 6,
+            detail: isAli
+              ? '۱ خطای Sentry (سطح error، هنوز حل‌نشده) به کامیت این فرد ردیابی شد — از ۶ خطای بررسی‌شده در کل تیم.'
+              : 'از ۶ خطای Sentry ردیابی‌شده در این تیم، هیچ‌کدام به کامیت این فرد نرسید.',
+            available: true
           }
         ]
       },
@@ -4425,6 +4462,16 @@ async function handleMockApi(path, options = {}) {
         fix: 'اعمال بررسی ایمن null-check روی metadata قبل از واکشی tenantId و استفاده از مقدار پیش‌فرض'
       },
       stack: '> com.nexus.billing.webhook.StripeWebhookHandler.processEvent(StripeWebhookHandler.java:142)\n  com.nexus.billing.webhook.StripeWebhookController.handleWebhook(StripeWebhookController.java:58)\n  jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)',
+      // git blame on the culprit frame (server-side: lib/sentryBlame.js) —
+      // demoed here as a resolved match so the "این خط را ... نوشته" block
+      // has something real to show without needing an actual local checkout.
+      blame: {
+        available: true,
+        frame: { filename: 'StripeWebhookHandler.java', lineNo: 142, function: 'processEvent', inApp: true },
+        commit: { sha: 'b8e9102c47a13f0e9c2d4a6b1f0e8d7c6b5a4321', summary: 'fix(billing): handle Stripe metadata edge case', at: Date.now() - 6 * 86400 * 1000 },
+        gitAuthor: { name: 'Ali Rezaei', email: 'ali.rezaei@nexus.io' },
+        author: { username: 'ali.rezaei', name: 'علی رضایی' },
+      },
       suggestions: [
         { username: 'sara.ahmadi', name: 'سارا احمدی', load: 'خفیف', inProgress: 1, openMrs: 1 },
         { username: 'ali.rezaei', name: 'علی رضایی', load: 'متوسط', inProgress: 2, openMrs: 1 }
@@ -4953,7 +5000,10 @@ async function loadMaintainers({ force = false } = {}) {
         '<div class="maint-user">@' + esc(m.username) + '</div>' +
       '</div>' +
       '<span class="tag">' + esc(ACCESS_LABEL[m.access_level] || ('level ' + m.access_level)) + '</span>' +
-      '<span class="tag ' + status.cls + '">' + esc(status.text) + '</span>' +
+      // status.text is one of the three literals just above, not API data —
+      // the "در لیست آنالیز" branch carries its own <i> icon tag, which
+      // esc() would turn into visible text (as it did until now).
+      '<span class="tag ' + status.cls + '">' + status.text + '</span>' +
     '</div>';
   }).join('');
 }
@@ -5423,7 +5473,10 @@ function renderTabs() {
       '</div>' +
       '<div class="tab-meta">' + esc(mr.author) + (mr.draft ? ' · Draft' : '') + (mr.approved ? ' · <i class="ico i-check-circle ico-green"></i> approved' : '') + '</div>' +
       '<div class="tab-meta">' + branchPill(mr) + '</div>' +
-      (statusWord ? '<div class="tab-meta">' + esc(statusWord) + (findingCount != null ? ' · ' + findingCount + ' یافته' : '') + '</div>' : '') +
+      // jobStatusWord() returns plain text for the running/error/stopped
+      // cases but its own <i class="ico ..."> tag for REQUEST_CHANGES/
+      // APPROVE — esc() turned that one into visible tag text.
+      (statusWord ? '<div class="tab-meta">' + statusWord + (findingCount != null ? ' · ' + findingCount + ' یافته' : '') + '</div>' : '') +
     '</div>';
   }).join('');
   tabs.querySelectorAll('.tab').forEach((el) => {
@@ -9059,6 +9112,45 @@ function renderSentryIssue(issue) {
 
 // The expanded view: the stack, the Persian reading of it, and the actions
 // that change something (resolve in Sentry, file in Jira).
+// "این خط را کی زده" — git blame on the crashing frame (server-side,
+// lib/sentryBlame.js). Three outcomes, each worth saying plainly rather than
+// collapsing into one "unknown": blamed to someone on the roster (feeds the
+// negative sentryReliability score), blamed to a real git identity that
+// isn't on the current roster (an ex-teammate, a bot, an external
+// contributor — informative, but nobody's score moves for it), or blame
+// itself couldn't run at all (no local checkout, file not found, line past
+// the file's current length) — silence there would read as "nobody's
+// fault" when it actually means "we don't know".
+function renderSentryBlame(blame) {
+  if (!blame) return '';
+  if (!blame.available) {
+    return '<div class="sentry-blame unavailable"><i class="ico i-git-commit ico-muted"></i> ' +
+      'مشخص نشد این خط را چه کسی نوشته — ' + esc(blame.reason || 'نامشخص') + '</div>';
+  }
+  const short = blame.commit && blame.commit.sha ? String(blame.commit.sha).slice(0, 8) : '';
+  const when = blame.commit && blame.commit.at ? relativeTime(blame.commit.at) : null;
+  const where = blame.frame ? esc(blame.frame.filename) + ':' + esc(blame.frame.lineNo) : '';
+  const commitBits = [
+    short ? 'commit <span class="mono">' + esc(short) + '</span>' : '',
+    when ? esc(when) : '',
+  ].filter(Boolean).join(' · ');
+
+  if (blame.author) {
+    return '<div class="sentry-blame found">' +
+      '<i class="ico i-user ico-red"></i> این خط را <b>' + esc(blame.author.name || blame.author.username) + '</b> نوشته' +
+      (where ? ' — <span class="mono">' + where + '</span>' : '') +
+      (commitBits ? ' · ' + commitBits : '') +
+      '<div class="meta">در امتیاز خودکار این فرد به‌عنوان امتیاز منفی (خطاهای Sentry ردیابی‌شده) لحاظ می‌شود.</div>' +
+    '</div>';
+  }
+  const ghostName = (blame.gitAuthor && blame.gitAuthor.name) || 'یک فرد خارج از لیست تیم';
+  return '<div class="sentry-blame unmatched">' +
+    '<i class="ico i-git-commit ico-muted"></i> این خط را <b>' + esc(ghostName) + '</b> نوشته — در لیست تیم فعلی پیدا نشد' +
+    (where ? ' — <span class="mono">' + where + '</span>' : '') +
+    (commitBits ? ' · ' + commitBits : '') +
+  '</div>';
+}
+
 function renderSentryDetail(issueId) {
   const d = SENTRY.details[issueId];
   if (!d) return '<div class="sentry-detail"><div class="meta">در حال خواندن جزئیات…</div></div>';
@@ -9097,6 +9189,7 @@ function renderSentryDetail(issueId) {
       '<button class="ghost sentry-resolve" data-issue="' + esc(issueId) + '"><i class="ico i-check ico-green"></i> فیکس شد (در Sentry بسته شود)</button>' +
       '<span class="sentry-resolve-status meta"></span>' +
     '</div>' +
+    renderSentryBlame(d.blame) +
     analysisHtml +
     (tags.length
       ? '<div class="sentry-tags">' + tags.map(([k, v]) =>
