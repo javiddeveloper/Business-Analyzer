@@ -1308,23 +1308,52 @@
   .hero-caveat a { cursor: pointer; text-decoration: none; border-bottom: 1px dotted currentColor; }
 
   /* Score Ring */
-  .score-ring { flex-shrink: 0; width: 96px; height: 96px; }
-  .score-ring .ring-track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 7; }
-  .score-ring .ring-fill {
+  /* ---- Score ring: the composition bar bent into a circle ----------------
+     One arc per component, as long as the points it contributed and in the
+     same hue it has in the breakdown below. The band colouring it replaced
+     (green/amber/red by score) only repeated the number in the middle, and
+     used colour to mean "how good" directly above a chart where colour means
+     "which component". */
+  .score-ring { flex-shrink: 0; width: 96px; height: 96px; overflow: visible; }
+
+  /* The old track was rgba(255,255,255,.08) — heavy enough to read as a grey
+     doughnut with a coloured bite taken out of it. It only needs to say where
+     the circle would be. */
+  .score-ring .ring-track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.045);
+    stroke-width: 7;
+  }
+
+  /* dasharray is the full circumference and the growth is on dashoffset, so
+     each arc draws itself from its own start point; the arc is placed by
+     rotating the element rather than by offsetting the dash, which would
+     slide the stroke instead of extending it. */
+  .score-ring .ring-seg {
+    /* --c (the circumference) is set on the <svg> from RING_CIRCUMFERENCE, so
+       the radius lives in exactly one place. */
     fill: none;
     stroke-width: 7;
-    stroke-linecap: round;
-    transform: rotate(-90deg);
+    stroke-linecap: butt;              /* round caps would overlap the next arc */
+    stroke-dasharray: var(--c) var(--c);
+    stroke-dashoffset: calc(var(--c) - var(--len));
+    transform: rotate(calc(-90deg + var(--start)));
     transform-origin: 50% 50%;
-    transition: stroke-dasharray 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: ring-draw 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+  .score-ring .ring-plain { stroke: var(--chart-1); }
+
+  @keyframes ring-draw {
+    from { stroke-dashoffset: var(--c); }
+    to   { stroke-dashoffset: calc(var(--c) - var(--len)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .score-ring .ring-seg { animation: none; }
+  }
+
   .score-ring .ring-num { font-size: 24px; font-weight: 800; fill: var(--foreground); font-family: var(--font-primary); }
   .score-ring .ring-cap { font-size: 8px; fill: var(--muted-foreground); font-family: var(--font-primary); letter-spacing: 0.04em; }
-  .score-ring.score-good .ring-fill { stroke: var(--green); }
-  .score-ring.score-mid  .ring-fill { stroke: var(--amber); }
-  .score-ring.score-bad  .ring-fill { stroke: var(--red); }
-  .score-ring.score-none .ring-fill { stroke: var(--dim); }
-  .score-ring.score-none .ring-num  { fill: var(--dim); font-size: 18px; }
+  .score-ring.score-none .ring-num { fill: var(--dim); font-size: 18px; }
 
   /* ---- Tabs (shadcn Tabs): a muted track whose active trigger lifts to the
      card surface. This is what replaced eleven stacked sections. */
@@ -5359,15 +5388,44 @@ function scrollToDevSection(id) {
 }
 
 const RING_CIRCUMFERENCE = 2 * Math.PI * 31;
-function renderScoreRing(score) {
+// `auto` is the whole autoScore, not just its number: the ring is drawn from
+// the same per-component contributions as the breakdown below it.
+function renderScoreRing(auto) {
+  const score = auto && auto.score != null ? auto.score : null;
   const known = score != null;
-  const cls = known ? scoreClass(score) : 'score-none';
-  const filled = known ? (RING_CIRCUMFERENCE * Math.max(0, Math.min(100, score))) / 100 : 0;
-  return '<svg class="score-ring ' + cls + '" viewBox="0 0 80 80" role="img" ' +
-      'aria-label="امتیاز خودکار: ' + (known ? score + ' از ۱۰۰' : 'بدون داده') + '">' +
+  const comps = ((auto && auto.components) || []).filter((c) => c.available);
+
+  // Points each component put into the total — identical to the quantity the
+  // composition bar draws, so the two can never disagree.
+  const contrib = (c) => (c.score * c.effectiveWeight) / 100;
+  const HUE = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
+
+  let cursor = 0;
+  const segs = comps.map((c, i) => {
+    const pts = Math.max(0, contrib(c));
+    if (pts <= 0.2) return '';                 // below a pixel of arc; drawing it only adds a seam
+    const len = (RING_CIRCUMFERENCE * pts) / 100;
+    const startDeg = (cursor / 100) * 360;
+    cursor += pts;
+    return '<circle class="ring-seg" cx="40" cy="40" r="31"' +
+      ' style="--len:' + len.toFixed(2) + '; --start:' + startDeg.toFixed(2) + 'deg;' +
+      ' animation-delay:' + (i * 0.08).toFixed(2) + 's; stroke:' + HUE[i % HUE.length] + '">' +
+      '<title>' + esc(c.label + ' — ' + Math.round(pts) + ' امتیاز') + '</title></circle>';
+  }).join('');
+
+  // No breakdown to draw (an older cached payload, or a score with no
+  // components): fall back to one plain arc rather than an empty ring.
+  const plain = known && !segs
+    ? '<circle class="ring-seg ring-plain" cx="40" cy="40" r="31" style="--len:' +
+        ((RING_CIRCUMFERENCE * Math.max(0, Math.min(100, score))) / 100).toFixed(2) +
+        '; --start:0deg"></circle>'
+    : '';
+
+  return '<svg class="score-ring ' + (known ? '' : 'score-none') + '" viewBox="0 0 80 80" role="img" ' +
+      'style="--c:' + RING_CIRCUMFERENCE.toFixed(2) + '" ' +
+      'aria-label="' + esc('امتیاز خودکار: ' + (known ? score + ' از ۱۰۰' : 'بدون داده')) + '">' +
     '<circle class="ring-track" cx="40" cy="40" r="31"></circle>' +
-    '<circle class="ring-fill" cx="40" cy="40" r="31" ' +
-      'stroke-dasharray="' + filled.toFixed(1) + ' ' + RING_CIRCUMFERENCE.toFixed(1) + '"></circle>' +
+    segs + plain +
     '<text class="ring-num" x="40" y="41" text-anchor="middle" dominant-baseline="middle">' +
       (known ? score : '—') + '</text>' +
     '<text class="ring-cap" x="40" y="55" text-anchor="middle">امتیاز خودکار</text>' +
@@ -5931,7 +5989,7 @@ function renderDevMain() {
     // Everything in every pane below is evidence for the figure in the ring,
     // so it sits above the tab strip and stays visible whichever pane is open.
     '<div class="card dev-hero">' +
-      renderScoreRing(auto.score == null ? null : auto.score) +
+      renderScoreRing(auto) +
       '<div class="hero-id">' +
         '<div class="hero-name">' + esc(displayName) + trendBadge + '</div>' +
         '<div class="hero-meta">' +
