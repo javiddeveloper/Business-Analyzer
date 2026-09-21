@@ -2547,7 +2547,15 @@
   .engine-card .body { min-width: 0; flex: 1; }
   .engine-card .name { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
   .engine-card .hint { font-size: 11px; color: var(--muted-foreground); margin-top: 2px; }
-  .engine-card .status { font-size: 11px; flex-shrink: 0; }
+  /* Status and the test button used to share the icon/name/hint row, which
+     at this modal's width (420px) left .body only a sliver — enough for one
+     word per line, which read as broken text rather than a layout problem.
+     Their own row, full width, fixes that without touching the data. */
+  .engine-card .foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+  }
+  .engine-card .status { font-size: 11px; display: flex; align-items: center; gap: 5px; min-width: 0; }
   .engine-card .status.ok   { color: var(--green); }
   .engine-card .status.warn { color: var(--amber); }
   .engine-card .status.unknown { color: var(--dim); }
@@ -4488,11 +4496,17 @@ function renderStatus() {
     : (g.error || '');
 
   const aiState = ENGINE_STATE[ai.state] || ENGINE_STATE['missing-key'];
+  // ENGINE_STATE's text carries its own leading icon tag (for the engine
+  // cards' status line) — everywhere else it's used as plain text (this
+  // badge, and a `title` attribute, which a browser never renders as HTML
+  // regardless of escaping), so the tag is stripped rather than escaped;
+  // escaping it just turned it into visible "<i ...>" text.
+  const aiStateLabel = aiState.text.replace(/^<i[^>]*><\/i>\s*/, '');
   const aiBadge = document.getElementById('aiBadge');
   aiBadge.innerHTML =
     '<span class="dot ' + (ai.state === 'ready' ? 'ok' : ai.state === 'unverified' ? '' : 'warn') + '"></span> مدل: ' +
-    esc(ai.model || '—') + (ai.state === 'ready' ? '' : ' (' + esc(aiState.text.replace(/^[✓↺⚠]\s*/, '')) + ')');
-  aiBadge.title = 'موتور فعال: ' + esc(ai.provider) + ' — ' + esc(aiState.text) + ' (برای تعویض کلیک کن)';
+    esc(ai.model || '—') + (ai.state === 'ready' ? '' : ' (' + esc(aiStateLabel) + ')');
+  aiBadge.title = 'موتور فعال: ' + esc(ai.provider) + ' — ' + esc(aiStateLabel) + ' (برای تعویض کلیک کن)';
 
   document.getElementById('autoReview').checked = !!st.autoReview;
   document.getElementById('autoReviewLabel').classList.toggle('on', !!st.autoReview);
@@ -4667,7 +4681,7 @@ document.getElementById('modelOverlay').addEventListener('click', (e) => {
 // without spending a real model call.
 const ENGINE_STATE = {
   ready: { cls: 'ok', text: '<i class="ico i-check ico-green"></i> کلید تنظیم شده' },
-  unverified: { cls: 'unknown', text: '↺ نصب‌شده — لاگین چک نشده' },
+  unverified: { cls: 'unknown', text: '<i class="ico i-refresh ico-cyan"></i> نصب‌شده — لاگین چک نشده' },
   'not-installed': { cls: 'warn', text: '<i class="ico i-alert ico-amber"></i> claude CLI نصب نیست' },
   'missing-key': { cls: 'warn', text: '<i class="ico i-alert ico-amber"></i> کلید ناقص' },
 };
@@ -4681,20 +4695,27 @@ async function loadEngines() {
     box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
     return;
   }
-  box.innerHTML = data.engines.map((e) => (
-    '<div class="engine-card ' + (e.active ? 'active' : '') + '" data-id="' + esc(e.id) + '">' +
+  box.innerHTML = data.engines.map((e) => {
+    // ENGINE_STATE[*].text is a fixed string this file writes itself (an
+    // icon tag plus a label), not data from the API — esc()ing it the same
+    // way as e.label/e.hint below would just turn its own markup into
+    // visible tag text, which is exactly what showed up on screen.
+    const st = ENGINE_STATE[e.state] || ENGINE_STATE['missing-key'];
+    return '<div class="engine-card ' + (e.active ? 'active' : '') + '" data-id="' + esc(e.id) + '">' +
       '<div class="row" data-select="' + esc(e.id) + '">' +
         '<span class="icon">' + e.icon + '</span>' +
         '<div class="body">' +
           '<div class="name">' + esc(e.label) + (e.active ? ' · فعال' : '') + '</div>' +
           '<div class="hint">' + esc(e.hint) + (e.model ? ' · ' + esc(e.model) : '') + '</div>' +
         '</div>' +
-        '<span class="status ' + esc(ENGINE_STATE[e.state].cls) + '">' + esc(ENGINE_STATE[e.state].text) + '</span>' +
+      '</div>' +
+      '<div class="foot">' +
+        '<span class="status ' + esc(st.cls) + '">' + st.text + '</span>' +
         '<button type="button" class="test-btn" data-test="' + esc(e.id) + '"><i class="ico i-play ico-green"></i> تست</button>' +
       '</div>' +
       '<div class="engine-test-result" data-result="' + esc(e.id) + '" hidden></div>' +
-    '</div>'
-  )).join('');
+    '</div>';
+  }).join('');
   box.querySelectorAll('[data-select]').forEach((el) => {
     el.onclick = () => selectEngine(el.dataset.select);
   });
@@ -4729,9 +4750,13 @@ async function testEngineUI(id, btn) {
     const r = await api('/api/engines/test', { method: 'POST', body: JSON.stringify({ id }) });
     resultBox.hidden = false;
     resultBox.className = 'engine-test-result ' + (r.ok ? 'ok' : 'err');
-    resultBox.textContent = r.ok
-      ? '<i class="ico i-check ico-green"></i> وصل شد (' + r.ms + 'ms) — پاسخ: «' + (r.text || '(خالی)') + '»'
-      : '<i class="ico i-x ico-red"></i> ' + r.error + (r.ms ? ' (' + r.ms + 'ms)' : '');
+    // .innerHTML, not .textContent — the icon tag needs to render, not show
+    // up as literal text (which is exactly what happened before). r.text and
+    // r.error are the model's own output/error message, so they still go
+    // through esc() rather than riding into innerHTML unescaped.
+    resultBox.innerHTML = r.ok
+      ? '<i class="ico i-check ico-green"></i> وصل شد (' + r.ms + 'ms) — پاسخ: «' + esc(r.text || '(خالی)') + '»'
+      : '<i class="ico i-x ico-red"></i> ' + esc(r.error) + (r.ms ? ' (' + r.ms + 'ms)' : '');
   } catch (e) {
     resultBox.hidden = false;
     resultBox.className = 'engine-test-result err';
@@ -5176,9 +5201,12 @@ function renderEnv() {
     const isActive = g.engine === activeProvider;
     return '<details class="engine-group"' + (isActive ? ' open' : '') + '>' +
       '<summary>' +
-        '<span>' + esc(meta.icon || '•') + ' ' + esc(g.name) + '</span>' +
+        // meta.icon and state.text both carry their own <i class="ico ...">
+        // tag — the same tag esc() would otherwise turn into visible text,
+        // as it did until now.
+        '<span>' + (meta.icon || '•') + ' ' + esc(g.name) + '</span>' +
         (isActive ? '<span class="engine-active-tag">فعال</span>' : '') +
-        (state ? '<span class="status ' + esc(state.cls) + '">' + esc(state.text) + '</span>' : '') +
+        (state ? '<span class="status ' + esc(state.cls) + '">' + state.text + '</span>' : '') +
       '</summary>' +
       fields +
     '</details>';
