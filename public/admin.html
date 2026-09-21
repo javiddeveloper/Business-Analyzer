@@ -640,6 +640,14 @@
     border-color: var(--ring);
     box-shadow: 0 0 0 3px rgba(138, 138, 138, 0.25);
   }
+  /* The closed <select> is `background: transparent` above and picks up the
+     dark page behind it, but its open dropdown list is a native popup the
+     OS/browser paints on its own — without this it renders on the browser's
+     default white, which against this theme's light text read as blank. */
+  select option {
+    background-color: var(--popover);
+    color: var(--foreground);
+  }
   textarea { min-height: 110px; resize: vertical; line-height: 1.7; }
 
   /* Checkboxes */
@@ -2850,8 +2858,7 @@
       <div class="badges">
         <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
         <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
-        <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی"><span class="dot"></span> مدل: …</button>
-        <span class="badge" id="accuracyBadge" hidden title="از یافته‌هایی که کسی رویشان 👍/👎 زده — نه از کل یافته‌ها"></span>
+        <button class="badge pick" id="aiBadge" title="تغییر موتور هوش مصنوعی — دقت یافته‌های رأی‌خورده هم همین‌جاست"><span class="dot"></span> مدل: …</button>
       </div>
     </header>
 
@@ -3105,6 +3112,12 @@
       <button class="modal-close" id="modelCloseBtn"><i class="ico i-x ico-muted"></i></button>
     </div>
     <div class="modal-body">
+      <!-- Used to be its own toolbar chip, always visible — with a longer
+           project name in the picker beside it there wasn't room, and it
+           quietly slid off into the hidden horizontal scroll nobody thinks
+           to check. It reads about the AI's own findings anyway, so it
+           belongs beside the engine that produces them, not in the toolbar. -->
+      <p class="modal-sub" id="accuracyBadge" hidden></p>
       <div class="engine-list" id="engineList"><div class="empty">در حال بارگذاری…</div></div>
     </div>
   </div>
