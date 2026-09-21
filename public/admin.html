@@ -1838,6 +1838,123 @@
   .i-x { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M18%206%206%2018'/%3E%3Cpath%20d='m6%206%2012%2012'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M18%206%206%2018'/%3E%3Cpath%20d='m6%206%2012%2012'/%3E%3C/svg%3E"); }
   .i-zap { -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%2014a1%201%200%200%201-.78-1.63l9.9-10.2a.5.5%200%200%201%20.86.46l-1.92%206.02A1%201%200%200%200%2013%2010h7a1%201%200%200%201%20.78%201.63l-9.9%2010.2a.5.5%200%200%201-.86-.46l1.92-6.02A1%201%200%200%200%2011%2014z'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23000'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M4%2014a1%201%200%200%201-.78-1.63l9.9-10.2a.5.5%200%200%201%20.86.46l-1.92%206.02A1%201%200%200%200%2013%2010h7a1%201%200%200%201%20.78%201.63l-9.9%2010.2a.5.5%200%200%201-.86-.46l1.92-6.02A1%201%200%200%200%2011%2014z'/%3E%3C/svg%3E"); }
 
+  /* ---- Auto-score composition -------------------------------------------
+     The widths come from a --w custom property rather than the width itself,
+     so every bar can start at 0 and animate out to its value. Doing it with
+     a keyframe instead of a transition means it plays on first paint, which
+     is the only time the reader is actually asking "where did this come
+     from" — a transition would need a second render to have something to
+     move from. */
+  @keyframes grow-w {
+    from { width: 0; }
+    to   { width: var(--w); }
+  }
+
+  .comp-bar {
+    display: flex;
+    height: 14px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background: var(--muted);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .comp-seg {
+    width: var(--w);
+    animation: grow-w 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    border-inline-end: 1px solid rgba(0, 0, 0, 0.35);
+  }
+  .comp-seg:last-child { border-inline-end: 0; }
+  /* The points that were available and not earned. Hatched rather than
+     coloured: it is an absence, and a sixth colour here would read as a
+     sixth component. */
+  .comp-seg.comp-lost {
+    background: repeating-linear-gradient(135deg,
+      rgba(255,255,255,.07), rgba(255,255,255,.07) 4px,
+      transparent 4px, transparent 8px);
+  }
+  /* Segments enter left-to-right in reading order. */
+  .comp-seg:nth-child(1) { animation-delay: .00s }
+  .comp-seg:nth-child(2) { animation-delay: .07s }
+  .comp-seg:nth-child(3) { animation-delay: .14s }
+  .comp-seg:nth-child(4) { animation-delay: .21s }
+  .comp-seg:nth-child(5) { animation-delay: .28s }
+  .comp-seg:nth-child(6) { animation-delay: .35s }
+
+  .comp-sum {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--muted-foreground);
+    padding-bottom: 14px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .comp-op { color: var(--dim); font-weight: 600; }
+  .comp-total {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--foreground);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .comp-list { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+  .comp-row { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .comp-head { display: flex; align-items: baseline; gap: 8px; }
+  .comp-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; align-self: center; }
+  .comp-label { font-size: 13px; font-weight: 500; flex: 1; min-width: 0; }
+  .comp-points { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .comp-points b { font-size: 15px; font-weight: 700; }
+  .comp-of { font-size: 11.5px; color: var(--muted-foreground); }
+
+  /* The rail is the full 0-100 scale, shared by every row. The track inside
+     it is this component's effective weight — the most it could have given —
+     and the fill is its score against that, so the fill's real length is the
+     points contributed and rows are directly comparable. */
+  .comp-rail {
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .comp-track {
+    height: 100%;
+    width: var(--t);
+    border-radius: var(--radius-full);
+    background: var(--muted);
+    overflow: hidden;
+  }
+  .comp-fill {
+    display: block;
+    height: 100%;
+    width: var(--w);
+    border-radius: var(--radius-full);
+    animation: grow-w 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: .1s;
+  }
+  .comp-why { font-size: 11.5px; line-height: 1.7; color: var(--muted-foreground); }
+
+  .comp-missing {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card-subtle);
+    font-size: 11.5px;
+    line-height: 1.9;
+    color: var(--muted-foreground);
+  }
+  .comp-missing b { color: var(--foreground); font-weight: 600; }
+  .comp-missing .chip-quiet { margin-inline-end: 4px; }
+
+  /* Someone who has asked not to see motion is not asking for a slower
+     version of it. */
+  @media (prefers-reduced-motion: reduce) {
+    .comp-seg, .comp-fill { animation: none; width: var(--w); }
+  }
+
   /* ---- Handoff report */
   .handoff-block {
     border: 1px solid var(--border);
@@ -7114,27 +7231,95 @@ function renderAutoScore(a) {
     return '<div class="card"><div class="band"><h4 id="autoScoreSection"><i class="ico i-target ico-amber"></i> امتیاز خودکار</h4></div>' +
       '<div class="empty">' + esc(s.reason) + '</div></div>';
   }
-  const rows = s.components.map((c) => {
-    const bar = c.available
-      ? '<div class="score-bar"><span style="width:' + c.score + '%"></span></div>'
-      : '<div class="score-bar off"></div>';
-    return '<tr' + (c.available ? '' : ' class="off"') + '>' +
-      '<td>' + esc(c.label) + '</td>' +
-      '<td class="num">' + (c.available ? c.score : '—') + '</td>' +
-      '<td class="num">' + (c.available ? c.effectiveWeight + '٪' : '<span title="وزن پایه ' + c.baseWeight + '٪ — بدون داده، بین بقیه پخش شد">۰٪</span>') + '</td>' +
-      '<td>' + bar + '</td>' +
-      '<td class="muted">' + esc(c.detail) +
-        (c.available && c.sampleSize
-          ? ' <span class="tag" title="حجم نمونه ' + c.sampleSize + ' — وزن این مؤلفه در ضریب اطمینان ' + c.confidence + '٪ ضرب شده">n=' + c.sampleSize + ' · اطمینان ' + c.confidence + '٪</span>'
-          : '') + '</td>' +
-    '</tr>';
-  }).join('');
-  return '<div class="card">' +
+
+  const avail = s.components.filter((c) => c.available);
+  const missing = s.components.filter((c) => !c.available);
+
+  // Points each component actually put in. This is the quantity the section
+  // exists to show, and it was the one the old table never printed.
+  const contrib = (c) => (c.score * c.effectiveWeight) / 100;
+  const earned = avail.reduce((t, c) => t + contrib(c), 0);
+
+  // Five hues, assigned by position rather than by meaning: these are parts of
+  // one number, not five verdicts, so a red segment here would read as "this
+  // component is bad" when it only means "this component is third".
+  const HUE = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
+  const hueOf = (i) => HUE[i % HUE.length];
+
+  // ---- the composition bar: contributions end to end, then the shortfall
+  const segs = avail.map((c, i) => (
+    '<span class="comp-seg" style="--w:' + contrib(c).toFixed(2) + '%; background:' + hueOf(i) + '"' +
+      ' title="' + esc(c.label + ' — ' + Math.round(contrib(c)) + ' از ' + Math.round(c.effectiveWeight) + ' امتیاز ممکن') + '"></span>'
+  )).join('');
+  const lost = Math.max(0, 100 - earned);
+
+  // ---- per-component rows
+  const rows = avail.map((c, i) => (
+    '<div class="comp-row">' +
+      '<div class="comp-head">' +
+        '<span class="comp-dot" style="background:' + hueOf(i) + '"></span>' +
+        '<span class="comp-label">' + esc(c.label) + '</span>' +
+        '<span class="comp-points">' +
+          '<b>' + Math.round(contrib(c)) + '</b>' +
+          '<span class="comp-of"> از ' + Math.round(c.effectiveWeight) + '</span>' +
+        '</span>' +
+      '</div>' +
+      // The track's own width is the component's effective weight, so every
+      // row is drawn on one shared 0-100 scale: the fill's actual length is
+      // the points contributed, directly comparable between rows and with the
+      // composition bar above. Equal-width tracks would have shown each
+      // component's score in isolation — which is the reading that made the
+      // old table unable to answer where the total came from.
+      '<div class="comp-rail">' +
+        '<div class="comp-track" style="--t:' + c.effectiveWeight + '%" title="' + esc('وزن مؤثر ' + c.effectiveWeight + '٪ — بیشترین امتیازی که این مؤلفه می‌توانست بدهد') + '">' +
+          '<span class="comp-fill" style="--w:' + c.score + '%; background:' + hueOf(i) + '" title="' + esc('نمره‌ی این مؤلفه ' + c.score + ' از ۱۰۰') + '"></span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="comp-why">' + esc(c.detail) +
+        (c.sampleSize
+          ? ' <span class="tag" title="' + esc('حجم نمونه ' + c.sampleSize + ' — وزن این مؤلفه در ضریب اطمینان ' + c.confidence + '٪ ضرب شده') + '">n=' + c.sampleSize + ' · اطمینان ' + c.confidence + '٪</span>'
+          : '') +
+      '</div>' +
+    '</div>'
+  )).join('');
+
+  // ---- components with no data: stated, not hidden and not scored zero
+  const missingBlock = missing.length
+    ? '<div class="comp-missing">' +
+        '<b>' + missing.length + ' مؤلفه داده نداشت</b> و وزنشان بین بقیه پخش شد — صفر حساب نشدند: ' +
+        missing.map((c) => '<span class="chip-quiet">' + esc(c.label) + ' (وزن پایه ' + c.baseWeight + '٪)</span>').join(' ') +
+      '</div>'
+    : '';
+
+  // ---- the arithmetic, written out
+  const adj = s.complexityAdjustment || 0;
+  const sumLine =
+    '<div class="comp-sum">' +
+      '<span>' + Math.round(earned) + ' امتیاز از مؤلفه‌ها</span>' +
+      (adj
+        ? '<span class="comp-op">' + (adj > 0 ? '+' : '−') + '</span>' +
+          '<span title="' + esc('میانگین پیچیدگی MRهای امتیازدهی‌شده، ضربدر ضریب اطمینان — سقف ±۱۲') + '">' +
+            Math.abs(adj) + ' بابت پیچیدگی' +
+            (s.complexitySample ? ' (n=' + s.complexitySample + ')' : '') +
+          '</span>'
+        : '') +
+      '<span class="comp-op">=</span>' +
+      '<b class="comp-total">' + s.score + '</b>' +
+    '</div>';
+
+  return '<div class="card score-card">' +
     '<div class="band"><h4 id="autoScoreSection"><i class="ico i-target ico-amber"></i> امتیاز خودکار — ' + s.score + ' از ۱۰۰</h4>' +
-      '<span class="band-note">' + esc(s.reason) + '</span></div>' +
+      '<span class="band-note">هر نوار، امتیازی است که آن مؤلفه واقعاً به عدد نهایی داده — نه نمره‌اش به‌تنهایی. طول کل نوار یعنی بیشترین چیزی که می‌توانست بدهد.</span></div>' +
     renderScoreGovernanceBanner() +
-    '<div class="table-wrap"><table class="score-table"><thead><tr><th>مؤلفه</th><th>امتیاز</th><th>وزن مؤثر</th><th></th><th>بر چه اساسی</th></tr></thead><tbody>' +
-    rows + '</tbody></table></div></div>';
+    '<div class="comp-bar" role="img" aria-label="' + esc('ترکیب امتیاز: ' + Math.round(earned) + ' از ۱۰۰') + '">' +
+      segs +
+      (lost > 0.5 ? '<span class="comp-seg comp-lost" style="--w:' + lost.toFixed(2) + '%" title="' + esc(Math.round(lost) + ' امتیازِ به‌دست‌نیامده') + '"></span>' : '') +
+    '</div>' +
+    sumLine +
+    '<div class="comp-list">' + rows + '</div>' +
+    missingBlock +
+    '<div class="muted" style="font-size:11.5px;margin-top:10px">' + esc(s.reason) + '</div>' +
+  '</div>';
 }
 
 // Every design choice in lib/devScore.js (dropping components with no data
