@@ -2994,8 +2994,25 @@
             <input type="text" id="projNewJira" placeholder="کلید پروژه در جیرا، مثلاً EM (خالی = مقدار عمومی JIRA_PROJECT_KEY)" />
             <p class="hint" style="margin:2px 0 8px">
               این دو برای هر ریپازیتوری جداست: کرش‌های یک اپ در پروژه‌ی Sentry خودش جمع می‌شوند و تسک‌هایش باید در پروژه‌ی جیرای خودش ثبت شوند.
-              آدرس و توکن Sentry و جیرا مشترک می‌مانند — یک نصب Sentry و یک جیرا بیشتر نداریم.
             </p>
+            <details class="fold" id="projConnFold">
+              <summary><i class="ico i-globe ico-muted"></i> اتصال جداگانه برای این پروژه (اختیاری)
+                <span class="band-note">— وقتی این پروژه اصلاً یک گیت‌لب/جیرا/Sentry دیگر است، نه فقط یک ریپازیتوری دیگر روی همان‌ها</span></summary>
+              <p class="hint" style="margin:8px 0">هر خانه‌ی خالی یعنی از مقدار عمومی <code>secrets.env</code> استفاده شود — این‌ها را فقط وقتی پر کن که این پروژه واقعاً جای دیگری میزبانی می‌شود.</p>
+              <div class="group-title" style="margin-top:2px">گیت‌لب</div>
+              <input type="text" id="projGitlabUrl" placeholder="آدرس پایه — خالی = همان گیت‌لب عمومی" />
+              <input type="password" id="projGitlabToken" placeholder="Access Token — خالی = بدون تغییر" autocomplete="new-password" />
+              <div class="hint" id="projGitlabTokenHint" style="margin:-6px 0 8px"></div>
+              <div class="group-title">جیرا</div>
+              <input type="text" id="projJiraUrl" placeholder="آدرس پایه — خالی = همان جیرای عمومی" />
+              <input type="password" id="projJiraToken" placeholder="Personal Access Token — خالی = بدون تغییر" autocomplete="new-password" />
+              <div class="hint" id="projJiraTokenHint" style="margin:-6px 0 8px"></div>
+              <div class="group-title">Sentry</div>
+              <input type="text" id="projSentryUrl" placeholder="آدرس پایه — خالی = همان Sentry عمومی" />
+              <input type="text" id="projSentryOrg" placeholder="slug سازمان — خالی = همان سازمان عمومی" />
+              <input type="password" id="projSentryToken" placeholder="Auth Token — خالی = بدون تغییر" autocomplete="new-password" />
+              <div class="hint" id="projSentryTokenHint" style="margin:-6px 0 4px"></div>
+            </details>
             <button id="projSaveBtn">ذخیره پروژه</button>
           </div>
           <div class="settings-panel" id="maintainersPanel" hidden>
@@ -3308,6 +3325,193 @@ const MOCK_TEAM_ROWS = {
   }
 };
 
+// ---- multi-project demo: a genuinely different team/roster/numbers behind
+// each project in the switcher, not just a different name on the same five
+// people. Real Developer Analytics still merges every configured project
+// into one cross-repo roster by design (see server.js's loadRoster) — this
+// is a preview of what per-project isolation looks like once a project
+// actually runs its own connection, which is what "اتصال جدا" in the
+// settings panel is for.
+let MOCK_ACTIVE_PROJECT_ID = 'nexus/core-platform';
+
+// The masked connections shape describeConnections() on the server returns —
+// kept identical here so the settings panel's rendering code (which only
+// ever talks to that shape) works the same whether it's fed by the real
+// backend or this mock one.
+const emptyConn = () => ({
+  gitlab: { url: '', token: '', tokenSet: false },
+  jira: { baseUrl: '', token: '', tokenSet: false },
+  sentry: { url: '', org: '', token: '', tokenSet: false },
+});
+
+let MOCK_PROJECTS_LIST = [
+  {
+    id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform',
+    sentryProject: 'nexus-core', jiraProjectKey: 'AUTH', fromEnv: true, connections: emptyConn(),
+  },
+  {
+    id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine',
+    sentryProject: 'billing-engine', jiraProjectKey: 'BILL', connections: emptyConn(),
+  },
+  {
+    id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway',
+    sentryProject: 'auth-gateway', jiraProjectKey: 'SEC',
+    // Demoes an isolated workspace: this one genuinely lives on its own
+    // GitLab/Jira/Sentry, which is why its team below is unrelated people —
+    // a vendor's identity team, not this org's own.
+    connections: {
+      // Fake-masked, the same shape describeConnections() sends for a real
+      // token — never the plaintext, even here.
+      gitlab: { url: 'https://gitlab.identity-vendor.example', token: '••••••••a91f', tokenSet: true },
+      jira: { baseUrl: 'https://jira.identity-vendor.example', token: '••••••••6c02', tokenSet: true },
+      sentry: { url: 'https://sentry.identity-vendor.example', org: 'identity-vendor', token: '••••••••e77b', tokenSet: true },
+    },
+  },
+];
+
+const MOCK_ROSTER_BILLING = [
+  { id: 201, username: 'negar.sadeghi', name: 'نگار صادقی', role: 'owner', accessLevel: 50, access_level: 50 },
+  { id: 202, username: 'amir.tavakoli', name: 'امیر توکلی', role: 'maintainer', accessLevel: 40, access_level: 40 },
+  { id: 203, username: 'parisa.rostami', name: 'پریسا رستمی', role: 'developer', accessLevel: 30, access_level: 30 },
+];
+
+const MOCK_ROSTER_AUTH = [
+  { id: 301, username: 'behnam.yousefi', name: 'بهنام یوسفی', role: 'owner', accessLevel: 50, access_level: 50 },
+  { id: 302, username: 'elham.karimi', name: 'الهام کریمی', role: 'developer', accessLevel: 30, access_level: 30 },
+  { id: 303, username: 'keyvan.azizi', name: 'کیوان عزیزی', role: 'developer', accessLevel: 30, access_level: 30 },
+];
+
+const MOCK_ROSTERS_BY_PROJECT = {
+  'nexus/core-platform': MOCK_ROSTER,
+  'nexus/billing-engine': MOCK_ROSTER_BILLING,
+  'nexus/auth-gateway': MOCK_ROSTER_AUTH,
+};
+
+const MOCK_TEAM_ROWS_BILLING = {
+  'negar.sadeghi': {
+    username: 'negar.sadeghi', name: 'نگار صادقی',
+    score: 88, scoreReason: 'خیلی خوب — تخمین دقیق و بدون MR راکد',
+    trend: { delta: 4, from: '1405-05', months: 2 },
+    openMrs: 2, oldestOpenHours: 9, staleOpenMrs: 0,
+    inProgressCount: 3, blockedNoMr: 0, overdueCount: 0, worstOverdueDays: null, missingWorklogCount: 0,
+    doneCount: 11, mergedCount: 9, medianOpenToMergeHours: 5.8, p90OpenToMergeHours: 11.4, attention: 0,
+    tasks: [
+      { key: 'BILL-940', summary: 'Add proration handling for mid-cycle plan upgrades', status: 'In Review', statusCategory: 'indeterminate', dueDate: mockDay(2), estimateHours: 10, spentHours: 7, project: 'Cloud Billing & Payments', sprint: 'Sprint 14', hasMr: true, reasons: [], owner: 'negar.sadeghi', ownerName: 'نگار صادقی' },
+    ],
+  },
+  'amir.tavakoli': {
+    username: 'amir.tavakoli', name: 'امیر توکلی',
+    score: 79, scoreReason: 'خوب — یک اسپرینت با ثبت زمان ناقص',
+    trend: { delta: 1, from: '1405-05', months: 2 },
+    openMrs: 1, oldestOpenHours: 30, staleOpenMrs: 0,
+    inProgressCount: 2, blockedNoMr: 0, overdueCount: 1, worstOverdueDays: 2, missingWorklogCount: 1,
+    doneCount: 8, mergedCount: 6, medianOpenToMergeHours: 10.1, p90OpenToMergeHours: 19.7, attention: 3,
+    tasks: [
+      { key: 'BILL-931', summary: 'Reconcile partial refunds against split-payment ledgers', status: 'In Progress', statusCategory: 'indeterminate', dueDate: mockDay(-2), overdueDays: 2, estimateHours: 14, spentHours: 6, project: 'Cloud Billing & Payments', sprint: 'Sprint 14', hasMr: true, reasons: ['overdue'], owner: 'amir.tavakoli', ownerName: 'امیر توکلی' },
+    ],
+  },
+  'parisa.rostami': {
+    username: 'parisa.rostami', name: 'پریسا رستمی',
+    score: 71, scoreReason: 'قابل قبول — تازه‌کار در تیم، هنوز رکورد کافی نیست',
+    trend: { delta: 0, from: '1405-05', months: 1 },
+    openMrs: 1, oldestOpenHours: 15, staleOpenMrs: 0,
+    inProgressCount: 1, blockedNoMr: 1, overdueCount: 0, worstOverdueDays: null, missingWorklogCount: 1,
+    doneCount: 3, mergedCount: 2, medianOpenToMergeHours: 13.0, p90OpenToMergeHours: 20.0, attention: 4,
+    tasks: [
+      { key: 'BILL-948', summary: 'Draft dunning-email templates for failed renewals', status: 'In Progress', statusCategory: 'indeterminate', dueDate: mockDay(5), estimateHours: 6, spentHours: 0, project: 'Cloud Billing & Payments', sprint: 'Sprint 14', hasMr: false, reasons: ['no-mr', 'no-worklog'], owner: 'parisa.rostami', ownerName: 'پریسا رستمی' },
+    ],
+  },
+};
+
+const MOCK_TEAM_ROWS_AUTH = {
+  'behnam.yousefi': {
+    username: 'behnam.yousefi', name: 'بهنام یوسفی',
+    score: 95, scoreReason: 'عالی — بدون هیچ MR راکد یا تسک عقب‌افتاده',
+    trend: { delta: 2, from: '1405-05', months: 3 },
+    openMrs: 0, oldestOpenHours: null, staleOpenMrs: 0,
+    inProgressCount: 1, blockedNoMr: 0, overdueCount: 0, worstOverdueDays: null, missingWorklogCount: 0,
+    doneCount: 15, mergedCount: 13, medianOpenToMergeHours: 4.1, p90OpenToMergeHours: 8.0, attention: 0,
+    tasks: [
+      { key: 'SEC-410', summary: 'Rotate service-account keys across the identity cluster', status: 'Done', statusCategory: 'done', dueDate: mockDay(-3), estimateHours: 6, spentHours: 5, project: 'Identity & Access Gateway', sprint: 'Sprint 9', hasMr: true, reasons: [], owner: 'behnam.yousefi', ownerName: 'بهنام یوسفی' },
+    ],
+  },
+  'elham.karimi': {
+    username: 'elham.karimi', name: 'الهام کریمی',
+    score: 62, scoreReason: 'نیازمند رسیدگی — دو تسک بدون MR و از سررسید گذشته',
+    trend: { delta: -3, from: '1405-05', months: 2 },
+    openMrs: 1, oldestOpenHours: 61, staleOpenMrs: 1,
+    inProgressCount: 3, blockedNoMr: 2, overdueCount: 2, worstOverdueDays: 6, missingWorklogCount: 2,
+    doneCount: 4, mergedCount: 3, medianOpenToMergeHours: 22.4, p90OpenToMergeHours: 40.0, attention: 14,
+    tasks: [
+      { key: 'SEC-422', summary: 'Add device-fingerprint check to login anomaly detection', status: 'In Progress', statusCategory: 'indeterminate', dueDate: mockDay(-6), overdueDays: 6, estimateHours: 12, spentHours: 0, project: 'Identity & Access Gateway', sprint: 'Sprint 9', hasMr: false, reasons: ['overdue', 'no-mr', 'no-worklog'], owner: 'elham.karimi', ownerName: 'الهام کریمی' },
+    ],
+  },
+  'keyvan.azizi': {
+    username: 'keyvan.azizi', name: 'کیوان عزیزی',
+    score: 84, scoreReason: 'خیلی خوب — تحویل منظم و مستمر',
+    trend: { delta: 1, from: '1405-05', months: 2 },
+    openMrs: 1, oldestOpenHours: 11, staleOpenMrs: 0,
+    inProgressCount: 2, blockedNoMr: 0, overdueCount: 0, worstOverdueDays: null, missingWorklogCount: 0,
+    doneCount: 9, mergedCount: 8, medianOpenToMergeHours: 7.5, p90OpenToMergeHours: 13.2, attention: 0,
+    tasks: [
+      { key: 'SEC-417', summary: 'Enforce secret vault rotation on database cluster credentials', status: 'In Review', statusCategory: 'indeterminate', dueDate: mockDay(3), estimateHours: 8, spentHours: 6, project: 'Identity & Access Gateway', sprint: 'Sprint 9', hasMr: true, reasons: [], owner: 'keyvan.azizi', ownerName: 'کیوان عزیزی' },
+    ],
+  },
+};
+
+const MOCK_TEAM_ROWS_BY_PROJECT = {
+  'nexus/core-platform': MOCK_TEAM_ROWS,
+  'nexus/billing-engine': MOCK_TEAM_ROWS_BILLING,
+  'nexus/auth-gateway': MOCK_TEAM_ROWS_AUTH,
+};
+
+const MOCK_MERGE_REQUESTS_BILLING = [
+  {
+    id: 2041, iid: 41, projectId: 'nexus/billing-engine',
+    title: 'feat(billing): proration handling for mid-cycle plan upgrades',
+    state: 'opened', author: 'نگار صادقی',
+    sourceBranch: 'feature/BILL-940-proration', targetBranch: 'develop', targetIsDevelop: true,
+    created_at: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+    hasReviewReport: true, lastDecision: 'APPROVE', findingsCount: 1,
+    task: 'BILL-940', mergeOrder: 1, draft: false, sha: 'd1e2f301', lastReviewedSha: 'd1e2f301',
+  },
+  {
+    id: 2038, iid: 38, projectId: 'nexus/billing-engine',
+    title: 'fix(billing): reconcile partial refunds on split-payment ledgers',
+    state: 'opened', author: 'امیر توکلی',
+    sourceBranch: 'fix/BILL-931-refund-ledger', targetBranch: 'develop', targetIsDevelop: true,
+    created_at: new Date(Date.now() - 30 * 3600 * 1000).toISOString(),
+    hasReviewReport: true, lastDecision: 'REQUEST_CHANGES', findingsCount: 2,
+    task: 'BILL-931', mergeOrder: 2, draft: false, sha: 'e4f50912', lastReviewedSha: 'e4f50912',
+  },
+];
+
+const MOCK_MERGE_REQUESTS_AUTH = [
+  {
+    id: 3017, iid: 17, projectId: 'nexus/auth-gateway',
+    title: 'feat(security): device-fingerprint check on login anomaly detection',
+    state: 'opened', author: 'الهام کریمی',
+    sourceBranch: 'feature/SEC-422-device-fingerprint', targetBranch: 'main', targetIsDevelop: false,
+    created_at: new Date(Date.now() - 62 * 3600 * 1000).toISOString(),
+    hasReviewReport: false, lastDecision: null, findingsCount: 0,
+    task: 'SEC-422', mergeOrder: 1, draft: true, sha: 'f6a71203', lastReviewedSha: null,
+  },
+  {
+    id: 3012, iid: 12, projectId: 'nexus/auth-gateway',
+    title: 'chore(security): enforce secret vault rotation on database cluster credentials',
+    state: 'opened', author: 'کیوان عزیزی',
+    sourceBranch: 'chore/SEC-417-vault-rotation', targetBranch: 'main', targetIsDevelop: false,
+    created_at: new Date(Date.now() - 9 * 3600 * 1000).toISOString(),
+    hasReviewReport: true, lastDecision: 'APPROVE', findingsCount: 0,
+    task: 'SEC-417', mergeOrder: 2, draft: false, sha: 'a2b34567', lastReviewedSha: 'a2b34567',
+  },
+];
+
+const MOCK_MERGE_REQUESTS_BY_PROJECT = {
+  'nexus/billing-engine': MOCK_MERGE_REQUESTS_BILLING,
+  'nexus/auth-gateway': MOCK_MERGE_REQUESTS_AUTH,
+};
+
    const MOCK_MERGE_REQUESTS = [
   {
     id: 1054,
@@ -3565,16 +3769,13 @@ async function handleMockApi(path, options = {}) {
   await new Promise(r => setTimeout(r, 40));
 
   if (path === '/api/status') {
+    const activeProj = MOCK_PROJECTS_LIST.find((p) => p.id === MOCK_ACTIVE_PROJECT_ID) || MOCK_PROJECTS_LIST[0];
     return {
       ok: true,
       user: { id: 102, username: 'ali.rezaei', name: 'علی رضایی' },
-      activeProject: { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
-      projects: [
-        { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
-        { id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine' },
-        { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
-      ],
-      projectPath: { set: true, value: '/repos/nexus-core-platform' },
+      activeProject: activeProj,
+      projects: MOCK_PROJECTS_LIST,
+      projectPath: { set: !!activeProj.path, value: activeProj.path || '' },
       gitlab: { url: 'https://gitlab.example.com', ok: true, user: 'ali.rezaei', name: 'علی رضایی', bot: false, error: null },
       // `context` is what the sidebar's progress bar measures against, and
       // `effort` is what the settings slider reads. Both were added after these
@@ -3626,12 +3827,52 @@ async function handleMockApi(path, options = {}) {
     };
   }
 
-  if (path === '/api/projects') {
-    return [
-      { id: 'nexus/core-platform', name: 'Nexus Core Platform', path: '/repos/nexus-core-platform', isDefault: true },
-      { id: 'nexus/billing-engine', name: 'Cloud Billing & Payments', path: '/repos/billing-engine' },
-      { id: 'nexus/auth-gateway', name: 'Identity & Access Gateway', path: '/repos/auth-gateway' }
-    ];
+  if (path === '/api/projects' && (!options.method || options.method === 'GET')) {
+    return { projects: MOCK_PROJECTS_LIST, activeId: MOCK_ACTIVE_PROJECT_ID };
+  }
+  if (path === '/api/projects' && options.method === 'POST') {
+    const body = JSON.parse(options.body || '{}');
+    if (!body.id) return { error: 'id (شناسه‌ی عددی پروژه در گیت‌لب) لازم است' };
+    const id = String(body.id);
+    const idx = MOCK_PROJECTS_LIST.findIndex((p) => p.id === id);
+    const existing = idx >= 0 ? MOCK_PROJECTS_LIST[idx] : { connections: emptyConn() };
+    // Same additive rule the real backend applies: an omitted/blank
+    // connection field keeps whatever was already there, a token field is
+    // only replaced when the form actually sent a new value.
+    const mergeConn = (kind, incoming) => {
+      const cur = { ...(existing.connections && existing.connections[kind]) };
+      for (const [k, v] of Object.entries(incoming || {})) {
+        if (v == null) continue;
+        if (v) { cur[k] = v; if (k === 'token') cur.tokenSet = true; }
+        else if (k === 'token') { cur.token = ''; cur.tokenSet = false; }
+        else cur[k] = '';
+      }
+      return cur;
+    };
+    const entry = {
+      id, name: body.name || existing.name || ('پروژه ' + id),
+      path: body.path || '', sentryProject: body.sentryProject || '', jiraProjectKey: (body.jiraProjectKey || '').toUpperCase(),
+      fromEnv: existing.fromEnv || false,
+      connections: {
+        gitlab: mergeConn('gitlab', body.connections && body.connections.gitlab),
+        jira: mergeConn('jira', body.connections && body.connections.jira),
+        sentry: mergeConn('sentry', body.connections && body.connections.sentry),
+      },
+    };
+    if (idx >= 0) MOCK_PROJECTS_LIST[idx] = entry; else MOCK_PROJECTS_LIST.push(entry);
+    return { project: entry, projects: MOCK_PROJECTS_LIST, activeId: MOCK_ACTIVE_PROJECT_ID };
+  }
+  const projectDeleteMatch = path.match(/^\/api\/projects\/([^\/]+)$/);
+  if (projectDeleteMatch && options.method === 'DELETE') {
+    const id = decodeURIComponent(projectDeleteMatch[1]);
+    MOCK_PROJECTS_LIST = MOCK_PROJECTS_LIST.filter((p) => p.id !== id);
+    if (MOCK_ACTIVE_PROJECT_ID === id) MOCK_ACTIVE_PROJECT_ID = (MOCK_PROJECTS_LIST[0] && MOCK_PROJECTS_LIST[0].id) || null;
+    return { projects: MOCK_PROJECTS_LIST, activeId: MOCK_ACTIVE_PROJECT_ID };
+  }
+  if (path === '/api/projects/active' && options.method === 'POST') {
+    const body = JSON.parse(options.body || '{}');
+    if (body.id && MOCK_PROJECTS_LIST.some((p) => p.id === body.id)) MOCK_ACTIVE_PROJECT_ID = body.id;
+    return { activeId: MOCK_ACTIVE_PROJECT_ID };
   }
 
   if (path === '/api/engines') {
@@ -3671,13 +3912,13 @@ async function handleMockApi(path, options = {}) {
 
   if (path.startsWith('/api/audit')) return [];
   if (path === '/api/backups') return [{ path: 'backups/2026-09-16-120000', date: '2026-09-16 12:00:00', sizeBytes: 412000 }];
-  if (path === '/api/merge-requests') return MOCK_MERGE_REQUESTS;
+  if (path === '/api/merge-requests') return MOCK_MERGE_REQUESTS_BY_PROJECT[MOCK_ACTIVE_PROJECT_ID] || MOCK_MERGE_REQUESTS;
   if (path === '/api/jobs') return MOCK_JOBS;
 
   // Developer roster: MUST return { authors: [...], cachedAt, fromCache }
   if (path.startsWith('/api/developers/roster')) {
     return {
-      authors: MOCK_ROSTER,
+      authors: MOCK_ROSTERS_BY_PROJECT[MOCK_ACTIVE_PROJECT_ID] || MOCK_ROSTER,
       cachedAt: Date.now() - 120000,
       fromCache: true
     };
@@ -3687,7 +3928,8 @@ async function handleMockApi(path, options = {}) {
   const teamMatch = path.match(/^\/api\/team\/([^\/]+)\/row/);
   if (teamMatch) {
     const author = decodeURIComponent(teamMatch[1]);
-    const row = MOCK_TEAM_ROWS[author] || {
+    const rows = MOCK_TEAM_ROWS_BY_PROJECT[MOCK_ACTIVE_PROJECT_ID] || MOCK_TEAM_ROWS;
+    const row = rows[author] || {
       username: author,
       name: author,
       score: 85,
@@ -4687,11 +4929,23 @@ async function loadProjectsPanel() {
 function renderProjectsPanel() {
   const box = document.getElementById('projectsList');
   if (!S.projects || !S.projects.length) { box.innerHTML = '<div class="empty">هنوز پروژه‌ای اضافه نشده.</div>'; return; }
+  // A project running its own GitLab/Jira/Sentry is a different kind of
+  // entry than one that only differs by id/path — worth a glance from the
+  // list, before anyone opens "ویرایش" to find out.
+  const isolated = (p) => {
+    const c = p.connections || {};
+    const bits = [];
+    if (c.gitlab && (c.gitlab.url || c.gitlab.tokenSet)) bits.push('گیت‌لب');
+    if (c.jira && (c.jira.baseUrl || c.jira.tokenSet)) bits.push('جیرا');
+    if (c.sentry && (c.sentry.url || c.sentry.tokenSet)) bits.push('Sentry');
+    return bits;
+  };
   box.innerHTML = S.projects.map((p) => (
     '<div class="row" style="justify-content:space-between; border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:6px">' +
       '<div style="min-width:0">' +
         '<strong>' + esc(p.name) + '</strong> ' + (String(p.id) === String(S.activeProjectId) ? '<span class="tag" style="color:var(--cyan)">فعال</span>' : '') +
         (p.fromEnv ? ' <span class="tag">(از secrets.env)</span>' : '') +
+        (isolated(p).length ? ' <span class="tag" style="color:var(--violet)" title="این پروژه اتصال جداگانه‌ی خودش را برای این‌ها دارد">اتصال جدا: ' + isolated(p).join('، ') + '</span>' : '') +
         '<div class="tag mono" style="direction:ltr;text-align:start">شناسه: ' + esc(p.id) + (p.path ? ' — ' + esc(p.path) : ' — مسیر تنظیم نشده') + '</div>' +
       '</div>' +
       '<div class="row" style="flex:0 0 auto">' +
@@ -4709,6 +4963,29 @@ function renderProjectsPanel() {
       document.getElementById('projNewPath').value = p.path || '';
       document.getElementById('projNewSentry').value = p.sentryProject || '';
       document.getElementById('projNewJira').value = p.jiraProjectKey || '';
+      // Non-secret connection fields load in full; token fields stay empty —
+      // they're password inputs and the value here is only ever the masked
+      // form (envFile.js's convention), never something worth pre-filling.
+      const c = p.connections || {};
+      document.getElementById('projGitlabUrl').value = (c.gitlab && c.gitlab.url) || '';
+      document.getElementById('projJiraUrl').value = (c.jira && c.jira.baseUrl) || '';
+      document.getElementById('projSentryUrl').value = (c.sentry && c.sentry.url) || '';
+      document.getElementById('projSentryOrg').value = (c.sentry && c.sentry.org) || '';
+      for (const f of ['projGitlabToken', 'projJiraToken', 'projSentryToken']) document.getElementById(f).value = '';
+      const tokHint = (label, kind) => {
+        const el = document.getElementById(kind + 'TokenHint');
+        el.textContent = (c[label] && c[label].tokenSet)
+          ? 'توکن فعلی: ' + c[label].token + ' — برای عوض کردن، مقدار تازه بنویس'
+          : 'هنوز توکنی برای این پروژه ثبت نشده — عمومی secrets.env استفاده می‌شود';
+      };
+      tokHint('gitlab', 'projGitlab');
+      tokHint('jira', 'projJira');
+      tokHint('sentry', 'projSentry');
+      // Open the fold automatically when there's already something in it —
+      // otherwise editing a project with its own GitLab silently hides that
+      // fact behind a collapsed <details>.
+      document.getElementById('projConnFold').open = isolated(p).length > 0;
+      document.getElementById('projNewId').scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
   });
   box.querySelectorAll('[data-remove-project]').forEach((btn) => {
@@ -4727,11 +5004,27 @@ document.getElementById('projSaveBtn').onclick = async () => {
   const sentryProject = document.getElementById('projNewSentry').value.trim();
   const jiraProjectKey = document.getElementById('projNewJira').value.trim();
   if (!id) { alert('شناسه‌ی عددی پروژه (Project ID) لازم است.'); return; }
+  // Non-secret fields go through as typed, blank included — clearing one is
+  // a real choice ("go back to the shared GitLab") and costs nothing to
+  // honour. Token fields only go through when the person actually typed a
+  // new one; an empty password input must mean "leave it as it was", never
+  // "erase the token", since the field can never show the real value to
+  // begin with (server.js's mergeConnections applies the same either/or).
+  const val = (id) => document.getElementById(id).value.trim();
+  const tok = (id) => { const v = document.getElementById(id).value; return v ? v : undefined; };
+  const connections = {
+    gitlab: { url: val('projGitlabUrl'), token: tok('projGitlabToken') },
+    jira: { baseUrl: val('projJiraUrl'), token: tok('projJiraToken') },
+    sentry: { url: val('projSentryUrl'), org: val('projSentryOrg'), token: tok('projSentryToken') },
+  };
   try {
-    await api('/api/projects', { method: 'POST', body: JSON.stringify({ id, name, path, sentryProject, jiraProjectKey }) });
-    for (const f of ['projNewId', 'projNewName', 'projNewPath', 'projNewSentry', 'projNewJira']) {
+    await api('/api/projects', { method: 'POST', body: JSON.stringify({ id, name, path, sentryProject, jiraProjectKey, connections }) });
+    for (const f of ['projNewId', 'projNewName', 'projNewPath', 'projNewSentry', 'projNewJira',
+                      'projGitlabUrl', 'projGitlabToken', 'projJiraUrl', 'projJiraToken',
+                      'projSentryUrl', 'projSentryOrg', 'projSentryToken']) {
       document.getElementById(f).value = '';
     }
+    document.getElementById('projConnFold').open = false;
     await loadProjectsPanel();
     await loadStatus();
   } catch (e) {
@@ -4750,7 +5043,20 @@ document.getElementById('projectPicker').onchange = async (e) => {
   try {
     await api('/api/projects/active', { method: 'POST', body: JSON.stringify({ id: e.target.value }) });
     S.activeProjectId = e.target.value;
-    await Promise.all([loadStatus(), loadMergeRequests(), loadJobs()]);
+    const jobs = [loadStatus(), loadMergeRequests(), loadJobs()];
+    // Real Developer Analytics deliberately merges every configured project
+    // into one roster (server.js's loadRoster) — a person's work isn't
+    // scoped to whichever repo happens to be active in this dropdown, so
+    // switching it must not reshuffle the team table underneath a manager
+    // mid-read. The mock demo is the one place a project can be a genuinely
+    // separate workspace (see lib/projects.js connections), so it previews
+    // what that isolation would look like by re-pulling the roster here —
+    // a preview, not a claim that the real backend already does this.
+    if (isMockMode()) {
+      DEV.roster = []; DEV.team = {}; DEV.rosterCachedAt = null;
+      jobs.push(loadDevRoster());
+    }
+    await Promise.all(jobs);
   } catch (err) {
     alert('خطا در تعویض پروژه: ' + err.message);
   }

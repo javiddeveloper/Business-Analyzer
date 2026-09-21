@@ -208,15 +208,16 @@ async function handleFeedbackAccuracy(req, res, searchParams) {
 // rather than in the browser so the deadline a task gets never depends on
 // the clock of whichever machine has the dashboard open.
 async function handleSentryIssues(req, res, searchParams) {
-  if (!sentry.isConfigured()) {
+  const activeId = searchParams.get('projectId') || projects.getActiveProjectId();
+  if (!sentry.isConfigured(activeId)) {
     return sendJson(res, 200, { configured: false, issues: [], errors: [], projects: [] });
   }
   const statsPeriod = searchParams.get('statsPeriod') || '14d';
   const query = searchParams.get('query') || 'is:unresolved';
   // Scoped to the dashboard's active project, so the errors on screen belong
-  // to the repository the rest of the page is about. Falls back to the
+  // to the repository the rest of the page is about (its own Sentry install,
+  // if it has one — otherwise secrets.env's global one). Falls back to the
   // global SENTRY_PROJECT when that project has no slug of its own.
-  const activeId = searchParams.get('projectId') || projects.getActiveProjectId();
   const slugs = projects.getSentryProjects(activeId);
   // Enrich whichever list we end up with — live or stored — the same way, so
   // a snapshot is not a second-class view missing its Jira links.
@@ -248,7 +249,7 @@ async function handleSentryIssues(req, res, searchParams) {
       staleReason: reason,
       projects: slugs,
       errors: [],
-      canCreateTask: jira.canCreate() || !!projects.getJiraProjectKey(activeId),
+      canCreateTask: jira.canCreate(activeId) || !!projects.getJiraProjectKey(activeId),
       projectKey: projects.getJiraProjectKey(activeId) || null,
       issues: decorate(snapshot.issues),
     });
@@ -256,7 +257,7 @@ async function handleSentryIssues(req, res, searchParams) {
   };
 
   try {
-    const { issues, errors, projects: used } = await sentry.listIssues({ query, statsPeriod, projects: slugs });
+    const { issues, errors, projects: used } = await sentry.listIssues({ query, statsPeriod, projects: slugs, projectId: activeId });
 
     // listIssues isolates failures per project and resolves rather than
     // throwing, so a total outage arrives here as "no issues, every project
@@ -276,7 +277,7 @@ async function handleSentryIssues(req, res, searchParams) {
       stale: false,
       projects: used,
       errors,
-      canCreateTask: jira.canCreate() || !!projects.getJiraProjectKey(activeId),
+      canCreateTask: jira.canCreate(activeId) || !!projects.getJiraProjectKey(activeId),
       // Shown on the create form so the reader can see which Jira project a
       // ticket is about to land in, rather than trusting it is the one they
       // assume — this dashboard can be pointed at more than one repo.
@@ -299,12 +300,13 @@ async function handleSentryIssues(req, res, searchParams) {
 // to take it. Assembled here rather than in four browser round-trips, since
 // a reader opening an error wants all of it at once.
 async function handleSentryDetail(req, res, issueId, searchParams) {
-  if (!sentry.isConfigured()) return sendJson(res, 400, { error: 'Sentry تنظیم نشده است' });
+  const activeId = searchParams.get('projectId') || projects.getActiveProjectId();
+  if (!sentry.isConfigured(activeId)) return sendJson(res, 400, { error: 'Sentry تنظیم نشده است' });
   let stale = false;
   let staleAt = null;
   let staleReason = null;
   try {
-    var detail = await sentry.issueDetail(issueId);
+    var detail = await sentry.issueDetail(issueId, activeId);
     // Stored on every successful expand, so the stack trace of a crash
     // somebody already opened survives the next outage — that is usually
     // the one being worked on.
@@ -362,7 +364,7 @@ async function handleSentryResolve(req, res) {
   if (!body || !body.issueId) return sendJson(res, 400, { error: 'issueId لازم است' });
   const status = body.status === 'unresolved' ? 'unresolved' : 'resolved';
   try {
-    await sentry.setIssueStatus(body.issueId, status);
+    await sentry.setIssueStatus(body.issueId, status, body.projectId || projects.getActiveProjectId());
     audit.record({
       action: 'sentry-status',
       actor: actorFor(req),
@@ -403,6 +405,7 @@ async function handleSentryCreateTask(req, res) {
       // nobody decided to give them.
       assignee: body.assignee || undefined,
       projectKey: projects.getJiraProjectKey(body.projectId || projects.getActiveProjectId()) || undefined,
+      projectId: body.projectId || projects.getActiveProjectId(),
     });
     const link = sentryTasks.recordLink(body.sentryIssueId, { ...created, summary: body.summary });
     audit.record({
@@ -429,7 +432,7 @@ async function handleJiraEpics(req, res, searchParams) {
   const key = projects.getJiraProjectKey(projectId);
   if (!key) return sendJson(res, 200, { configured: false, projectKey: null, epics: [] });
   try {
-    const epics = await jira.listEpics(key, { force: searchParams.get('refresh') === '1' });
+    const epics = await jira.listEpics(key, { force: searchParams.get('refresh') === '1', projectId });
     return sendJson(res, 200, { configured: true, projectKey: key, epics });
   } catch (e) {
     return sendJson(res, 502, { configured: true, projectKey: key, error: e.message, epics: [] });
@@ -477,22 +480,26 @@ async function handleStatus(req, res) {
       maxOutputTokens: budget.maxOutputTokens,
     },
   };
-  const activeProject = projects.getProject(projects.getActiveProjectId());
+  const activeId = projects.getActiveProjectId();
+  const activeProject = projects.getProject(activeId);
   const projectPath = (activeProject && activeProject.path) || '';
   const out = {
     ai,
     settings,
-    gitlab: { url: gitlab.gitlabBase(), ok: false, user: null, name: null, bot: false, error: null },
+    gitlab: { url: gitlab.gitlabBase(activeId), ok: false, user: null, name: null, bot: false, error: null },
     projectPath: { set: !!projectPath, value: projectPath },
-    activeProject,
-    projects: projects.listProjects(),
+    // Masked — this response reaches the browser, and a project's own
+    // GitLab/Jira/Sentry tokens have no business leaving the process in
+    // plaintext just because the status badge wants to show its name.
+    activeProject: projects.publicProject(activeProject),
+    projects: projects.listProjectsPublic(),
   };
-  if (!secret('GITLAB_TOKEN')) {
+  if (!secret('GITLAB_TOKEN', activeId)) {
     out.gitlab.error = 'GITLAB_TOKEN تنظیم نشده است.';
     return sendJson(res, 200, out);
   }
   try {
-    const user = await gitlab.getCurrentUser();
+    const user = await gitlab.getCurrentUser({}, activeId);
     out.gitlab.ok = true;
     // Both, not one: a Project/Group Access Token's username is an unreadable
     // `project_<id>_bot_<hash>`, while its display name is what the human
@@ -530,7 +537,7 @@ async function handleMrContext(req, res, projectId, mrIid, query) {
         // Both are best-effort and independent: Jira being down must not cost
         // the commit counts, and vice versa.
         const [issue, commits] = await Promise.all([
-          jira.fetchIssueSafe(taskKey).catch(() => null),
+          jira.fetchIssueSafe(taskKey, { projectId }).catch(() => null),
           gitlab.getMergeRequestCommitStats(projectId, mrIid).catch(() => null),
         ]);
         out.jira = issue;
@@ -672,7 +679,7 @@ async function handleMergeRequests(req, res) {
 // queries every configured project regardless of which one is "active" here.
 async function handleProjects(req, res) {
   if (req.method === 'GET') {
-    return sendJson(res, 200, { projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
+    return sendJson(res, 200, { projects: projects.listProjectsPublic(), activeId: projects.getActiveProjectId() });
   }
   const body = await readJsonBody(req);
   if (!body || !body.id) return sendJson(res, 400, { error: 'id (شناسه‌ی عددی پروژه در گیت‌لب) لازم است' });
@@ -680,9 +687,15 @@ async function handleProjects(req, res) {
     const entry = projects.upsertProject({
       id: body.id, name: body.name, path: body.path,
       sentryProject: body.sentryProject, jiraProjectKey: body.jiraProjectKey,
+      // Each connection field is optional and additive (see
+      // mergeConnections): omitted or '' keeps whatever that project already
+      // had (or secrets.env's global value), so the settings form only ever
+      // sends a field the person actually typed into — never the masked
+      // placeholder describeConnections handed back on the previous load.
+      connections: body.connections,
     });
     audit.record({ action: 'project', actor: actorFor(req), detail: { op: 'upsert', id: entry.id, name: entry.name } });
-    return sendJson(res, 200, { project: entry, projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
+    return sendJson(res, 200, { project: projects.publicProject(entry), projects: projects.listProjectsPublic(), activeId: projects.getActiveProjectId() });
   } catch (e) {
     return sendJson(res, 400, { error: e.message });
   }
@@ -698,7 +711,7 @@ async function handleActiveProject(req, res) {
 async function handleDeleteProject(req, res, id) {
   projects.removeProject(id);
   audit.record({ action: 'project', actor: actorFor(req), detail: { op: 'remove', id } });
-  return sendJson(res, 200, { projects: projects.listProjects(), activeId: projects.getActiveProjectId() });
+  return sendJson(res, 200, { projects: projects.listProjectsPublic(), activeId: projects.getActiveProjectId() });
 }
 
 // One card per developer with an open MR: what they're on right now (from
