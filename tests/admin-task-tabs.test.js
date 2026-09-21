@@ -19,6 +19,10 @@ function loadRenderer() {
   const src = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin.html'), 'utf8');
   const fn = src.match(/function renderJiraTasks\(a\) \{[\s\S]*?\n\}\n/);
   assert.ok(fn, 'renderJiraTasks must be findable in admin.html');
+  // taskGroupText is evaluated alongside it: renderJiraTasks calls it to fill
+  // the per-column copy text, and that text is part of what this file guards.
+  const textFn = src.match(/function taskGroupText\(status, items\) \{[\s\S]*?\n\}/);
+  assert.ok(textFn, 'taskGroupText must be findable in admin.html');
 
   const sandbox = {
     esc: (x) => String(x == null ? '' : x)
@@ -28,6 +32,8 @@ function loadRenderer() {
       return reached && !(t.spentHours > 0);
     },
     DEV: { taskTab: null },
+    TASK_TEXT: new Map(),
+    faDate: (d) => String(d),
   };
   for (const stub of ['jiraStatusBadge', 'projectBadge', 'mrLinks', 'estimateBadge',
                       'dueBadge', 'ratingBadges', 'renderMonthTabs', 'faDate']) {
@@ -35,17 +41,17 @@ function loadRenderer() {
   }
 
   const names = Object.keys(sandbox);
-  const make = new Function(...names, fn[0] + '\nreturn renderJiraTasks;');
+  const make = new Function(...names, textFn[0] + '\n' + fn[0] + '\nreturn renderJiraTasks;');
   return { render: make(...names.map((n) => sandbox[n])), sandbox };
 }
 
 // Done arrives first from Jira but sorts last in the strip, so the two orders
 // disagree — the exact shape that used to mis-pair.
 const TASKS = [
-  { key: 'D-1', summary: 'done one', status: 'Done', statusCategory: 'done', spentHours: 0, url: '#' },
-  { key: 'R-1', summary: 'rev one', status: 'In Review', statusCategory: 'indeterminate', spentHours: 0, url: '#' },
-  { key: 'R-2', summary: 'rev two', status: 'In Review', statusCategory: 'indeterminate', spentHours: 0, url: '#' },
-  { key: 'R-3', summary: 'rev three', status: 'In Review', statusCategory: 'indeterminate', spentHours: 0, url: '#' },
+  { key: 'D-1', summary: 'done one', status: 'Done', statusCategory: 'done', spentHours: 0, url: 'http://x/D-1' },
+  { key: 'R-1', summary: 'rev one', status: 'In Review', statusCategory: 'indeterminate', spentHours: 0, url: 'http://x/R-1' },
+  { key: 'R-2', summary: 'rev two', status: 'In Review', statusCategory: 'indeterminate', spentHours: 0, url: 'http://x/R-2' },
+  { key: 'R-3', summary: 'rev three', status: 'In Review', statusCategory: 'indeterminate', spentHours: 0, url: 'http://x/R-3' },
 ];
 
 test('each task tab renders the cards of the status it is labelled with', () => {
@@ -82,4 +88,30 @@ test('the without-time flag counts the tasks on that tab', () => {
   assert.ok(flag, 'the active tab should carry a without-time flag here');
   assert.ok(Number(flag[1]) <= cards,
     'the flag can never exceed the number of cards on the tab it sits on');
+});
+
+// The copy button has exactly the failure mode the tab strip had: it is per
+// status, and keying it by anything positional would hand over another
+// column's tickets. That is worse than the display bug, because what lands in
+// somebody's clipboard leaves the page entirely.
+test('each column copies its own tickets and nobody else\'s', () => {
+  const { render, sandbox } = loadRenderer();
+  sandbox.DEV.taskTab = 'st0';
+  const html = render({ jiraConfigured: true, jiraTasks: TASKS, months: [], jiraTasksTotal: TASKS.length });
+
+  const buttons = (html.match(/data-copytasks=/g) || []).length;
+  assert.ok(buttons >= 1, 'the rendered column must carry a copy button');
+
+  assert.deepEqual([...sandbox.TASK_TEXT.keys()].sort(), ['Done', 'In Review']);
+
+  for (const [status, text] of sandbox.TASK_TEXT) {
+    for (const t of TASKS) {
+      if (t.status === status) {
+        assert.ok(text.includes(t.key), `${status} text must include its own ${t.key}`);
+        assert.ok(text.includes(t.url), `${status} text must include ${t.key}'s link`);
+      } else {
+        assert.ok(!text.includes(t.key), `${status} text must not leak ${t.key}`);
+      }
+    }
+  }
 });

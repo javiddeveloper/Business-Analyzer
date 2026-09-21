@@ -2002,6 +2002,19 @@
     .comp-seg, .comp-fill { animation: none; width: var(--w); }
   }
 
+  /* Copy bar at the head of each status column. Sits above the cards rather
+     than in the tab strip so it belongs to the list it copies — the strip is
+     shared by every status. */
+  .task-copy-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .task-copy-note { font-size: 11.5px; color: var(--muted-foreground); }
+  .task-copy-bar button { margin-inline-start: auto; font-size: 11.5px; padding: 5px 10px; }
+
   /* ---- Handoff report */
   .handoff-block {
     border: 1px solid var(--border);
@@ -6099,6 +6112,12 @@ function renderDevMain() {
   for (const btn of document.querySelectorAll('[data-copy]')) {
     btn.onclick = () => copyHandoff(btn.dataset.copy, btn);
   }
+  for (const btn of document.querySelectorAll('[data-copytasks]')) {
+    btn.onclick = () => {
+      const text = TASK_TEXT.get(btn.dataset.copytasks);
+      if (text) copyToClipboard(text, btn);
+    };
+  }
   const attnChip = document.getElementById('heroAttentionChip');
   if (attnChip) attnChip.onclick = () => openDevTab('attention', 'attentionFold');
   // Switching panes is pure re-render off data already in hand — no refetch.
@@ -6821,8 +6840,15 @@ const HANDOFF = { report: null };
 
 async function copyHandoff(which, btn) {
   if (!HANDOFF.report) return;
-  const text = handoffText(HANDOFF.report, which);
-  const label = btn.textContent;
+  await copyToClipboard(handoffText(HANDOFF.report, which), btn);
+}
+
+// Writes `text` and reports the outcome on the button itself. The fallback is
+// not belt-and-braces: navigator.clipboard needs a secure context, and this
+// dashboard is routinely opened over plain http from other machines on the
+// LAN, where it simply is not there.
+async function copyToClipboard(text, btn) {
+  const label = btn.innerHTML;
   let ok = true;
   try {
     await navigator.clipboard.writeText(text);
@@ -6842,7 +6868,9 @@ async function copyHandoff(which, btn) {
     } catch (e2) { ok = false; }
   }
   btn.innerHTML = ok ? '<i class="ico i-check ico-green"></i> کپی شد' : '<i class="ico i-x ico-red"></i> کپی نشد — دستی انتخاب کن';
-  setTimeout(() => { btn.textContent = label; }, 2000);
+  // innerHTML, not textContent: the original label carries an icon, and
+  // restoring it as text left the markup on screen as literal angle brackets.
+  setTimeout(() => { btn.innerHTML = label; }, 2000);
 }
 
 function renderDeliveredBand(a) {
@@ -7442,6 +7470,31 @@ function renderScoreGovernanceBanner() {
     '</div>';
 }
 
+// Holds each status column's copyable text, keyed by status name. Rebuilt on
+// every render, so it can never describe a list that is no longer on screen.
+const TASK_TEXT = new Map();
+
+// One ticket per block, in the same shape the handoff report uses: key and
+// title, then the facts somebody pasting this into a chat would have to go
+// look up otherwise, then the link.
+function taskGroupText(status, items) {
+  const lines = [status + ' — ' + items.length + ' تسک', ''];
+  for (const t of items) {
+    const bits = [];
+    if (t.project) bits.push(t.project);
+    if (t.sprint) bits.push(t.sprint);
+    if (t.estimateHours != null) bits.push('تخمین ' + t.estimateHours + ' ساعت');
+    bits.push(t.spentHours > 0 ? 'ثبت‌شده ' + t.spentHours + ' ساعت' : 'بدون ثبت زمان');
+    if (t.dueDate) bits.push('سررسید ' + faDate(t.dueDate));
+    if (!t.hasMr) bits.push('بدون MR');
+    lines.push(t.key + ' — ' + (t.summary || '(بدون عنوان)'));
+    lines.push(bits.join(' · '));
+    if (t.url) lines.push(t.url);
+    lines.push('');
+  }
+  return lines.join('\n').trimEnd();
+}
+
 function renderJiraTasks(a) {
   if (!a.jiraConfigured) return ''; // Jira not set up — no empty section, no noise
   const tasks = a.jiraTasks || [];
@@ -7471,7 +7524,15 @@ function renderJiraTasks(a) {
   // Keyed by status, not positional: panes are built in a different (sorted)
   // order, and an index into this list silently paired a heading with
   // another status's cards.
+  TASK_TEXT.clear();
+  for (const [status, items] of byStatus) TASK_TEXT.set(status, taskGroupText(status, items));
+
   const groups = new Map(Array.from(byStatus.entries()).map(([status, items]) => [status,
+    '<div class="task-copy-bar">' +
+      '<span class="task-copy-note">' + items.length + ' تسک در «' + esc(status) + '»</span>' +
+      '<button class="ghost" data-copytasks="' + esc(status) + '">' +
+        '<i class="ico i-clipboard ico-muted"></i> کپی متن این ستون</button>' +
+    '</div>' +
     '<div class="task-cards two-col">' + items.map((t) => (
         '<div class="task-card' + (missingTimeLog(t) ? ' needs-worklog' : '') + '">' +
           '<div class="task-head">' +
