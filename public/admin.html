@@ -3718,13 +3718,13 @@ async function handleMockApi(path, options = {}) {
           }
         ]
       },
-      latestSprint: { name: 'Sprint 28', score: isSara ? 94 : 89, taskCount: 6, doneCount: 5 },
+      latestSprint: { name: 'Sprint 28', score: isSara ? 91 : (isAli ? 83 : 76), taskCount: 6, doneCount: 5 },
       sprints: [
         { name: 'Sprint 24', score: 84, taskCount: 5, loggedCount: 4, noTimeLogged: 1, doneCount: 4 },
         { name: 'Sprint 25', score: 86, taskCount: 5, loggedCount: 5, noTimeLogged: 0, doneCount: 5 },
         { name: 'Sprint 26', score: 76, taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 },
         { name: 'Sprint 27', score: 83, taskCount: 6, loggedCount: 6, noTimeLogged: 0, doneCount: 6 },
-        { name: 'Sprint 28', score: isSara ? 94 : 89, taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 }
+        { name: 'Sprint 28', score: isSara ? 91 : (isAli ? 83 : 76), taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 }
       ],
       jiraTasks: [
         { key: 'AUTH-1042', url: 'https://jira.example.com/browse/AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', type: 'Story', priority: 'High', sprint: 'Sprint 28', storyPoints: 5, updated: '2026-09-18T14:30:00Z', dueDate: mockDay(1), estimateHours: 8, spentHours: 6, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
@@ -3735,7 +3735,7 @@ async function handleMockApi(path, options = {}) {
       monthlyRows: [
         { month: '1405-04', score: 85, mrCount: 5, taskCount: 6 },
         { month: '1405-05', score: 76, mrCount: 6, taskCount: 7 },
-        { month: '1405-06', score: isSara ? 94 : 89, mrCount: 7, taskCount: 8 }
+        { month: '1405-06', score: isSara ? 91 : (isAli ? 83 : 76), mrCount: 7, taskCount: 8 }
       ],
       months: [
         {
