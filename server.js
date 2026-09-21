@@ -926,7 +926,30 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
     const events = activity.eventsFor(author);
     // Reported beside the score as a status, not folded into it: how recently
     // somebody worked says nothing about how well they worked.
-    value.lastActivityMs = Math.max(0, ...events.map((e) => e.at), ...reviews.map((r) => r.at)) || null;
+    //
+    // Drawn from what the person actually did, not from what this tool did to
+    // them. Using only our own events and review runs meant the figure moved
+    // when we happened to run a review and stood still otherwise — it showed
+    // 328 hours for a developer who had opened a merge request an hour
+    // earlier, and was stale for everyone for the same reason. The merge
+    // request records already loaded carry the real signals.
+    const stamps = [];
+    const push = (iso) => {
+      if (!iso) return;
+      const t = Date.parse(iso);
+      if (Number.isFinite(t)) stamps.push(t);
+    };
+    for (const month of value.months || []) {
+      for (const mr of month.tasks || []) {
+        push(mr.lastCommitAt);      // a push to the branch
+        push(mr.createdAt);         // opening the request
+        push(mr.mergedAt);          // landing it
+      }
+    }
+    for (const task of value.jiraTasks || []) push(task.updated);
+    for (const e of events) if (Number.isFinite(e.at)) stamps.push(e.at);
+    for (const r of reviews) if (Number.isFinite(r.at)) stamps.push(r.at);
+    value.lastActivityMs = stamps.length ? Math.max(...stamps) : null;
     value.autoScore = devScore.compute({
       tasks: value.jiraTasks || [],
       analytics: value,
