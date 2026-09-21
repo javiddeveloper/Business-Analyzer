@@ -2031,6 +2031,67 @@
     .comp-seg, .comp-fill { animation: none; width: var(--w); }
   }
 
+  /* The role chip uses the same colours as the ring it explains, so the two
+     are recognisably the same fact stated twice rather than two signals. */
+  .cover-chip.role-chip-maintainer {
+    border-color: rgba(99, 102, 241, 0.45);
+    background: rgba(99, 102, 241, 0.14);
+    color: #a5b4fc;
+    font-weight: 600;
+  }
+  .cover-chip.role-chip-owner {
+    border-color: rgba(240, 180, 41, 0.5);
+    background: rgba(240, 180, 41, 0.14);
+    color: #fde68a;
+    font-weight: 600;
+  }
+  .cover-chip.role-chip-maintainer .ico, .cover-chip.role-chip-owner .ico { color: inherit; }
+
+  /* Facet chips: the ways a column's tasks differ in a way worth acting on.
+     Toned by what the facet means — amber for something left undone, red for
+     something already late, green for the settled case — so the strip reads
+     as a triage list rather than as a row of tags. */
+  .facet-strip {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .facet {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted-foreground);
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .facet:hover { background: var(--accent); color: var(--foreground); }
+  .facet-n {
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-full);
+    padding: 0 5px;
+  }
+  .facet-warn { border-color: rgba(240, 180, 41, 0.3); color: #fbbf24; }
+  .facet-bad  { border-color: rgba(244, 63, 94, 0.3);  color: #fb7185; }
+  .facet-ok   { border-color: rgba(45, 212, 167, 0.3); color: #4ade9f; }
+
+  /* The selected chip fills with its own tone rather than a shared accent, so
+     which filter is on is legible without reading the labels. */
+  .facet.on { border-color: var(--border-strong); background: var(--accent); color: var(--foreground); }
+  .facet.facet-warn.on { background: rgba(240, 180, 41, 0.16); border-color: rgba(240, 180, 41, 0.5); color: #fbbf24; }
+  .facet.facet-bad.on  { background: rgba(244, 63, 94, 0.16);  border-color: rgba(244, 63, 94, 0.5);  color: #fb7185; }
+  .facet.facet-ok.on   { background: rgba(45, 212, 167, 0.16); border-color: rgba(45, 212, 167, 0.5); color: #4ade9f; }
+  .facet.on .facet-n { background: rgba(0, 0, 0, 0.28); }
+
   /* Copy bar at the head of each status column. Sits above the cards rather
      than in the tab strip so it belongs to the list it copies — the strip is
      shared by every status. */
@@ -2707,7 +2768,7 @@
           <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
         </svg>
-        <span>دولوپرها</span>
+        <span>افراد تیم</span>
       </button>
 
       <button class="nav-item" data-page="sentry">
@@ -2868,8 +2929,8 @@
       <section class="page" id="devPage" hidden>
         <div class="page-head-row">
           <div class="page-head">
-            <h1>آنالیز دولوپرها</h1>
-            <p>یک نفر را انتخاب کن تا کارنامه‌ی کامل او در همه‌ی پروژه‌ها باز شود</p>
+            <h1>آنالیز افراد تیم</h1>
+            <p>یک نفر را انتخاب کن تا کارنامه‌ی کامل او در همه‌ی پروژه‌ها باز شود. حلقه‌ی دور آواتار نقش گیت‌لبی فرد را نشان می‌دهد — نیلی Maintainer، طلایی Owner.</p>
           </div>
           <button class="ghost" id="devBackBtn">← بازگشت به خانه</button>
         </div>
@@ -2882,8 +2943,8 @@
             <span class="tag" id="devRosterCacheNote"></span>
             <div class="dev-roster" id="devRoster"><div class="empty">در حال بارگذاری…</div></div>
             <label class="check" id="includeMaintainersLabel" style="font-size:11px; border-top:1px solid var(--border); padding-top:10px"
-                   title="پیش‌فرض فقط اعضای با نقش Developer در لیست می‌آیند، چون معمولاً maintainerها ریویوکننده‌اند نه ریویوشونده. اگر لید تیم خودش هم فیچر می‌زند، این را روشن کن تا Maintainer و Owner هم بیایند.">
-              <input type="checkbox" id="setIncludeMaintainers" /> maintainerها هم در لیست بیایند
+                   title="پیش‌فرض فقط اعضای با نقش Developer سنجیده می‌شوند. اگر لید تیم خودش هم فیچر می‌زند، این را روشن کن تا Maintainer و Owner هم کارنامه بگیرند — در لیست با حلقه‌ی دور آواتارشان قابل تشخیص‌اند.">
+              <input type="checkbox" id="setIncludeMaintainers" /> maintainerها و ownerها هم سنجیده شوند
             </label>
           </aside>
           <div class="dev-main" id="devMain">
@@ -2952,12 +3013,12 @@
             <div class="group-title">در گزارش‌ها چطور دیده شوند</div>
             <label class="check" style="margin-top:4px">
               <input type="checkbox" id="setIncludeMaintainersSettings" />
-              maintainerها هم دقیقاً مثل یک دولوپر در آنالیز بیایند
+              maintainerها و ownerها هم دقیقاً مثل یک دولوپر سنجیده شوند
             </label>
             <p class="meta" style="margin-top:2px">
               روشن که باشد، هر maintainer که حداقل یک MR باز کرده باشد در لیست آنالیز دولوپرها می‌آید و
               <strong>همان صفحه و همان امتیاز کامل</strong> را می‌گیرد که یک دولوپر می‌گیرد — هیچ محاسبه‌ای برایش فرق نمی‌کند.
-              خاموش که باشد (پیش‌فرض)، فقط اعضای با نقش Developer در لیست می‌آیند، چون در حالت معمول maintainer ریویوکننده است نه ریویوشونده.
+              خاموش که باشد (پیش‌فرض)، فقط اعضای با نقش Developer سنجیده می‌شوند — نه برای اینکه لیست شلوغ نشود (حالا نقش هرکس با حلقه‌ی دور آواتارش پیداست)، بلکه چون در حالت معمول maintainer ریویوکننده است نه ریویوشونده.
             </p>
             <p class="meta" style="margin-top:6px;color:var(--amber)">
               <i class="ico i-alert ico-amber"></i> یک نکته که محاسبه‌اش واقعاً فرق دارد: امضای ریویو (sign-off). فایل <code>review/MR-&lt;iid&gt;.md</code> فقط وقتی
@@ -3689,7 +3750,9 @@ async function handleMockApi(path, options = {}) {
       checkedCap: 25,
       cachedAt: Date.now() - 180000,
       fromCache: true,
-      lastActivityMs: Date.now() - 3600000 * 2,
+      // Spread across the chip's three bands so the demo shows all of them:
+      // green inside a day, amber up to three, red beyond.
+      lastActivityMs: Date.now() - 3600000 * (isSara ? 2 : isAli ? 51 : 196),
       delivery: {
         mrCount: 14,
         total: 14,
@@ -3812,6 +3875,11 @@ async function handleMockApi(path, options = {}) {
         { key: 'AUTH-1042', url: 'https://jira.example.com/browse/AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', type: 'Story', priority: 'High', sprint: 'Sprint 28', storyPoints: 5, updated: '2026-09-18T14:30:00Z', dueDate: mockDay(1), estimateHours: 8, spentHours: 6, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
         { key: 'AUTH-1038', url: 'https://jira.example.com/browse/AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to Cloud KMS', status: 'Done', statusCategory: 'done', type: 'Task', priority: 'Medium', sprint: 'Sprint 27', storyPoints: 8, updated: '2026-09-12T10:15:00Z', dueDate: mockDay(-7), estimateHours: 16, spentHours: 14, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
         { key: 'AUTH-1035', url: 'https://jira.example.com/browse/AUTH-1035', summary: 'Implement session revocation blacklist in Redis cluster', status: 'Done', statusCategory: 'done', type: 'Task', priority: 'Medium', sprint: 'Sprint 27', storyPoints: 5, updated: '2026-09-08T18:00:00Z', dueDate: mockDay(-11), estimateHours: 12, spentHours: 12, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
+        // Reached Done without a worklog — the case the "بدون ثبت زمان" facet,
+        // the tab flag and the segmented copy all exist for.
+        { key: 'AUTH-1031', url: 'https://jira.example.com/browse/AUTH-1031', summary: 'Rotate refresh-token signing keys on the auth cluster', status: 'Done', statusCategory: 'done', dueDate: mockDay(-6), estimateHours: 6, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, updated: mockDay(-5) },
+        { key: 'BILL-877', url: 'https://jira.example.com/browse/BILL-877', summary: 'Backfill failed SEPA settlement retries', status: 'Done', statusCategory: 'done', dueDate: mockDay(-8), estimateHours: 9, spentHours: 0, project: 'Cloud Billing', sprint: 'Sprint 27', hasMr: true, updated: mockDay(-7) },
+        { key: 'PERF-388', url: 'https://jira.example.com/browse/PERF-388', summary: 'Trim connection pool churn on the read replicas', status: 'In Review', statusCategory: 'indeterminate', dueDate: mockDay(-2), estimateHours: 4, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: false, updated: mockDay(-1) },
         { key: 'AUTH-1029', url: 'https://jira.example.com/browse/AUTH-1029', summary: 'Configure audit logging on administrative login endpoints', status: 'Done', statusCategory: 'done', type: 'Improvement', priority: 'Low', sprint: 'Sprint 26', storyPoints: 3, updated: '2026-09-04T12:00:00Z', dueDate: mockDay(-15), estimateHours: 4, spentHours: 4, hasMr: true, project: 'Nexus Core Platform', reasons: [] }
       ],
       monthlyRows: [
@@ -5361,6 +5429,10 @@ const HOME = { taskBucket: null };
 const DEV = {
   roster: [], selected: null, analytics: null, score: null, since: '', until: '',
   ratingMonth: null, taskTab: null, monthTab: null, devTab: 'overview', trendRange: '12',
+  // Which facet the open status column is filtered to; 'all' or an id from
+  // TASK_FACETS. Held per render rather than per status, and reset below
+  // whenever the chosen facet has no members in the column being drawn.
+  taskFacet: 'all',
   // The team table is the page's landing view — a manager's first question is
   // "what is my team doing", not "how is one named person doing". Rows arrive
   // one developer at a time (see loadTeam), so `team` holds whatever has come
@@ -5568,6 +5640,25 @@ function rosterAttentionCount(row) {
 // The roster is the only payload carrying access levels, so anything that
 // renders a person by username resolves through it. The team table's rows come
 // from a different endpoint that has no reason to know about GitLab roles.
+// Named on the person's own page. The ring alone is a code the reader has
+// to have been taught; here there is room to simply say it, along with the
+// one consequence that actually changes how their numbers should be read.
+function roleChip(username) {
+  const d = rosterEntry(username);
+  const level = (d && d.accessLevel) || 0;
+  if (level >= 50) {
+    return '<span class="cover-chip role-chip-owner" title="' +
+      esc('Owner در گیت‌لب — بالاترین سطح دسترسی روی پروژه') + '">' +
+      '<i class="ico i-key"></i>Owner</span>';
+  }
+  if (level >= 40) {
+    return '<span class="cover-chip role-chip-maintainer" title="' +
+      esc('Maintainer در گیت‌لب — امضای فایل ریویو از او پذیرفته می‌شود، حتی روی MR خودش') + '">' +
+      '<i class="ico i-check-circle"></i>Maintainer</span>';
+  }
+  return '';
+}
+
 function rosterEntry(username) {
   return (DEV.roster || []).find((d) => d.username === username) || null;
 }
@@ -6118,7 +6209,7 @@ function renderDevMain() {
 
           (auto.reason ? '<span title="' + esc(auto.reason) + '">چطور حساب شد؟</span>' : '') +
         '</div>' +
-        '<div class="hero-chips">' + activityChip(a.lastActivityMs) + attentionChip + manualBadge + coverageChip(a) + '</div>' +
+        '<div class="hero-chips">' + roleChip(DEV.selected) + activityChip(a.lastActivityMs) + attentionChip + manualBadge + coverageChip(a) + '</div>' +
       '</div>' +
       '<div class="hero-actions">' + cacheNote +
         '<button class="btn-refresh" id="devRefreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی این فرد</button>' +
@@ -6179,6 +6270,9 @@ function renderDevMain() {
   if (breakdownLink) breakdownLink.onclick = () => openDevTab('score', 'autoScoreSection');
   for (const btn of document.querySelectorAll('[data-copy]')) {
     btn.onclick = () => copyHandoff(btn.dataset.copy, btn);
+  }
+  for (const btn of document.querySelectorAll('[data-taskfacet]')) {
+    btn.onclick = () => { DEV.taskFacet = btn.dataset.taskfacet; renderDevMain(); };
   }
   for (const btn of document.querySelectorAll('[data-copytasks]')) {
     btn.onclick = () => {
@@ -7538,6 +7632,28 @@ function renderScoreGovernanceBanner() {
     '</div>';
 }
 
+// The ways a column's tasks differ from each other in a way worth acting on.
+// Deliberately not a taxonomy of everything a ticket can be: each of these is
+// something somebody has to go and do, which is why "has an MR" is not here
+// but "has none" is.
+const TASK_FACETS = [
+  { id: 'no-worklog', label: 'بدون ثبت زمان', tone: 'warn',
+    match: (t) => missingTimeLog(t) },
+  { id: 'worklog', label: 'با ثبت زمان', tone: 'ok',
+    match: (t) => t.spentHours > 0 },
+  { id: 'no-mr', label: 'بدون MR', tone: 'warn',
+    match: (t) => !t.hasMr },
+  { id: 'overdue', label: 'از سررسید گذشته', tone: 'bad',
+    match: (t) => t.statusCategory !== 'done' && t.dueDate && Date.parse(t.dueDate) < Date.now() },
+];
+
+// Which facets actually have members in this column. A chip for an empty
+// facet is a filter that leads nowhere, and with four of them on every column
+// that is most of the strip.
+function facetsPresent(items) {
+  return TASK_FACETS.filter((f) => items.some((t) => f.match(t)));
+}
+
 // Holds each status column's copyable text, keyed by status name. Rebuilt on
 // every render, so it can never describe a list that is no longer on screen.
 const TASK_TEXT = new Map();
@@ -7545,20 +7661,43 @@ const TASK_TEXT = new Map();
 // One ticket per block, in the same shape the handoff report uses: key and
 // title, then the facts somebody pasting this into a chat would have to go
 // look up otherwise, then the link.
+function taskLines(t) {
+  const bits = [];
+  if (t.project) bits.push(t.project);
+  if (t.sprint) bits.push(t.sprint);
+  if (t.estimateHours != null) bits.push('تخمین ' + t.estimateHours + ' ساعت');
+  bits.push(t.spentHours > 0 ? 'ثبت‌شده ' + t.spentHours + ' ساعت' : 'بدون ثبت زمان');
+  if (t.dueDate) bits.push('سررسید ' + faDate(t.dueDate));
+  if (!t.hasMr) bits.push('بدون MR');
+  const out = [t.key + ' — ' + (t.summary || '(بدون عنوان)'), bits.join(' · ')];
+  if (t.url) out.push(t.url);
+  out.push('');
+  return out;
+}
+
+// Segmented under headings rather than run together. A ticket can match more
+// than one facet — overdue and without a worklog, say — so it is filed under
+// the first that claims it and the rest of the sections do not repeat it;
+// pasting the same key three times reads as three problems.
 function taskGroupText(status, items) {
   const lines = [status + ' — ' + items.length + ' تسک', ''];
-  for (const t of items) {
-    const bits = [];
-    if (t.project) bits.push(t.project);
-    if (t.sprint) bits.push(t.sprint);
-    if (t.estimateHours != null) bits.push('تخمین ' + t.estimateHours + ' ساعت');
-    bits.push(t.spentHours > 0 ? 'ثبت‌شده ' + t.spentHours + ' ساعت' : 'بدون ثبت زمان');
-    if (t.dueDate) bits.push('سررسید ' + faDate(t.dueDate));
-    if (!t.hasMr) bits.push('بدون MR');
-    lines.push(t.key + ' — ' + (t.summary || '(بدون عنوان)'));
-    lines.push(bits.join(' · '));
-    if (t.url) lines.push(t.url);
-    lines.push('');
+  const facets = facetsPresent(items);
+  const claimed = new Set();
+
+  for (const f of facets) {
+    const mine = items.filter((t) => !claimed.has(t.key) && f.match(t));
+    if (!mine.length) continue;
+    for (const t of mine) claimed.add(t.key);
+    lines.push('## ' + f.label + ' (' + mine.length + ')', '');
+    for (const t of mine) lines.push(...taskLines(t));
+  }
+
+  const rest = items.filter((t) => !claimed.has(t.key));
+  if (rest.length) {
+    // Only headed when something above it was, so a column with nothing to
+    // separate still copies as a plain list.
+    if (claimed.size) lines.push('## بقیه (' + rest.length + ')', '');
+    for (const t of rest) lines.push(...taskLines(t));
   }
   return lines.join('\n').trimEnd();
 }
@@ -7593,15 +7732,45 @@ function renderJiraTasks(a) {
   // order, and an index into this list silently paired a heading with
   // another status's cards.
   TASK_TEXT.clear();
-  for (const [status, items] of byStatus) TASK_TEXT.set(status, taskGroupText(status, items));
 
-  const groups = new Map(Array.from(byStatus.entries()).map(([status, items]) => [status,
-    '<div class="task-copy-bar">' +
-      '<span class="task-copy-note">' + items.length + ' تسک در «' + esc(status) + '»</span>' +
-      '<button class="ghost" data-copytasks="' + esc(status) + '">' +
-        '<i class="ico i-clipboard ico-muted"></i> کپی متن این ستون</button>' +
-    '</div>' +
-    '<div class="task-cards two-col">' + items.map((t) => (
+  const groups = new Map(Array.from(byStatus.entries()).map(([status, allItems]) => {
+    const facets = facetsPresent(allItems);
+    // A facet carried over from another column may have nothing here; falling
+    // back to "all" beats showing an empty list under a chip that looks active.
+    const facet = facets.some((f) => f.id === DEV.taskFacet) ? DEV.taskFacet : 'all';
+    const active = TASK_FACETS.find((f) => f.id === facet);
+    const items = active ? allItems.filter(active.match) : allItems;
+
+    // The copy follows what is on screen: filtered to one facet it copies that
+    // facet, unfiltered it copies the column segmented under headings.
+    TASK_TEXT.set(status, active
+      ? taskGroupText(status + ' · ' + active.label, items)
+      : taskGroupText(status, allItems));
+
+    const chips = facets.length
+      ? '<div class="facet-strip">' +
+          '<button class="facet' + (facet === 'all' ? ' on' : '') + '" data-taskfacet="all">' +
+            'همه<span class="facet-n">' + allItems.length + '</span></button>' +
+          facets.map((f) => {
+            const n = allItems.filter(f.match).length;
+            return '<button class="facet facet-' + f.tone + (facet === f.id ? ' on' : '') +
+              '" data-taskfacet="' + f.id + '">' + esc(f.label) +
+              '<span class="facet-n">' + n + '</span></button>';
+          }).join('') +
+        '</div>'
+      : '';
+
+    return [status,
+      chips +
+      '<div class="task-copy-bar">' +
+        '<span class="task-copy-note">' +
+          (active ? items.length + ' تسک · ' + esc(active.label) : items.length + ' تسک در «' + esc(status) + '»') +
+        '</span>' +
+        '<button class="ghost" data-copytasks="' + esc(status) + '">' +
+          '<i class="ico i-clipboard ico-muted"></i> ' +
+          (active ? 'کپی همین فیلتر' : 'کپی متن این ستون') + '</button>' +
+      '</div>' +
+      '<div class="task-cards two-col">' + items.map((t) => (
         '<div class="task-card' + (missingTimeLog(t) ? ' needs-worklog' : '') + '">' +
           '<div class="task-head">' +
             '<span class="task-pill">' + esc(t.key) + '</span>' +
@@ -7623,7 +7792,8 @@ function renderJiraTasks(a) {
           '</div>' +
         '</div>'
       )).join('') + '</div>'
-  ]));
+    ];
+  }));
 
   // Panes, not stacked sections: with ~100 tasks the old layout meant
   // scrolling past every Done ticket to reach the month list. The tab strip

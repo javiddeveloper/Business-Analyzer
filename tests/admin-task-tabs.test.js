@@ -19,10 +19,19 @@ function loadRenderer() {
   const src = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin.html'), 'utf8');
   const fn = src.match(/function renderJiraTasks\(a\) \{[\s\S]*?\n\}\n/);
   assert.ok(fn, 'renderJiraTasks must be findable in admin.html');
-  // taskGroupText is evaluated alongside it: renderJiraTasks calls it to fill
-  // the per-column copy text, and that text is part of what this file guards.
-  const textFn = src.match(/function taskGroupText\(status, items\) \{[\s\S]*?\n\}/);
-  assert.ok(textFn, 'taskGroupText must be findable in admin.html');
+  // The column renderer pulls in the facet definitions and the text builder,
+  // and all three are part of what this file guards, so they are evaluated
+  // together rather than stubbed — a stub would let their real behaviour drift.
+  const deps = [
+    /const TASK_FACETS = \[[\s\S]*?\n\];/,
+    /function facetsPresent\(items\) \{[\s\S]*?\n\}/,
+    /function taskLines\(t\) \{[\s\S]*?\n\}/,
+    /function taskGroupText\(status, items\) \{[\s\S]*?\n\}/,
+  ].map((re) => {
+    const m = src.match(re);
+    assert.ok(m, 'admin.html must still define ' + re);
+    return m[0];
+  });
 
   const sandbox = {
     esc: (x) => String(x == null ? '' : x)
@@ -31,7 +40,7 @@ function loadRenderer() {
       const reached = t.statusCategory === 'done' || /review/i.test(String(t.status || ''));
       return reached && !(t.spentHours > 0);
     },
-    DEV: { taskTab: null },
+    DEV: { taskTab: null, taskFacet: 'all' },
     TASK_TEXT: new Map(),
     faDate: (d) => String(d),
   };
@@ -41,7 +50,7 @@ function loadRenderer() {
   }
 
   const names = Object.keys(sandbox);
-  const make = new Function(...names, textFn[0] + '\n' + fn[0] + '\nreturn renderJiraTasks;');
+  const make = new Function(...names, deps.join('\n') + '\n' + fn[0] + '\nreturn renderJiraTasks;');
   return { render: make(...names.map((n) => sandbox[n])), sandbox };
 }
 
@@ -114,4 +123,66 @@ test('each column copies its own tickets and nobody else\'s', () => {
       }
     }
   }
+});
+
+// Reported: a Done column where some tasks have logged time and some do not,
+// with nothing separating them in the cards or in the copied text. The facet
+// strip and the segmented copy share one definition of the facets, so this
+// covers both at once.
+const MIXED = [
+  { key: 'N-1', summary: 'no time', status: 'Done', statusCategory: 'done', spentHours: 0, hasMr: true, url: 'http://x/N-1' },
+  { key: 'N-2', summary: 'no time', status: 'Done', statusCategory: 'done', spentHours: 0, hasMr: true, url: 'http://x/N-2' },
+  { key: 'W-1', summary: 'has time', status: 'Done', statusCategory: 'done', spentHours: 3, hasMr: true, url: 'http://x/W-1' },
+];
+
+test('a column offers a filter for each facet its tasks actually have', () => {
+  const { render, sandbox } = loadRenderer();
+  sandbox.DEV.taskTab = 'st0';
+  const html = render({ jiraConfigured: true, jiraTasks: MIXED, months: [], jiraTasksTotal: MIXED.length });
+
+  const chips = [...html.matchAll(/data-taskfacet="([^"]+)"[^>]*>[^<]*<span class="facet-n">(\d+)/g)]
+    .map((m) => [m[1], Number(m[2])]);
+  const byId = Object.fromEntries(chips);
+
+  assert.equal(byId.all, 3);
+  assert.equal(byId['no-worklog'], 2);
+  assert.equal(byId.worklog, 1);
+  // every task here has an MR and none is overdue, so those chips must not
+  // appear — a filter that leads to an empty list is worse than no filter
+  assert.ok(!('no-mr' in byId), 'a facet with no members must not get a chip');
+  assert.ok(!('overdue' in byId), 'a facet with no members must not get a chip');
+});
+
+test('the copy is segmented, and follows the filter that is on', () => {
+  const { render, sandbox } = loadRenderer();
+  sandbox.DEV.taskTab = 'st0';
+
+  sandbox.DEV.taskFacet = 'all';
+  render({ jiraConfigured: true, jiraTasks: MIXED, months: [], jiraTasksTotal: MIXED.length });
+  const whole = [...sandbox.TASK_TEXT.values()][0];
+  assert.match(whole, /## بدون ثبت زمان \(2\)/);
+  assert.match(whole, /## با ثبت زمان \(1\)/);
+  // each ticket filed once, even though a ticket can match several facets
+  for (const t of MIXED) {
+    const entries = (whole.match(new RegExp('^' + t.key + ' — ', 'gm')) || []).length;
+    assert.equal(entries, 1, `${t.key} must appear exactly once in the copied text`);
+  }
+
+  sandbox.DEV.taskFacet = 'no-worklog';
+  sandbox.TASK_TEXT.clear();
+  const filteredHtml = render({ jiraConfigured: true, jiraTasks: MIXED, months: [], jiraTasksTotal: MIXED.length });
+  const filtered = [...sandbox.TASK_TEXT.values()][0];
+  assert.ok(filtered.includes('N-1') && filtered.includes('N-2'));
+  assert.ok(!filtered.includes('W-1'), 'a filtered column must not copy what it is not showing');
+  assert.equal((filteredHtml.match(/class="task-card[" ]/g) || []).length, 2,
+    'the cards shown must match what was copied');
+});
+
+test('a filter with no members in this column falls back to showing everything', () => {
+  const { render, sandbox } = loadRenderer();
+  sandbox.DEV.taskTab = 'st0';
+  sandbox.DEV.taskFacet = 'overdue';           // nothing here is overdue
+  const html = render({ jiraConfigured: true, jiraTasks: MIXED, months: [], jiraTasksTotal: MIXED.length });
+  assert.equal((html.match(/class="task-card[" ]/g) || []).length, MIXED.length,
+    'an inapplicable filter must not empty the column');
 });
