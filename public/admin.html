@@ -133,6 +133,52 @@
   a:hover { text-decoration: underline; }
   code, .mono { font-family: var(--font-mono); font-size: 12px; direction: ltr; unicode-bidi: embed; }
 
+  /* Boot / project-switch splash — plain black, not the theme's --background,
+     because the point is to hide a half-painted page during a full reload or
+     a project switch, not to blend with it. Sits above everything (z-index),
+     starts visible (no `hidden` in the markup) so it covers the very first
+     paint on a refresh, and is removed from layout (`display:none`) only
+     after its fade-out finishes, not the instant JS decides data is ready —
+     see splashHide()'s transitionend handling. */
+  .splash-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    opacity: 1;
+    transition: opacity 0.35s ease;
+  }
+  .splash-overlay.out { opacity: 0; pointer-events: none; }
+  .splash-mark { width: 72px; height: 72px; animation: splash-breathe 1.6s ease-in-out infinite; }
+  @keyframes splash-breathe {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.92); opacity: 0.75; }
+  }
+  .splash-track {
+    width: 200px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+  }
+  .splash-bar {
+    width: 40%;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #4338CA, #A5B4FC);
+    animation: splash-indeterminate 1.1s ease-in-out infinite;
+  }
+  @keyframes splash-indeterminate {
+    0%   { transform: translateX(-110%); }
+    100% { transform: translateX(280%); }
+  }
+  .splash-text { font-size: 13px; color: rgba(255, 255, 255, 0.75); letter-spacing: 0.2px; }
+
   /* App Layout: itsnyein/shadcn-admin Shell */
   /* Sidebar variant="inset": the page itself is painted in the sidebar
      tone, and the main content is a rounded panel inset into it. */
@@ -2730,6 +2776,18 @@
 </head>
 <body>
 
+<!-- Boot / project-switch splash — see its CSS for why it starts visible
+     with no `hidden` attribute, rather than being shown by JS. -->
+<div class="splash-overlay" id="splashOverlay">
+  <svg class="splash-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+    <path d="M32 4 L58 19 L32 34 L6 19 Z" fill="#A5B4FC"></path>
+    <path d="M6 19 L32 34 L32 60 L6 45 Z" fill="#6366F1"></path>
+    <path d="M58 19 L58 45 L32 60 L32 34 Z" fill="#4338CA"></path>
+  </svg>
+  <div class="splash-track"><div class="splash-bar"></div></div>
+  <div class="splash-text" id="splashText">در حال بروزرسانی…</div>
+</div>
+
 <div class="app-layout">
 
   <!-- itsnyein/shadcn-admin Signature Sidebar -->
@@ -3132,6 +3190,46 @@
 </div>
 
 <script>
+// ---- boot / project-switch splash ------------------------------------------
+// A full reload or a project switch both replace everything on screen at
+// once — the roster, the MR list, the KPIs — so painting them in piecemeal
+// as each request resolves would show a half-old, half-new page for a
+// moment. The splash hides that entirely, and stays up a minimum time even
+// when the data comes back instantly (a warm cache, mock mode) — a flash
+// that's gone before anyone registers what it said would look like a glitch
+// rather than a deliberate "loading" state.
+const SPLASH_MIN_MS = 2000;
+// The overlay is already on screen from the HTML itself by the time this
+// script tag runs (it's the first thing in <body>, no `hidden` attribute) —
+// so "shown at" is effectively now, not whenever splashShow() next fires.
+let splashShownAt = Date.now();
+
+function splashShow(text) {
+  const el = document.getElementById('splashOverlay');
+  document.getElementById('splashText').textContent = text || 'در حال بروزرسانی…';
+  el.hidden = false;
+  el.classList.remove('out');
+  splashShownAt = Date.now();
+}
+
+// Waits out whatever's left of SPLASH_MIN_MS, then fades out and — only
+// after the fade actually finishes, via transitionend rather than a second
+// guessed timeout — sets `hidden` so it stops intercepting clicks and leaves
+// the accessibility tree.
+function splashHide() {
+  const el = document.getElementById('splashOverlay');
+  const remaining = SPLASH_MIN_MS - (Date.now() - splashShownAt);
+  setTimeout(() => {
+    el.classList.add('out');
+    const onDone = (e) => {
+      if (e.target !== el || e.propertyName !== 'opacity') return;
+      el.hidden = true;
+      el.removeEventListener('transitionend', onDone);
+    };
+    el.addEventListener('transitionend', onDone);
+  }, Math.max(0, remaining));
+}
+
 // ---- state ----------------------------------------------------------------
 const S = {
   status: null,
@@ -5078,6 +5176,7 @@ function renderProjectPicker() {
   picker.innerHTML = list.map((p) => '<option value="' + esc(p.id) + '"' + (String(p.id) === String(S.activeProjectId) ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('');
 }
 document.getElementById('projectPicker').onchange = async (e) => {
+  splashShow('در حال بروزرسانی…');
   try {
     await api('/api/projects/active', { method: 'POST', body: JSON.stringify({ id: e.target.value }) });
     S.activeProjectId = e.target.value;
@@ -5097,6 +5196,8 @@ document.getElementById('projectPicker').onchange = async (e) => {
     await Promise.all(jobs);
   } catch (err) {
     alert('خطا در تعویض پروژه: ' + err.message);
+  } finally {
+    splashHide();
   }
 };
 
@@ -5848,19 +5949,27 @@ function showPage(name) {
   for (const btn of document.querySelectorAll('[data-page]')) {
     btn.classList.toggle('on', btn.dataset.page === page);
   }
-  if (page === 'home') openHome();
-  if (page === 'devs') openDevPage();
-  if (page === 'sentry') loadSentry();
-  if (page === 'settings') openSettings();
+  // Returned so a caller that needs to know "is the page it just opened
+  // actually ready" — the boot/project-switch splash — can await it.
+  if (page === 'home') return openHome();
+  if (page === 'devs') return openDevPage();
+  if (page === 'sentry') return loadSentry();
+  if (page === 'settings') return openSettings();
 }
 
 // The roster is what both Home and the Developers page are built from, so it
 // is loaded once on whichever is opened first.
 function openHome() {
-  if (!DEV.roster.length) { loadDevRoster(); return; }
+  // Returns the roster load's promise (or undefined when there's nothing to
+  // wait on) so callers that care about "is the home page actually ready" —
+  // the boot splash — can await it, without a second concurrent call to
+  // loadDevRoster() racing this one (cache.cached() has no in-flight dedupe,
+  // so two calls before the first resolves would mean two real GitLab
+  // crawls, not one shared result).
+  if (!DEV.roster.length) return loadDevRoster();
   renderTeam();
   renderTeamTasks();
-  if (!Object.keys(DEV.team).length) loadTeam();
+  if (!Object.keys(DEV.team).length) return loadTeam();
 }
 
 function openDevPage() {
@@ -9257,12 +9366,14 @@ document.getElementById('sentryPeriod').onchange = () => loadSentry();
 // ---- boot -----------------------------------------------------------------
 // Home first: the team table and the task board answer "what is going on"
 // without anybody picking anything, which the MR list cannot.
-showPage('home');
-loadStatus();
-loadMergeRequests().then(loadJobs);
-loadKb();
-loadUsage();
-loadAccuracy();
+Promise.all([
+  showPage('home'), // resolves once the roster it triggers has loaded
+  loadStatus(),
+  loadMergeRequests().then(loadJobs),
+  loadKb(),
+  loadUsage(),
+  loadAccuracy(),
+]).catch(() => {}).finally(splashHide); // a boot error must not leave the splash stuck forever
 
 // Live status for every tab at once — so several MRs reviewing in parallel all
 // stay up to date, not just the one being looked at.
