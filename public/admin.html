@@ -6213,6 +6213,7 @@ function renderDevMain() {
       '</div>' +
       '<div class="hero-actions">' + cacheNote +
         '<button class="btn-refresh" id="devRefreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی این فرد</button>' +
+        '<button class="ghost" id="devReportBtn" title="کارنامه‌ی چاپی — در پنجره‌ی چاپ می‌توانی PDF ذخیره کنی"><i class="ico i-file-text ico-violet"></i> کارنامه PDF</button>' +
         '<button class="ghost" id="devExportBtn" title="خروجی اکسل عملکرد ماهانه، همراه با نمودار"><i class="ico i-chart ico-cyan"></i> خروجی اکسل</button>' +
       '</div>' +
       '<div class="hero-caveat">' +
@@ -6292,6 +6293,9 @@ function renderDevMain() {
   // A plain navigation, not fetch(): the browser's own download handling
   // gets the filename from Content-Disposition, and nothing has to buffer
   // the workbook in JS.
+  const reportBtn = document.getElementById('devReportBtn');
+  if (reportBtn) reportBtn.onclick = () => openReport();
+
   document.getElementById('devExportBtn').onclick = () => {
     const q = [];
     if (DEV.since) q.push('since=' + encodeURIComponent(DEV.since));
@@ -6639,6 +6643,440 @@ function renderSprintCard(a) {
     ]) +
     (items.length ? stackedBarChart(items) : chartEmpty('هیچ تسکی اسپرینت ثبت‌شده ندارد.')) +
   '</div>';
+}
+
+// ---- Printable performance report -------------------------------------------
+// A standalone document built from data already on the page, opened in its own
+// window and handed to the browser's print dialog, where "Save as PDF" produces
+// the file.
+//
+// Not a hand-written PDF. This project ships zero npm dependencies, and the
+// PDF format has no idea what Persian is: laying out RTL text with shaped,
+// context-sensitive Arabic glyphs would mean embedding and subsetting a font
+// and implementing the shaping ourselves. The browser already does all of it,
+// correctly, and its print pipeline is what produces the file either way.
+//
+// It is also deliberately light-themed. The dashboard is dark because it is
+// looked at for hours; this is printed, forwarded, and read next to other
+// documents.
+
+const REPORT_TONES = ['#4f46e5', '#0d9488', '#b45309', '#7c3aed', '#be123c'];
+
+function reportRing(auto) {
+  const score = auto && auto.score != null ? auto.score : null;
+  const comps = ((auto && auto.components) || []).filter((c) => c.available);
+  const C = 2 * Math.PI * 54;
+  const contrib = (c) => (c.score * c.effectiveWeight) / 100;
+
+  let cursor = 0;
+  const arcs = comps.map((c, i) => {
+    const pts = Math.max(0, contrib(c));
+    if (pts <= 0.2) return '';
+    const len = (C * pts) / 100;
+    const start = (cursor / 100) * 360;
+    cursor += pts;
+    return '<circle cx="70" cy="70" r="54" fill="none" stroke="' + REPORT_TONES[i % 5] + '"' +
+      ' stroke-width="13" stroke-linecap="butt"' +
+      ' stroke-dasharray="' + len.toFixed(2) + ' ' + C.toFixed(2) + '"' +
+      ' transform="rotate(' + (start - 90).toFixed(2) + ' 70 70)"></circle>';
+  }).join('');
+
+  return '<svg viewBox="0 0 140 140" width="140" height="140">' +
+    '<circle cx="70" cy="70" r="54" fill="none" stroke="#e7e5e4" stroke-width="13"></circle>' +
+    arcs +
+    '<text x="70" y="72" text-anchor="middle" dominant-baseline="middle" ' +
+      'style="font-size:38px;font-weight:800;fill:#18181b">' + (score == null ? '—' : score) + '</text>' +
+    '<text x="70" y="94" text-anchor="middle" style="font-size:9px;fill:#78716c">از ۱۰۰</text>' +
+  '</svg>';
+}
+
+// The same contribution reading the dashboard uses: bar length is points
+// supplied, and the legend names the component that supplied them.
+function reportComposition(auto) {
+  const comps = ((auto && auto.components) || []).filter((c) => c.available);
+  if (!comps.length) return '';
+  const contrib = (c) => (c.score * c.effectiveWeight) / 100;
+  const earned = comps.reduce((t, c) => t + contrib(c), 0);
+  const scale = earned > 100 ? 100 / earned : 1;
+
+  const segs = comps.map((c, i) =>
+    '<span style="width:' + (contrib(c) * scale).toFixed(2) + '%;background:' + REPORT_TONES[i % 5] + '"></span>'
+  ).join('');
+  const lost = Math.max(0, 100 - earned * scale);
+
+  const rows = comps.map((c, i) => (
+    '<tr>' +
+      '<td class="k"><span class="dot" style="background:' + REPORT_TONES[i % 5] + '"></span>' + esc(c.label) + '</td>' +
+      '<td class="n">' + c.score + '</td>' +
+      '<td class="n">' + Math.round(c.effectiveWeight) + '٪</td>' +
+      '<td class="n b">' + (Math.round(contrib(c)) === Math.round(c.effectiveWeight) && c.score < 100
+        ? contrib(c).toFixed(1) : Math.round(contrib(c))) + '</td>' +
+      '<td class="muted">' + esc(c.detail || '') + (c.sampleSize ? ' (n=' + c.sampleSize + ')' : '') + '</td>' +
+    '</tr>'
+  )).join('');
+
+  const adj = (auto && auto.complexityAdjustment) || 0;
+  return '<div class="compbar">' + segs +
+      (lost > 0.5 ? '<span class="lost" style="width:' + lost.toFixed(2) + '%"></span>' : '') +
+    '</div>' +
+    '<p class="sum">' + Math.round(earned) + ' امتیاز از مؤلفه‌ها' +
+      (adj ? (adj > 0 ? ' + ' : ' − ') + Math.abs(adj) + ' بابت پیچیدگی' : '') +
+      ' = <b>' + (auto.score != null ? auto.score : '—') + '</b></p>' +
+    '<table class="grid"><thead><tr><th>مؤلفه</th><th>نمره</th><th>وزن</th><th>سهم</th><th>بر چه اساسی</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table>';
+}
+
+// Monthly score as a filled area, drawn for paper: no hover, so every point
+// carries its number.
+function reportTrend(rows) {
+  const pts = (rows || []).filter((r) => r.score != null);
+  if (pts.length < 2) return '<p class="empty">برای رسم روند دست‌کم دو ماهِ امتیازدار لازم است.</p>';
+  const W = 720, H = 220, padT = 24, padB = 34, padS = 34, padE = 12;
+  const plotH = H - padT - padB;
+  const y = (s) => padT + plotH - (plotH * s) / 100;
+  const step = (W - padS - padE - 20) / (pts.length - 1);
+  const x = (i) => padS + 10 + i * step;
+
+  let grid = '';
+  for (let v = 0; v <= 100; v += 25) {
+    grid += '<line x1="' + padS + '" y1="' + y(v) + '" x2="' + (W - padE) + '" y2="' + y(v) +
+      '" stroke="#e7e5e4" stroke-width="1"></line>' +
+      '<text x="' + (padS - 6) + '" y="' + (y(v) + 3.5) + '" text-anchor="end" style="font-size:9px;fill:#a8a29e">' + v + '</text>';
+  }
+
+  const coords = pts.map((r, i) => ({ x: x(i), y: y(r.score) }));
+  let line = 'M' + coords[0].x.toFixed(1) + ' ' + coords[0].y.toFixed(1);
+  for (let i = 0; i < coords.length - 1; i++) {
+    const p0 = coords[i - 1] || coords[i], p1 = coords[i], p2 = coords[i + 1], p3 = coords[i + 2] || p2;
+    line += ' C' + (p1.x + (p2.x - p0.x) / 6).toFixed(1) + ' ' + (p1.y + (p2.y - p0.y) / 6).toFixed(1) +
+      ',' + (p2.x - (p3.x - p1.x) / 6).toFixed(1) + ' ' + (p2.y - (p3.y - p1.y) / 6).toFixed(1) +
+      ',' + p2.x.toFixed(1) + ' ' + p2.y.toFixed(1);
+  }
+  const area = line + ' L' + coords[coords.length - 1].x.toFixed(1) + ' ' + y(0) +
+    ' L' + coords[0].x.toFixed(1) + ' ' + y(0) + ' Z';
+
+  const marks = pts.map((r, i) =>
+    '<circle cx="' + coords[i].x.toFixed(1) + '" cy="' + coords[i].y.toFixed(1) + '" r="3.5" fill="#4f46e5"></circle>' +
+    '<text x="' + coords[i].x.toFixed(1) + '" y="' + (coords[i].y - 10).toFixed(1) + '" text-anchor="middle" ' +
+      'style="font-size:10px;font-weight:700;fill:#18181b">' + r.score + '</text>' +
+    '<text x="' + coords[i].x.toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" ' +
+      'style="font-size:9px;fill:#78716c">' + esc(faMonthShort(r.month)) + '</text>'
+  ).join('');
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">' +
+    '<defs><linearGradient id="rf" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#4f46e5" stop-opacity="0.22"></stop>' +
+      '<stop offset="1" stop-color="#4f46e5" stop-opacity="0.02"></stop></linearGradient></defs>' +
+    grid +
+    '<path d="' + area + '" fill="url(#rf)"></path>' +
+    '<path d="' + line + '" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-linejoin="round"></path>' +
+    marks + '</svg>';
+}
+
+function reportBars(items, legend) {
+  if (!items.length) return '<p class="empty">داده‌ای برای رسم نیست.</p>';
+  const W = 720, H = 200, padT = 22, padB = 34, padS = 34;
+  const plotH = H - padT - padB;
+  const slot = Math.min(90, (W - padS * 2) / items.length);
+  const barW = Math.min(42, slot * 0.55);
+  const max = Math.max(1, ...items.map((it) => it.total));
+
+  let grid = '';
+  for (let s = 0; s <= 4; s++) {
+    const gy = padT + plotH - (plotH * s) / 4;
+    grid += '<line x1="' + padS + '" y1="' + gy.toFixed(1) + '" x2="' + (W - padS) + '" y2="' + gy.toFixed(1) +
+      '" stroke="#e7e5e4"></line>' +
+      '<text x="' + (padS - 6) + '" y="' + (gy + 3.5).toFixed(1) + '" text-anchor="end" style="font-size:9px;fill:#a8a29e">' +
+      Math.round((max * s) / 4) + '</text>';
+  }
+
+  const bars = items.map((it, i) => {
+    const cx = padS + slot * i + slot / 2;
+    let top = padT + plotH;
+    const drawn = it.segments.filter((sg) => sg.count > 0);
+    const stack = drawn.map((sg) => {
+      const h = (sg.count / max) * plotH;
+      top -= h;
+      return '<rect x="' + (cx - barW / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + barW.toFixed(1) +
+        '" height="' + h.toFixed(1) + '" fill="' + sg.color + '"></rect>';
+    }).join('');
+    return stack +
+      '<text x="' + cx.toFixed(1) + '" y="' + (top - 6).toFixed(1) + '" text-anchor="middle" ' +
+        'style="font-size:10px;font-weight:700;fill:#18181b">' + it.total + '</text>' +
+      '<text x="' + cx.toFixed(1) + '" y="' + (H - 18) + '" text-anchor="middle" style="font-size:9px;fill:#78716c">' +
+        esc(it.axis) + '</text>' +
+      (it.sub ? '<text x="' + cx.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" style="font-size:8px;fill:#a8a29e">' +
+        esc(it.sub) + '</text>' : '');
+  }).join('');
+
+  const key = legend.map((l) =>
+    '<span><i style="background:' + l.color + '"></i>' + esc(l.label) + '</span>').join('');
+
+  return '<div class="legend">' + key + '</div>' +
+    '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">' + grid + bars + '</svg>';
+}
+
+// Tasks grouped by status and then by facet, which is how they read on the
+// page — a flat list of eighty tickets is not a report.
+function reportTasks(tasks) {
+  if (!tasks.length) return '';
+  const byStatus = new Map();
+  for (const t of tasks) {
+    const k = t.status || 'بدون وضعیت';
+    if (!byStatus.has(k)) byStatus.set(k, []);
+    byStatus.get(k).push(t);
+  }
+
+  return Array.from(byStatus.entries()).map(([status, items]) => {
+    const facets = facetsPresent(items);
+    const claimed = new Set();
+    const sections = [];
+
+    for (const f of facets) {
+      const mine = items.filter((t) => !claimed.has(t.key) && f.match(t));
+      if (!mine.length) continue;
+      for (const t of mine) claimed.add(t.key);
+      sections.push({ label: f.label, tone: f.tone, items: mine });
+    }
+    const rest = items.filter((t) => !claimed.has(t.key));
+    if (rest.length) sections.push({ label: claimed.size ? 'بقیه' : '', tone: '', items: rest });
+
+    const body = sections.map((sec) =>
+      (sec.label ? '<p class="facet ' + sec.tone + '">' + esc(sec.label) + ' — ' + sec.items.length + '</p>' : '') +
+      '<table class="grid tasks"><tbody>' + sec.items.map((t) => (
+        '<tr>' +
+          '<td class="key">' + esc(t.key) + '</td>' +
+          '<td>' + esc(t.summary || '(بدون عنوان)') + '</td>' +
+          '<td class="n">' + (t.estimateHours != null ? t.estimateHours + 'س' : '—') + '</td>' +
+          '<td class="n">' + (t.spentHours > 0 ? t.spentHours + 'س' : '—') + '</td>' +
+          '<td class="muted">' + (t.dueDate ? esc(faDate(t.dueDate)) : '—') + '</td>' +
+        '</tr>'
+      )).join('') + '</tbody></table>'
+    ).join('');
+
+    return '<section class="block"><h3>' + esc(status) + ' <span class="cnt">' + items.length + '</span></h3>' +
+      '<table class="grid head-only"><thead><tr><th>کلید</th><th>عنوان</th><th>تخمین</th><th>ثبت‌شده</th><th>سررسید</th></tr></thead></table>' +
+      body + '</section>';
+  }).join('');
+}
+
+// The stylesheet the report carries with it. Sized for A4 with a 14mm margin,
+// and every block asked not to split across a page — a table header stranded
+// at the bottom of a sheet is the usual way a printed report goes wrong.
+const REPORT_CSS = `
+  @page { size: A4; margin: 14mm 12mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #fff; color: #1c1917;
+    font-family: Vazirmatn, Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 11px; line-height: 1.75; direction: rtl;
+  }
+  .sheet { max-width: 190mm; margin: 0 auto; padding: 8mm 0; }
+  .block { break-inside: avoid; page-break-inside: avoid; margin-bottom: 14px; }
+  .pbreak { break-before: page; page-break-before: always; }
+
+  header.top { display: flex; align-items: center; gap: 14px; border-bottom: 2px solid #1c1917; padding-bottom: 12px; }
+  .mark { width: 34px; height: 34px; flex-shrink: 0; }
+  .brand { font-weight: 800; font-size: 14px; letter-spacing: -.02em; }
+  .brand small { display: block; font-weight: 500; font-size: 9px; color: #78716c; letter-spacing: .12em; }
+  .top .when { margin-inline-start: auto; text-align: left; font-size: 9.5px; color: #78716c; direction: ltr; }
+
+  .who { display: flex; align-items: center; gap: 18px; margin: 18px 0 8px; }
+  .who h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -.02em; }
+  .who .handle { direction: ltr; text-align: right; color: #78716c; font-size: 10.5px; }
+  .who .chips { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { border: 1px solid #d6d3d1; border-radius: 4px; padding: 1px 7px; font-size: 9.5px; }
+  .chip.ok   { border-color: #99f6e4; background: #f0fdfa; color: #0f766e; }
+  .chip.warn { border-color: #fde68a; background: #fffbeb; color: #b45309; }
+  .chip.bad  { border-color: #fecdd3; background: #fff1f2; color: #be123c; }
+  .who .ring { margin-inline-start: auto; }
+
+  h2 { font-size: 13px; margin: 20px 0 8px; padding-bottom: 5px; border-bottom: 1px solid #e7e5e4; }
+  h3 { font-size: 11.5px; margin: 14px 0 6px; }
+  h3 .cnt { color: #78716c; font-weight: 500; }
+  p.note { color: #57534e; margin: 0 0 8px; font-size: 10px; }
+  p.empty { color: #a8a29e; font-style: italic; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .kpi { border: 1px solid #e7e5e4; border-radius: 6px; padding: 8px 10px; }
+  .kpi .l { font-size: 9px; color: #78716c; }
+  .kpi .v { font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
+  .kpi .s { font-size: 8.5px; color: #a8a29e; }
+
+  .compbar { display: flex; height: 13px; border-radius: 999px; overflow: hidden; background: #f5f5f4; border: 1px solid #e7e5e4; }
+  .compbar > span { display: block; }
+  .compbar .lost { background: repeating-linear-gradient(135deg,#e7e5e4,#e7e5e4 3px,transparent 3px,transparent 6px); }
+  p.sum { margin: 8px 0 12px; font-size: 11px; color: #57534e; }
+  p.sum b { font-size: 15px; color: #1c1917; }
+
+  table.grid { width: 100%; border-collapse: collapse; font-size: 10px; }
+  table.grid th { text-align: right; font-weight: 600; color: #57534e; border-bottom: 1.5px solid #d6d3d1; padding: 5px 6px; font-size: 9.5px; }
+  table.grid td { border-bottom: 1px solid #f5f5f4; padding: 5px 6px; vertical-align: top; }
+  table.grid td.n { text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.grid td.b { font-weight: 700; }
+  table.grid td.muted { color: #78716c; font-size: 9px; }
+  table.grid td.k .dot { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-inline-end: 5px; }
+  table.grid.tasks td.key { font-family: ui-monospace, monospace; direction: ltr; white-space: nowrap; font-size: 9px; }
+  table.grid.head-only { margin-bottom: -1px; }
+
+  p.facet { margin: 10px 0 3px; font-size: 9.5px; font-weight: 700; color: #57534e; }
+  p.facet.warn { color: #b45309; }
+  p.facet.bad  { color: #be123c; }
+  p.facet.ok   { color: #0f766e; }
+
+  .legend { display: flex; gap: 14px; font-size: 9px; color: #57534e; margin-bottom: 4px; }
+  .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-inline-end: 4px; }
+
+  .caveat { border: 1px solid #fde68a; background: #fffbeb; color: #78350f; border-radius: 6px; padding: 8px 10px; font-size: 9.5px; line-height: 1.8; }
+  footer { margin-top: 18px; padding-top: 8px; border-top: 1px solid #e7e5e4; font-size: 8.5px; color: #a8a29e; display: flex; }
+  footer .l { margin-inline-start: auto; direction: ltr; }
+
+  .toolbar { position: sticky; top: 0; background: #1c1917; color: #fff; padding: 10px 14px; display: flex; gap: 10px; align-items: center; font-size: 12px; }
+  .toolbar button { font: inherit; background: #fff; color: #1c1917; border: 0; border-radius: 6px; padding: 6px 14px; font-weight: 600; cursor: pointer; }
+  .toolbar span { color: #d6d3d1; font-size: 11px; }
+  @media print { .toolbar { display: none; } }
+`;
+
+// Assembles the whole document from what the page already holds, so opening
+// the report costs no request and can never show a different number from the
+// screen behind it.
+function buildReportDocument() {
+  const a = DEV.analytics || {};
+  const auto = a.autoScore || {};
+  const scoreData = DEV.score || {};
+  const who = rosterEntry(DEV.selected) || {};
+  const name = who.name || DEV.selected;
+  const d = a.delivery || {};
+  const tasks = a.jiraTasks || [];
+  const done = tasks.filter((t) => t.statusCategory === 'done');
+  const noLog = tasks.filter(missingTimeLog);
+  const attn = attentionItems(a);
+
+  const range = (DEV.since || DEV.until)
+    ? (DEV.since ? faDate(DEV.since) : '…') + ' تا ' + (DEV.until ? faDate(DEV.until) : '…')
+    : 'همه‌ی بازه‌ی موجود';
+
+  const roleName = (who.accessLevel || 0) >= 50 ? 'Owner'
+    : (who.accessLevel || 0) >= 40 ? 'Maintainer' : null;
+
+  const kpi = (l, v, s) => '<div class="kpi"><div class="l">' + esc(l) + '</div>' +
+    '<div class="v">' + esc(v) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>';
+
+  const monthItems = (a.months || []).slice().reverse().map((m) => {
+    const clean = Math.max(0, m.mrCount - m.roundTripCount - m.uncheckedCount - (m.noReportCount || 0));
+    return { axis: faMonthShort(m.month), total: m.mrCount, segments: [
+      { count: clean, color: '#0d9488' },
+      { count: m.roundTripCount, color: '#be123c' },
+      { count: m.uncheckedCount, color: '#b45309' },
+      { count: m.noReportCount || 0, color: '#d6d3d1' },
+    ] };
+  });
+
+  const sprintItems = (a.sprints || []).map((sp) => {
+    const rest = Math.max(0, sp.taskCount - sp.loggedCount - sp.noTimeLogged);
+    return { axis: (String(sp.name).match(/(\d+)/) || [null, sp.name])[1], total: sp.taskCount,
+      sub: sp.score == null ? '' : 'امتیاز ' + sp.score,
+      segments: [
+        { count: sp.loggedCount, color: '#0d9488' },
+        { count: sp.noTimeLogged, color: '#b45309' },
+        { count: rest, color: '#d6d3d1' },
+      ] };
+  });
+
+  const coverPct = a.totalMRs ? Math.round((a.reportedMRs / a.totalMRs) * 100) : null;
+
+  const body =
+    '<header class="top">' +
+      '<svg class="mark" viewBox="0 0 64 64">' +
+        '<path d="M32 4 L58 19 L32 34 L6 19 Z" fill="#A5B4FC"/>' +
+        '<path d="M6 19 L32 34 L32 60 L6 45 Z" fill="#6366F1"/>' +
+        '<path d="M58 19 L58 45 L32 60 L32 34 Z" fill="#4338CA"/></svg>' +
+      '<div class="brand">Business Analyzer<small>PERFORMANCE REPORT</small></div>' +
+      '<div class="when">' + esc(new Date().toLocaleString('fa-IR')) + '</div>' +
+    '</header>' +
+
+    '<div class="who">' +
+      '<div>' +
+        '<h1>' + esc(name) + '</h1>' +
+        '<div class="handle">@' + esc(DEV.selected) + '</div>' +
+        '<div class="chips">' +
+          (roleName ? '<span class="chip">' + roleName + '</span>' : '') +
+          '<span class="chip">بازه: ' + esc(range) + '</span>' +
+          (a.lastActivityMs ? '<span class="chip">آخرین فعالیت: ' + esc(relativeTime(a.lastActivityMs)) + '</span>' : '') +
+          (coverPct != null ? '<span class="chip ' + (coverPct >= 60 ? 'ok' : coverPct >= 25 ? 'warn' : 'bad') + '">' +
+            'پوشش ریویو: ' + a.reportedMRs + '/' + a.totalMRs + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="ring">' + reportRing(auto) + '</div>' +
+    '</div>' +
+
+    '<div class="caveat block">این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی. فقط از داده‌ای ساخته شده که این سرویس جمع کرده — درباره‌ی مهارت واقعی، کیفیت کدی که ریویو نشده، یا مسائل تیمی هیچ ادعایی ندارد.</div>' +
+
+    '<h2>یک نگاه</h2>' +
+    '<div class="kpis block">' +
+      kpi('MR باز', openMrs(a).length, staleOpenMrs(a).length ? staleOpenMrs(a).length + ' تا راکد' : 'راکدی نیست') +
+      kpi('MR merge‌شده', d.mergedCount || 0, 'از ' + (d.mrCount || 0) + ' MR') +
+      kpi('تسک به Done', done.length, 'از ' + tasks.length + ' تسک') +
+      kpi('بدون ثبت زمان', noLog.length, noLog.length ? 'دقت تخمین ناقص می‌ماند' : 'همه ثبت شده') +
+    '</div>' +
+    '<div class="kpis block" style="margin-top:8px">' +
+      kpi('میانه‌ی merge', humanHours(d.medianOpenToMergeHours), d.openToMergeSample ? 'n=' + d.openToMergeSample : '') +
+      kpi('میانه‌ی cycle', humanHours(d.medianCycleHours), d.cycleSample ? 'n=' + d.cycleSample : '') +
+      kpi('نیازمند رسیدگی', attn.length, attn.filter((i) => i.level === 'high').length + ' مورد جدی') +
+      kpi('امتیاز دستی', scoreData.ratingOverall != null ? scoreData.ratingOverall : '—',
+          scoreData.month ? faMonth(scoreData.month) : 'ثبت نشده') +
+    '</div>' +
+
+    '<h2>امتیاز خودکار — از چه ساخته شده</h2>' +
+    '<div class="block">' + (reportComposition(auto) || '<p class="empty">' + esc(auto.reason || 'داده‌ای نبود') + '</p>') + '</div>' +
+
+    '<div class="pbreak"></div>' +
+    '<h2>روند امتیاز ماه‌به‌ماه</h2>' +
+    '<p class="note">امتیاز کل ماهانه (۰ تا ۱۰۰). ماهی که داده‌ی قابل‌سنجش ندارد نقطه نمی‌گیرد.</p>' +
+    '<div class="block">' + reportTrend(a.monthlyRows) + '</div>' +
+
+    '<h2>Merge Requestها بر اساس ماه</h2>' +
+    '<div class="block">' + reportBars(monthItems, [
+      { color: '#0d9488', label: 'تمیز' }, { color: '#be123c', label: 'چندنویسنده' },
+      { color: '#b45309', label: 'نامشخص' }, { color: '#d6d3d1', label: 'ریویو نشده' },
+    ]) + '</div>' +
+
+    '<h2>تسک‌ها در اسپرینت‌های اخیر</h2>' +
+    '<div class="block">' + reportBars(sprintItems, [
+      { color: '#0d9488', label: 'با ثبت زمان' }, { color: '#b45309', label: 'بدون ثبت زمان' },
+      { color: '#d6d3d1', label: 'هنوز به Review نرسیده' },
+    ]) + '</div>' +
+
+    (tasks.length ? '<div class="pbreak"></div><h2>تسک‌ها</h2>' + reportTasks(tasks) : '') +
+
+    '<footer><span>Business Analyzer — گزارش خودکار</span>' +
+      '<span class="l">' + esc(DEV.selected) + ' · ' + esc(new Date().toISOString().slice(0, 10)) + '</span></footer>';
+
+  return '<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">' +
+    '<title>' + esc('کارنامه — ' + name) + '</title>' +
+    '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">' +
+    '<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">' +
+    '<style>' + REPORT_CSS + '</style></head><body>' +
+    '<div class="toolbar"><button onclick="window.print()">چاپ / ذخیره به‌صورت PDF</button>' +
+      '<span>در پنجره‌ی چاپ، مقصد را روی «Save as PDF» بگذار.</span></div>' +
+    '<div class="sheet">' + body + '</div></body></html>';
+}
+
+// Opened in its own window rather than printed from a hidden frame: the report
+// is long enough that anyone sending it on will want to look at it first, and
+// a print dialog firing over the dashboard with nothing visible to check is
+// how the wrong range gets sent to a manager.
+function openReport() {
+  if (!DEV.analytics) return;
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('پنجره‌ی گزارش باز نشد — احتمالاً مرورگر popup را بلاک کرده. اجازه‌ی باز کردن پنجره را برای این آدرس بده.');
+    return;
+  }
+  w.document.open();
+  w.document.write(buildReportDocument());
+  w.document.close();
 }
 
 // ---- The three bands the developer page is built from -----------------------
