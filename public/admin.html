@@ -1939,18 +1939,11 @@
   .comp-points b { font-size: 15px; font-weight: 700; }
   .comp-of { font-size: 11.5px; color: var(--muted-foreground); }
 
-  /* The rail is the full 0-100 scale, shared by every row. The track inside
-     it is this component's effective weight — the most it could have given —
-     and the fill is its score against that, so the fill's real length is the
-     points contributed and rows are directly comparable. */
-  .comp-rail {
-    height: 8px;
-    border-radius: var(--radius-full);
-    background: rgba(255, 255, 255, 0.03);
-  }
+  /* The track is this component's own 0-100 scale and the fill is its score,
+     so the bar agrees with the caption beside it. Contributions are compared
+     in the composition bar above, not here. */
   .comp-track {
-    height: 100%;
-    width: var(--t);
+    height: 8px;
     border-radius: var(--radius-full);
     background: var(--muted);
     overflow: hidden;
@@ -3638,21 +3631,21 @@ async function handleMockApi(path, options = {}) {
         notesSample: 12
       },
       autoScore: {
-        score: isSara ? 94 : (isAli ? 89 : 82),
-        baseScore: isSara ? 92 : (isAli ? 87 : 80),
+        score: isSara ? 91 : (isAli ? 83 : 76),
+        baseScore: isSara ? 89 : (isAli ? 81 : 74),
         complexityAdjustment: 2,
         complexitySample: 3,
         complexityConfidence: 60,
-        availableWeight: 115,
+        availableWeight: 100,
         reason: isSara ? 'عالی — تحویل به‌موقع و تخمین دقیق در تمام اسپرینت‌ها' : 'بسیار خوب — کیفیت کد بالا و انضباط کامل',
         components: [
           {
             key: 'onTime',
             label: 'تحویل به‌موقع (نسبت به Due date)',
             baseWeight: 25,
-            effectiveWeight: 25,
+            effectiveWeight: 21.7,
             confidence: 62,
-            score: isSara ? 96 : 88,
+            score: isSara ? 91 : (isAli ? 80 : 74),
             sampleSize: 8,
             detail: '۸ تسک جیرا با موعد سررسید؛ ۰ روز تأخیر',
             available: true
@@ -3661,9 +3654,9 @@ async function handleMockApi(path, options = {}) {
             key: 'estimateAccuracy',
             label: 'دقت تخمین (Original Estimate در برابر Time Spent)',
             baseWeight: 25,
-            effectiveWeight: 25,
+            effectiveWeight: 21.7,
             confidence: 55,
-            score: isSara ? 94 : 92,
+            score: isSara ? 89 : (isAli ? 84 : 77),
             sampleSize: 6,
             detail: 'میانگین انحراف تخمین در محدوده ۱۲٪',
             available: true
@@ -3672,9 +3665,9 @@ async function handleMockApi(path, options = {}) {
             key: 'codeQuality',
             label: 'کیفیت کد (یافته‌های ریویو، نسبت به اندازه‌ی MR)',
             baseWeight: 20,
-            effectiveWeight: 20,
+            effectiveWeight: 17.4,
             confidence: 50,
-            score: isSara ? 95 : 84,
+            score: isSara ? 90 : (isAli ? 77 : 70),
             sampleSize: 5,
             detail: 'بدون یافته‌ی بحرانی در ۵ MR اخیر',
             available: true
@@ -3683,9 +3676,9 @@ async function handleMockApi(path, options = {}) {
             key: 'completion',
             label: 'تکمیل تسک‌ها (Done از کل تسک‌های بازه)',
             baseWeight: 15,
-            effectiveWeight: 15,
+            effectiveWeight: 13.0,
             confidence: 67,
-            score: isSara ? 95 : 90,
+            score: isSara ? 90 : (isAli ? 82 : 75),
             sampleSize: 10,
             detail: '۹ تسک از ۱۰ تعهد اسپرینت حل شده',
             available: true
@@ -3694,9 +3687,9 @@ async function handleMockApi(path, options = {}) {
             key: 'timeLogging',
             label: 'ثبت زمان روی تسک‌های Review/Done',
             baseWeight: 10,
-            effectiveWeight: 10,
+            effectiveWeight: 8.7,
             confidence: 62,
-            score: 100,
+            score: isSara ? 95 : (isAli ? 91 : 84),
             sampleSize: 8,
             detail: '۱۰۰٪ تسک‌های رسیده به ریویو دارای زمان ثبت‌شده هستند',
             available: true
@@ -3705,9 +3698,9 @@ async function handleMockApi(path, options = {}) {
             key: 'mrSize',
             label: 'اندازه‌ی Merge Requestها (L — چقدر کد باید خوانده شود)',
             baseWeight: 15,
-            effectiveWeight: 15,
+            effectiveWeight: 13.0,
             confidence: 50,
-            score: isSara ? 90 : 85,
+            score: isSara ? 85 : (isAli ? 78 : 71),
             sampleSize: 6,
             detail: 'میانگین حجم تغییرات هر MR زیر ۲۵۰ خط کد',
             available: true
@@ -3716,9 +3709,9 @@ async function handleMockApi(path, options = {}) {
             key: 'reworkFree',
             label: 'برنچ تک‌نویسنده (بدون کامیت از فرد دیگر)',
             baseWeight: 5,
-            effectiveWeight: 5,
+            effectiveWeight: 4.3,
             confidence: 50,
-            score: isSara ? 85 : 80,
+            score: isSara ? 80 : (isAli ? 73 : 67),
             sampleSize: 5,
             detail: '۴ از ۵ MR به صورت کاملاً مستقل روی برنچ پوش شده',
             available: true
@@ -7305,8 +7298,12 @@ function renderAutoScore(a) {
   const hueOf = (i) => HUE[i % HUE.length];
 
   // ---- the composition bar: contributions end to end, then the shortfall
+  // Guard against a weight set that does not renormalise cleanly: without
+  // this the segments would overflow and the bar would read as full at any
+  // total above 100, hiding the shortfall entirely.
+  const scale = earned > 100 ? 100 / earned : 1;
   const segs = avail.map((c, i) => (
-    '<span class="comp-seg" style="--w:' + contrib(c).toFixed(2) + '%; background:' + hueOf(i) + '"' +
+    '<span class="comp-seg" style="--w:' + (contrib(c) * scale).toFixed(2) + '%; background:' + hueOf(i) + '"' +
       ' title="' + esc(c.label + ' — ' + Math.round(contrib(c)) + ' از ' + Math.round(c.effectiveWeight) + ' امتیاز ممکن') + '"></span>'
   )).join('');
   const lost = Math.max(0, 100 - earned);
@@ -7317,21 +7314,26 @@ function renderAutoScore(a) {
       '<div class="comp-head">' +
         '<span class="comp-dot" style="background:' + hueOf(i) + '"></span>' +
         '<span class="comp-label">' + esc(c.label) + '</span>' +
-        '<span class="comp-points">' +
-          '<b>' + Math.round(contrib(c)) + '</b>' +
-          '<span class="comp-of"> از ' + Math.round(c.effectiveWeight) + '</span>' +
-        '</span>' +
+        // Rounding both halves can make a component that scored 95 print as
+        // "17 of 17", which reads as perfect. When that collision would
+        // misrepresent, the contribution keeps a decimal.
+        (function () {
+          const pts = contrib(c), max = c.effectiveWeight;
+          const collide = Math.round(pts) === Math.round(max) && c.score < 100;
+          return '<span class="comp-points">' +
+            '<b>' + (collide ? pts.toFixed(1) : Math.round(pts)) + '</b>' +
+            '<span class="comp-of"> از ' + Math.round(max) + '</span>' +
+          '</span>';
+        })() +
       '</div>' +
-      // The track's own width is the component's effective weight, so every
-      // row is drawn on one shared 0-100 scale: the fill's actual length is
-      // the points contributed, directly comparable between rows and with the
-      // composition bar above. Equal-width tracks would have shown each
-      // component's score in isolation — which is the reading that made the
-      // old table unable to answer where the total came from.
-      '<div class="comp-rail">' +
-        '<div class="comp-track" style="--t:' + c.effectiveWeight + '%" title="' + esc('وزن مؤثر ' + c.effectiveWeight + '٪ — بیشترین امتیازی که این مؤلفه می‌توانست بدهد') + '">' +
-          '<span class="comp-fill" style="--w:' + c.score + '%; background:' + hueOf(i) + '" title="' + esc('نمره‌ی این مؤلفه ' + c.score + ' از ۱۰۰') + '"></span>' +
-        '</div>' +
+      // The bar spans the row and fills by this component's own score, which
+      // is exactly what the label beside it states: at "21 of 22 possible",
+      // the bar sits at 96%. Drawing it as a share of the whole 0-100 scale
+      // instead made a component that scored 96 show a bar a fifth of the way
+      // across, disagreeing with its own caption. Comparing contributions
+      // between components is the composition bar's job, not this one's.
+      '<div class="comp-track" title="' + esc('نمره‌ی این مؤلفه ' + c.score + ' از ۱۰۰ · وزن مؤثر ' + c.effectiveWeight + '٪') + '">' +
+        '<span class="comp-fill" style="--w:' + c.score + '%; background:' + hueOf(i) + '"></span>' +
       '</div>' +
       '<div class="comp-why">' + esc(c.detail) +
         (c.sampleSize
