@@ -882,6 +882,33 @@
     flex-shrink: 0;
     border: 1px solid var(--border-strong);
   }
+  /* Standing, shown on the avatar. A maintainer can sign off a review file —
+     including their own MR — which changes how their numbers should be read,
+     so it belongs next to the name rather than on the settings page.
+
+     The ring sits outside the avatar via box-shadow rather than a border, so
+     adding it does not change the element's size and the rows stay aligned
+     whatever mix of roles a team has. */
+  .avatar-sm.role-maintainer {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 3.5px var(--chart-1);
+    border-color: transparent;
+  }
+
+  /* Owner is a step further, not a different colour at the same weight: a
+     thicker double ring plus a gold cast, so the two are told apart at a
+     glance and by more than hue alone. */
+  .avatar-sm.role-owner {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px #f0b429, 0 0 10px -1px rgba(240, 180, 41, 0.55);
+    border-color: transparent;
+    background: linear-gradient(140deg, rgba(240, 180, 41, 0.22), var(--accent));
+    color: #fde68a;
+  }
+
+  /* The rail packs rows tightly; without a little room the rings would clip
+     against their neighbours. */
+  .dev-roster-item .avatar-sm.role-maintainer,
+  .dev-roster-item .avatar-sm.role-owner { margin: 2px; }
+
   .dev-name-col {
     display: flex;
     flex-direction: column;
@@ -5521,6 +5548,22 @@ function rosterAttentionCount(row) {
     (row.missingWorklogCount ? 1 : 0);
 }
 
+// Owner outranks maintainer, and both outrank nobody. Kept as one place so
+// the rail, the team table and anything later cannot grade them differently.
+function roleClass(d) {
+  const level = (d && d.accessLevel) || 0;
+  if (level >= 50) return 'role-owner';
+  if (level >= 40) return 'role-maintainer';
+  return '';
+}
+
+function roleTitle(d) {
+  const level = (d && d.accessLevel) || 0;
+  if (level >= 50) return ' title="' + esc('Owner — بالاترین سطح دسترسی در گیت‌لب') + '"';
+  if (level >= 40) return ' title="' + esc('Maintainer — می‌تواند فایل ریویو را امضا کند، از جمله روی MR خودش') + '"';
+  return '';
+}
+
 function initials(name) {
   const parts = String(name).replace(/[_.-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '؟';
@@ -5568,7 +5611,7 @@ function renderDevRoster() {
         ? '<span class="flag" title="' + attnCount + ' مورد نیازمند رسیدگی">' + attnCount + '</span>' : '';
       return '<div class="dev-roster-item ' + (DEV.selected === d.username ? 'active' : '') + '" data-username="' + esc(d.username) + '"' +
         ' tabindex="0" role="button" aria-pressed="' + (DEV.selected === d.username) + '">' +
-        '<span class="avatar-sm">' + esc(initials(d.name || d.username)) + '</span>' +
+        '<span class="avatar-sm ' + roleClass(d) + '"' + roleTitle(d) + '>' + esc(initials(d.name || d.username)) + '</span>' +
         '<span class="grow">' +
           '<span class="rn">' + esc(d.name || d.username) + '</span>' +
           '<span class="rh">@' + esc(d.username) + '</span>' +

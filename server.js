@@ -835,7 +835,22 @@ async function handleMaintainers(req, res, query) {
 async function handleDeveloperRoster(req, res, query) {
   try {
     const { value, at, fromCache } = await loadRoster({ force: query.get('refresh') === '1' });
-    return sendJson(res, 200, { authors: value, cachedAt: at, fromCache });
+    // Standing is attached here rather than left to the page to cross-check:
+    // this is the same list reviewSignoff gates on, so what the roster marks
+    // and what actually decides whose review file counts cannot drift apart.
+    // A failure to read it is not worth failing the roster over — everyone
+    // simply shows as a plain developer, which is what happened before.
+    let byUser = new Map();
+    try {
+      const m = await loadMaintainers();
+      byUser = new Map((m.value || []).map((x) => [x.username, x.access_level || 0]));
+    } catch (e) { /* roster still stands without it */ }
+
+    const authors = value.map((a) => {
+      const level = byUser.get(a.username) || 0;
+      return { ...a, accessLevel: level, role: level >= 50 ? 'owner' : level >= 40 ? 'maintainer' : 'developer' };
+    });
+    return sendJson(res, 200, { authors, cachedAt: at, fromCache });
   } catch (e) {
     return sendJson(res, 502, { error: e.message });
   }
