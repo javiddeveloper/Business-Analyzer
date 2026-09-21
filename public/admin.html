@@ -904,10 +904,12 @@
     color: #fde68a;
   }
 
-  /* The rail packs rows tightly; without a little room the rings would clip
-     against their neighbours. */
+  /* Both the rail and the team table pack rows tightly; without a little room
+     the rings clip against their neighbours and the row above. */
   .dev-roster-item .avatar-sm.role-maintainer,
-  .dev-roster-item .avatar-sm.role-owner { margin: 2px; }
+  .dev-roster-item .avatar-sm.role-owner,
+  .dev-avatar-cell .avatar-sm.role-maintainer,
+  .dev-avatar-cell .avatar-sm.role-owner { margin: 2px; }
 
   .dev-name-col {
     display: flex;
@@ -3101,12 +3103,16 @@ function mockDay(offset) {
   return d.toISOString().slice(0, 10);
 }
 
+// One of each standing, so the demo shows the ring the real roster cannot:
+// owners rarely author merge requests, so a live roster usually has none.
+// `accessLevel` and `role` are the fields the real endpoint now returns;
+// `access_level` stays for the settings page, which reads GitLab's own spelling.
 const MOCK_ROSTER = [
-  { id: 101, username: 'sara.ahmadi', name: 'سارا احمدی', role: 'Developer', access_level: 30 },
-  { id: 102, username: 'ali.rezaei', name: 'علی رضایی', role: 'Developer', access_level: 30 },
-  { id: 103, username: 'maryam.hosseini', name: 'مریم حسینی', role: 'Developer', access_level: 30 },
-  { id: 104, username: 'reza.karimi', name: 'رضا کریمی', role: 'Developer', access_level: 30 },
-  { id: 105, username: 'mehdi.shafiee', name: 'مهدی شفیعی', role: 'Developer', access_level: 30 }
+  { id: 101, username: 'sara.ahmadi', name: 'سارا احمدی', role: 'owner', accessLevel: 50, access_level: 50 },
+  { id: 102, username: 'ali.rezaei', name: 'علی رضایی', role: 'maintainer', accessLevel: 40, access_level: 40 },
+  { id: 103, username: 'maryam.hosseini', name: 'مریم حسینی', role: 'developer', accessLevel: 30, access_level: 30 },
+  { id: 104, username: 'reza.karimi', name: 'رضا کریمی', role: 'developer', accessLevel: 30, access_level: 30 },
+  { id: 105, username: 'mehdi.shafiee', name: 'مهدی شفیعی', role: 'developer', accessLevel: 30, access_level: 30 }
 ];
 
 const MOCK_TASKS = [
@@ -3578,7 +3584,18 @@ async function handleMockApi(path, options = {}) {
   }
 
   if (path === '/api/maintainers') {
-    return [{ id: 102, username: 'ali.rezaei', name: 'علی رضایی' }];
+    // Same shape the real endpoint returns, and the same two people the
+    // roster marks — a demo where the settings page and the avatars disagree
+    // about who can sign off a review is worse than one with no maintainers.
+    return {
+      maintainers: [
+        { id: 101, username: 'sara.ahmadi', name: 'سارا احمدی', access_level: 50, inRoster: true },
+        { id: 102, username: 'ali.rezaei', name: 'علی رضایی', access_level: 40, inRoster: true }
+      ],
+      includeMaintainers: true,
+      cachedAt: Date.now() - 6 * 60 * 1000,
+      fromCache: true
+    };
   }
 
   if (path.startsWith('/api/jira/epics')) {
@@ -5548,6 +5565,13 @@ function rosterAttentionCount(row) {
     (row.missingWorklogCount ? 1 : 0);
 }
 
+// The roster is the only payload carrying access levels, so anything that
+// renders a person by username resolves through it. The team table's rows come
+// from a different endpoint that has no reason to know about GitLab roles.
+function rosterEntry(username) {
+  return (DEV.roster || []).find((d) => d.username === username) || null;
+}
+
 // Owner outranks maintainer, and both outrank nobody. Kept as one place so
 // the rail, the team table and anything later cannot grade them differently.
 function roleClass(d) {
@@ -5680,7 +5704,8 @@ function teamCell(row, col) {
     const rawName = row.name || row.username || '??';
     const parts = rawName.trim().split(/\s+/);
     const initials = parts.length > 1 ? (parts[0][0] + parts[1][0]) : rawName.slice(0, 2);
-    return '<td class="who"><div class="dev-avatar-cell"><span class="avatar-sm">' + esc(initials.toUpperCase()) + '</span><div class="dev-name-col"><span class="dev-display-name">' + esc(rawName) + '</span><span class="dev-user-handle">@' + esc(row.username || '') + '</span></div>' + trend + '</div></td>';
+    const who = rosterEntry(row.username);
+    return '<td class="who"><div class="dev-avatar-cell"><span class="avatar-sm ' + roleClass(who) + '"' + roleTitle(who) + '>' + esc(initials.toUpperCase()) + '</span><div class="dev-name-col"><span class="dev-display-name">' + esc(rawName) + '</span><span class="dev-user-handle">@' + esc(row.username || '') + '</span></div>' + trend + '</div></td>';
   }
   const v = row[col.key];
   if (v == null) return '<td class="num zero">—</td>';
