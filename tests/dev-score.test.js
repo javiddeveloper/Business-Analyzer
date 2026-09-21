@@ -275,3 +275,34 @@ test('compute() leaves sentryReliability out entirely (redistributed, not zeroed
   const onTimeWithout = withoutIt.components.find((c) => c.key === 'onTime').effectiveWeight;
   assert.ok(onTimeWithout > onTimeWith, "dropping sentryReliability must redistribute its weight, not just delete it");
 });
+
+// ---- Story/Epic exclusion from time-logging judgment ---------------------
+// Regression: this exclusion existed in timeLogging() but nowhere else that
+// flags "missing worklog" used it — a Story reaching Done with no logged
+// hours (normal: the hours live on its sub-tasks) still counted as a real
+// problem everywhere outside the score itself.
+
+test('isStoryOrEpic recognises both types, case-insensitively, and nothing else', () => {
+  assert.equal(devScore.isStoryOrEpic({ type: 'Story' }), true);
+  assert.equal(devScore.isStoryOrEpic({ type: 'epic' }), true);
+  assert.equal(devScore.isStoryOrEpic({ type: 'Bug' }), false);
+  assert.equal(devScore.isStoryOrEpic({ type: 'Sub-task' }), false);
+  assert.equal(devScore.isStoryOrEpic({}), false);
+});
+
+test('needsTimeLog is true for a done Bug/Task but false for a done Story/Epic', () => {
+  assert.equal(devScore.needsTimeLog({ statusCategory: 'done', type: 'Bug' }), true);
+  assert.equal(devScore.needsTimeLog({ statusCategory: 'done', type: 'Task' }), true);
+  assert.equal(devScore.needsTimeLog({ statusCategory: 'done', type: 'Story' }), false);
+  assert.equal(devScore.needsTimeLog({ statusCategory: 'done', type: 'Epic' }), false);
+  assert.equal(devScore.needsTimeLog({ statusCategory: 'new', type: 'Bug' }), false, 'still gated on having reached Review/Done at all');
+});
+
+test('a done Story with no logged time neither counts against nor drops the sample size silently', () => {
+  const out = devScore.timeLogging([
+    { statusCategory: 'done', type: 'Task', spentHours: 5 },
+    { statusCategory: 'done', type: 'Story', spentHours: null }, // must not count as a miss
+  ]);
+  assert.equal(out.sampleSize, 1, 'the Story is not evidence either way, not a counted failure');
+  assert.equal(out.score, 100, 'one logged Task, zero misses');
+});

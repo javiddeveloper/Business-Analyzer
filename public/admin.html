@@ -8109,11 +8109,15 @@ function renderDeliveryMetrics(a) {
 }
 
 // A task that reached Review/Done with no logged hours — the same rule the
-// score uses (devScore.isReviewOrDone), so a card flagged here is exactly a
-// card costing points there.
+// score uses (devScore.needsTimeLog), so a card flagged here is exactly a
+// card costing points there. A Story/Epic is excluded: it's a container, not
+// something anyone logs hours against directly — the time lives on its
+// sub-tasks, so flagging the story itself would blame a hole that was never
+// its own to fill.
 function missingTimeLog(t) {
   const reached = t.statusCategory === 'done' || /review/i.test(String(t.status || ''));
-  return reached && !(t.spentHours > 0);
+  const isStoryOrEpic = /story|epic/i.test(String(t.type || ''));
+  return reached && !isStoryOrEpic && !(t.spentHours > 0);
 }
 
 // Which project the ticket belongs to. Jira's own project field when we have

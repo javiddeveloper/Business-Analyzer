@@ -82,3 +82,36 @@ test('the rollup sums what a manager can act on', () => {
   assert.equal(sum.overdue, 1);
   assert.equal(sum.scored, 2);
 });
+
+// Regression: buildRow's missingWorklogCount (and the 'no-worklog' reason
+// noteworthyTasks tags a card with) used to check only isReviewOrDone, not
+// devScore's own needsTimeLog — so a Story reaching Done with nothing logged
+// on it (normal: the hours are logged on its sub-tasks) was flagged as a
+// real problem here even though it never cost the person a single point in
+// their actual score.
+test('a done Story/Epic with no logged time is not counted as a missing worklog', () => {
+  const tasks = [
+    { statusCategory: 'done', type: 'Task', spentHours: 5 },
+    { statusCategory: 'done', type: 'Story', spentHours: null },
+    { statusCategory: 'done', type: 'Epic', spentHours: null },
+    { statusCategory: 'done', type: 'Bug', spentHours: null }, // this one is a real miss
+  ];
+  const row = teamOverview.buildRow({ username: 'a', analytics: analytics({ jiraTasks: tasks }), now: NOW });
+  assert.equal(row.missingWorklogCount, 1, 'only the Bug should count — the Story and Epic are containers, not evidence of a hole');
+});
+
+test("a done Story with no logged time does not get tagged 'no-worklog' among the noteworthy tasks", () => {
+  const tasks = [
+    { key: 'STORY-1', type: 'Story', statusCategory: 'done', spentHours: null, dueDate: null },
+    { key: 'BUG-1', type: 'Bug', statusCategory: 'done', spentHours: null, dueDate: null },
+  ];
+  const row = teamOverview.buildRow({ username: 'a', analytics: analytics({ jiraTasks: tasks }), now: NOW });
+  const story = row.tasks.find((t) => t.key === 'STORY-1');
+  const bug = row.tasks.find((t) => t.key === 'BUG-1');
+  // A done task with no reasons at all is dropped from the noteworthy list
+  // entirely (see noteworthyTasks) — so under the old bug the Story would
+  // have shown up here carrying 'no-worklog'; the fix means it never
+  // qualifies as noteworthy in the first place.
+  assert.equal(story, undefined, "a done Story with nothing else wrong must not be noteworthy — the old bug listed it for 'no-worklog'");
+  assert.ok(bug && bug.reasons.includes('no-worklog'), 'a real task with no logged time is still flagged');
+});
