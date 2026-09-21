@@ -3742,7 +3742,10 @@ async function handleMockApi(path, options = {}) {
       author,
       name: isAli ? 'علی رضایی' : (isSara ? 'سارا احمدی' : author),
       jiraConfigured: true,
-      jiraTasksTotal: 4,
+      // Fewer than the array below — a live Jira query is capped too, and
+      // the demo should show that badge ("نمایش N از M تسک") rather than
+      // hide the one case where the count and the list disagree on purpose.
+      jiraTasksTotal: 22,
       totalMRs: 14,
       reportedMRs: 12,
       roundTripMRs: 2,
@@ -3871,16 +3874,36 @@ async function handleMockApi(path, options = {}) {
         { name: 'Sprint 27', score: 83, taskCount: 6, loggedCount: 6, noTimeLogged: 0, doneCount: 6 },
         { name: 'Sprint 28', score: isSara ? 91 : (isAli ? 83 : 76), taskCount: 6, loggedCount: 5, noTimeLogged: 1, doneCount: 5 }
       ],
+      // One column per real Jira status (To Do / In Progress / In Review /
+      // Done), each carrying enough tasks to trigger every facet chip
+      // (بدون ثبت زمان، بدون MR، از سررسید گذشته) at least once — a demo
+      // where a whole column or a whole facet never appears is a demo that
+      // hides the exact cases this board exists to surface.
       jiraTasks: [
+        // -- To Do (not started — nothing has a worklog or a branch yet) --
+        { key: 'ORD-410', url: 'https://jira.example.com/browse/ORD-410', summary: 'Support partial refunds on split-payment orders', status: 'To Do', statusCategory: 'new', type: 'Story', priority: 'High', sprint: 'Sprint 28', storyPoints: 8, updated: mockDay(-3), dueDate: mockDay(-3), estimateHours: 10, spentHours: 0, hasMr: false, project: 'Cloud Billing', reasons: [] },
+        { key: 'SEC-330', url: 'https://jira.example.com/browse/SEC-330', summary: 'Add device-fingerprint check to login anomaly detection', status: 'To Do', statusCategory: 'new', type: 'Task', priority: 'Medium', sprint: 'Sprint 28', storyPoints: 5, updated: mockDay(-1), dueDate: mockDay(6), estimateHours: 5, spentHours: 0, hasMr: false, project: 'Identity Gateway', reasons: [] },
+        { key: 'NOTIF-118', url: 'https://jira.example.com/browse/NOTIF-118', summary: 'Batch digest emails instead of one per event', status: 'To Do', statusCategory: 'new', type: 'Task', priority: 'Low', sprint: 'Sprint 28', storyPoints: 3, updated: mockDay(-2), dueDate: mockDay(0), estimateHours: 3, spentHours: 0, hasMr: false, project: 'Nexus Core Platform', reasons: [] },
+        // -- In Progress --
+        { key: 'PERF-401', url: 'https://jira.example.com/browse/PERF-401', summary: 'Tiered Redis multi-region cluster connection pooling', status: 'In Progress', statusCategory: 'indeterminate', type: 'Task', priority: 'High', sprint: 'Sprint 28', storyPoints: 8, updated: mockDay(-1), dueDate: mockDay(-5), estimateHours: 20, spentHours: 24, hasMr: true, project: 'Nexus Core Platform', reasons: ['overdue'] },
+        { key: 'ORD-230', url: 'https://jira.example.com/browse/ORD-230', summary: 'Migrate checkout pipeline to event-driven saga orchestration', status: 'In Progress', statusCategory: 'indeterminate', type: 'Story', priority: 'High', sprint: 'Sprint 28', storyPoints: 13, updated: mockDay(-2), dueDate: mockDay(3), estimateHours: 16, spentHours: 0, hasMr: false, project: 'Nexus Core Platform', reasons: ['no-mr', 'no-worklog'] },
+        { key: 'SEC-310', url: 'https://jira.example.com/browse/SEC-310', summary: 'Enforce secret vault rotation on database cluster credentials', status: 'In Progress', statusCategory: 'indeterminate', type: 'Task', priority: 'High', sprint: 'Sprint 28', storyPoints: 5, updated: mockDay(-4), dueDate: mockDay(-4), estimateHours: 8, spentHours: 0, hasMr: false, project: 'Identity Gateway', reasons: ['overdue', 'no-mr', 'no-worklog'] },
+        { key: 'BILL-902', url: 'https://jira.example.com/browse/BILL-902', summary: 'Add proration handling for mid-cycle plan upgrades', status: 'In Progress', statusCategory: 'indeterminate', type: 'Task', priority: 'Medium', sprint: 'Sprint 28', storyPoints: 5, updated: mockDay(-1), dueDate: mockDay(4), estimateHours: 10, spentHours: 4, hasMr: true, project: 'Cloud Billing', reasons: [] },
+        // -- In Review --
         { key: 'AUTH-1042', url: 'https://jira.example.com/browse/AUTH-1042', summary: 'Implement OAuth2 PKCE Token Exchange and refresh rotation', status: 'In Review', statusCategory: 'indeterminate', type: 'Story', priority: 'High', sprint: 'Sprint 28', storyPoints: 5, updated: '2026-09-18T14:30:00Z', dueDate: mockDay(1), estimateHours: 8, spentHours: 6, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
+        { key: 'BILL-890', url: 'https://jira.example.com/browse/BILL-890', summary: 'Idempotent Stripe webhook handling without duplicate charges', status: 'In Review', statusCategory: 'indeterminate', type: 'Task', priority: 'Medium', sprint: 'Sprint 28', storyPoints: 8, updated: mockDay(0), dueDate: mockDay(2), estimateHours: 12, spentHours: 9, hasMr: true, project: 'Cloud Billing', reasons: [] },
+        { key: 'PERF-388', url: 'https://jira.example.com/browse/PERF-388', summary: 'Trim connection pool churn on the read replicas', status: 'In Review', statusCategory: 'indeterminate', dueDate: mockDay(-2), estimateHours: 4, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: false, updated: mockDay(-1) },
+        // -- Done --
         { key: 'AUTH-1038', url: 'https://jira.example.com/browse/AUTH-1038', summary: 'Migrate JWT RSA256 signature verification to Cloud KMS', status: 'Done', statusCategory: 'done', type: 'Task', priority: 'Medium', sprint: 'Sprint 27', storyPoints: 8, updated: '2026-09-12T10:15:00Z', dueDate: mockDay(-7), estimateHours: 16, spentHours: 14, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
         { key: 'AUTH-1035', url: 'https://jira.example.com/browse/AUTH-1035', summary: 'Implement session revocation blacklist in Redis cluster', status: 'Done', statusCategory: 'done', type: 'Task', priority: 'Medium', sprint: 'Sprint 27', storyPoints: 5, updated: '2026-09-08T18:00:00Z', dueDate: mockDay(-11), estimateHours: 12, spentHours: 12, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
         // Reached Done without a worklog — the case the "بدون ثبت زمان" facet,
         // the tab flag and the segmented copy all exist for.
         { key: 'AUTH-1031', url: 'https://jira.example.com/browse/AUTH-1031', summary: 'Rotate refresh-token signing keys on the auth cluster', status: 'Done', statusCategory: 'done', dueDate: mockDay(-6), estimateHours: 6, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 27', hasMr: true, updated: mockDay(-5) },
         { key: 'BILL-877', url: 'https://jira.example.com/browse/BILL-877', summary: 'Backfill failed SEPA settlement retries', status: 'Done', statusCategory: 'done', dueDate: mockDay(-8), estimateHours: 9, spentHours: 0, project: 'Cloud Billing', sprint: 'Sprint 27', hasMr: true, updated: mockDay(-7) },
-        { key: 'PERF-388', url: 'https://jira.example.com/browse/PERF-388', summary: 'Trim connection pool churn on the read replicas', status: 'In Review', statusCategory: 'indeterminate', dueDate: mockDay(-2), estimateHours: 4, spentHours: 0, project: 'Nexus Core Platform', sprint: 'Sprint 28', hasMr: false, updated: mockDay(-1) },
-        { key: 'AUTH-1029', url: 'https://jira.example.com/browse/AUTH-1029', summary: 'Configure audit logging on administrative login endpoints', status: 'Done', statusCategory: 'done', type: 'Improvement', priority: 'Low', sprint: 'Sprint 26', storyPoints: 3, updated: '2026-09-04T12:00:00Z', dueDate: mockDay(-15), estimateHours: 4, spentHours: 4, hasMr: true, project: 'Nexus Core Platform', reasons: [] }
+        { key: 'AUTH-1029', url: 'https://jira.example.com/browse/AUTH-1029', summary: 'Configure audit logging on administrative login endpoints', status: 'Done', statusCategory: 'done', type: 'Improvement', priority: 'Low', sprint: 'Sprint 26', storyPoints: 3, updated: '2026-09-04T12:00:00Z', dueDate: mockDay(-15), estimateHours: 4, spentHours: 4, hasMr: true, project: 'Nexus Core Platform', reasons: [] },
+        // Closed without ever going through a tracked MR — a hotfix pushed
+        // straight to the branch. The only "بدون MR" case the Done column had.
+        { key: 'PERF-395', url: 'https://jira.example.com/browse/PERF-395', summary: 'Optimize GIN indexing on audit events query table', status: 'Done', statusCategory: 'done', type: 'Task', priority: 'Medium', sprint: 'Sprint 27', storyPoints: 5, updated: mockDay(-10), dueDate: mockDay(-11), estimateHours: 10, spentHours: 8, hasMr: false, project: 'Nexus Core Platform', reasons: [] }
       ],
       monthlyRows: [
         { month: '1405-04', score: 85, mrCount: 5, taskCount: 6 },
