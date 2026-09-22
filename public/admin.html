@@ -389,14 +389,6 @@
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 
-  /* the vertical rules the sample puts between header clusters */
-  .hdr-sep {
-    width: 1px;
-    height: 24px;
-    background: var(--border);
-    flex-shrink: 0;
-    margin: 0 4px;
-  }
 
   .breadcrumbs {
     display: flex;
@@ -413,40 +405,21 @@
   /* below this the project picker starts sliding under the crumb */
   @media (max-width: 640px) { .breadcrumbs { display: none; } }
   .bc-root { color: var(--muted-foreground); }
-  .bc-sep { opacity: 0.4; transform: rotate(180deg); }
+  /* The icon itself is Lucide's ChevronLeft (‹) — on this RTL page the
+     deeper page (bc-current) sits visually to the left of the root, so a
+     left-pointing chevron is already correct. The 180° rotation this had
+     was flipping it into a right-pointing chevron, backwards for RTL. */
+  .bc-sep { opacity: 0.4; }
   .bc-current { color: var(--foreground); font-weight: 400; }
 
-  /* Command Search Hint Box in Header */
-  .header-command-box {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 32px;
-    width: 200px;
-    padding: 0 10px;
-    background: rgba(46, 46, 46, 0.5);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    color: var(--muted-foreground);
-    font-size: 12.5px;
-    font-weight: 400;
-    cursor: default;
-  }
-  .header-command-box > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  @media (max-width: 1500px) { .header-command-box { width: auto; } .header-command-box > span { display: none; } }
-  @media (max-width: 900px) { .header-command-box, .hdr-sep { display: none; } }
-  .kbd-chip {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    line-height: 1.6;
-    padding: 0 5px;
-    border-radius: var(--radius-sm);
-    background: var(--muted);
-    border: 1px solid var(--border);
-    color: var(--muted-foreground);
-    flex-shrink: 0;
-  }
 
+  /* One shared height for every toolbar item (the picker and the two
+     badges used to have different padding, so they lined up unevenly) and
+     no scrolling, ever: items shrink and ellipsize instead of overflowing.
+     Three items at their minimum widths always fit a real header — the
+     search box that used to force this row wider than it needed to be is
+     gone. */
+  :root { --toolbar-item-h: 30px; }
   .badges {
     display: flex;
     flex-wrap: nowrap;
@@ -454,25 +427,28 @@
     align-items: center;
     margin-inline-start: auto;
     min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    padding-block: 4px;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    overflow: hidden;
   }
-  .badges::-webkit-scrollbar { display: none; }
-  .badges > * { flex-shrink: 0; }
+  .badges > * { flex-shrink: 1; min-width: 0; }
 
   /* Project Picker Select */
   .project-picker {
+    height: var(--toolbar-item-h);
+    box-sizing: border-box;
     background: transparent;
     color: var(--foreground);
     border: 1px solid var(--input);
     border-radius: var(--radius-md);
-    padding: 6px 28px 6px 10px;
+    padding: 0 28px 0 10px;
     font-size: 12.5px;
     font-weight: 500;
     cursor: pointer;
-    max-width: 220px;
+    width: 180px;
+    min-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     appearance: none;
     -webkit-appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -490,10 +466,12 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    height: var(--toolbar-item-h);
+    box-sizing: border-box;
     background: transparent;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 3px 9px;
+    padding: 0 9px;
     font-size: 11.5px;
     font-weight: 500;
     color: var(--muted-foreground);
@@ -2962,17 +2940,6 @@
         <span class="bc-current" id="crumbCurrent">مرور کلی تیم و پروژه‌ها</span>
       </div>
 
-      <span class="hdr-sep"></span>
-
-      <span class="header-command-box">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.3-4.3"></path>
-        </svg>
-        <span>جست‌وجو…</span>
-        <kbd class="kbd-chip">⌘K</kbd>
-      </span>
-
       <div class="badges">
         <select class="project-picker" id="projectPicker" title="پروژه‌ی فعال — لیست MRها و ریویوها فقط همین پروژه را نشان می‌دهد"></select>
         <span class="badge" id="gitlabBadge"><span class="dot"></span> گیت‌لب: در حال بررسی…</span>
@@ -4677,10 +4644,16 @@ function renderStatus() {
   // regardless of escaping), so the tag is stripped rather than escaped;
   // escaping it just turned it into visible "<i ...>" text.
   const aiStateLabel = aiState.text.replace(/^<i[^>]*><\/i>\s*/, '');
+  // The toolbar chip gets a one- or two-word hint, not the full sentence —
+  // "(نصب‌شده — لاگین چک نشده)" inline made this the widest thing in the
+  // header by a wide margin. The full explanation still lives in the title
+  // tooltip below, one hover away.
+  const AI_STATE_SHORT = { ready: '', unverified: 'نامعلوم', 'not-installed': 'نصب‌نشده', 'missing-key': 'کلید ناقص' };
+  const shortLabel = AI_STATE_SHORT[ai.state] != null ? AI_STATE_SHORT[ai.state] : aiStateLabel;
   const aiBadge = document.getElementById('aiBadge');
   aiBadge.innerHTML =
     '<span class="dot ' + (ai.state === 'ready' ? 'ok' : ai.state === 'unverified' ? '' : 'warn') + '"></span> مدل: ' +
-    esc(ai.model || '—') + (ai.state === 'ready' ? '' : ' (' + esc(aiStateLabel) + ')');
+    esc(ai.model || '—') + (shortLabel ? ' (' + esc(shortLabel) + ')' : '');
   aiBadge.title = 'موتور فعال: ' + esc(ai.provider) + ' — ' + esc(aiStateLabel) + ' (برای تعویض کلیک کن)';
 
   document.getElementById('autoReview').checked = !!st.autoReview;
