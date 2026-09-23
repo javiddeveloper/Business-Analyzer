@@ -761,7 +761,9 @@
      exactly the header the sample's dashboard page renders above its cards. */
   .page-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
   .page-head-row { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-  .page-head-row .page-head { flex: 1; min-width: 0; }
+  /* A floor, so actions beside the title wrap below it rather than squeezing
+     the description into a five-line column. */
+  .page-head-row .page-head { flex: 1 1 320px; min-width: 0; }
   /* selects inherit width:100% from the form-input rule, which pushed the
      page actions onto their own line instead of sitting beside the title */
   .page-head-row select, .page-head-row input { width: auto; margin-bottom: 0; }
@@ -769,61 +771,56 @@
   .page-head h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
   .page-head p { margin: 0; font-size: 13.5px; color: var(--muted-foreground); line-height: 1.6; }
 
-  /* `grid gap-4 sm:grid-cols-2 lg:grid-cols-4` — a fixed column count, so
-     the row never resolves to the ragged 5-and-1 that auto-fit was giving. */
+  /* A fixed column count per breakpoint, so the row never resolves to the
+     ragged 5-and-1 that auto-fit gives. `.cols-6` is the home strip, `.cols-3`
+     the smaller summaries; the default is four. */
+  /* Tiles size themselves to the space the row actually has (a pane beside
+     the roster rail is far narrower than the window), so four or five of
+     them sit on one line when they fit instead of breaking 2+2+1. The home
+     strip keeps fixed breakpoints: six tiles going 5+1 read as a mistake. */
   .kpi-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
   }
-  @media (max-width: 1200px) { .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 620px)  { .kpi-row { grid-template-columns: 1fr; } }
+  .kpi-row.cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .kpi-row.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 1280px) { .kpi-row.cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 760px)  { .kpi-row.cols-6, .kpi-row.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 480px)  { .kpi-row, .kpi-row.cols-6, .kpi-row.cols-3 { grid-template-columns: 1fr; } }
 
-  /* SectionCards: Card > CardContent.space-y-4 — icon + state pill on one
-     row, then label / value / sub stacked underneath. */
+  /* A stat tile: label, number, one line of context. The state (bad / warn /
+     good) is carried by the number's colour and a thin accent on the
+     inline-start edge — the old icon + "هشدار" pill on every card said the
+     same thing three times and doubled the card's height. */
   .kpi {
+    position: relative;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: 24px;
+    border-radius: var(--radius-lg);
+    padding: 14px 16px 14px;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 4px;
+    overflow: hidden;
     transition: border-color 0.15s;
   }
   .kpi:hover { border-color: var(--border-strong); }
-
-  .kpi-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+  .kpi::before {
+    content: '';
+    position: absolute;
+    inset-block: 10px;
+    inset-inline-start: 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: transparent;
   }
-  .kpi-icon { width: 22px; height: 22px; color: var(--muted-foreground); flex-shrink: 0; }
-
-  /* `<Badge variant="outline">` with the green/red tint the sample applies
-     to its growth pill. The state lives here now, not in the number. */
-  .kpi-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    padding: 1px 8px;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--muted-foreground);
-    white-space: nowrap;
-  }
-  .kpi-pill svg { width: 12px; height: 12px; }
-  .kpi-pill.good { border-color: rgba(45, 212, 167, 0.35); background: rgba(45, 212, 167, 0.10); color: #4ade9f; }
-  .kpi-pill.warn { border-color: rgba(240, 180, 41, 0.35); background: rgba(240, 180, 41, 0.10); color: #fbbf24; }
-  .kpi-pill.bad  { border-color: rgba(244, 63, 94, 0.35);  background: rgba(244, 63, 94, 0.10);  color: #fb7185; }
-
-  .kpi-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .kpi.bad::before  { background: #f43f5e; }
+  .kpi.warn::before { background: #f0b429; }
+  .kpi.good::before { background: #2dd4a7; }
   .kpi .l {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--muted-foreground);
     line-height: 1.5;
@@ -834,17 +831,24 @@
     color: var(--foreground);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
-    line-height: 1.25;
+    line-height: 1.2;
   }
+  .kpi.bad .n  { color: #fb7185; }
+  .kpi.warn .n { color: #fbbf24; }
+  .kpi.good .n { color: #4ade9f; }
   .kpi .n small {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--muted-foreground);
     font-weight: 600;
   }
   .kpi .sub {
-    font-size: 12.5px;
+    font-size: 11.5px;
     color: var(--muted-foreground);
-    line-height: 1.6;
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .kpi.quiet .n { color: var(--dim); }
 
@@ -869,30 +873,174 @@
     font-size: 12.5px;
   }
   .team-table th, .team-table td {
-    padding: 10px 12px;
+    padding: 10px 10px;
     border-bottom: 1px solid var(--border);
-    text-align: right;
+    text-align: center;
     white-space: nowrap;
+    vertical-align: middle;
   }
+  .team-table tbody tr:last-child td { border-bottom: none; }
   .team-table th {
-    font-family: var(--font-mono);
     color: var(--muted-foreground);
-    font-weight: 600;
-    font-size: 10.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+    font-size: 11.5px;
+    line-height: 1.4;
+    white-space: normal;
+    min-width: 56px;
+    padding-top: 0;
     cursor: pointer;
     user-select: none;
   }
-  .team-table th.on { color: var(--cyan); }
+  .team-table th:first-child, .team-table td.who { text-align: start; }
+  .team-table th:hover { color: var(--foreground); }
+  .team-table th.on { color: var(--foreground); }
+  .team-table th.on::after { content: ' ▾'; color: var(--cyan); }
   .team-table td.num { font-variant-numeric: tabular-nums; }
   .team-table tbody tr { cursor: pointer; transition: background 0.15s; }
   .team-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
   .team-table .who { font-weight: 600; white-space: normal; color: var(--foreground); }
-  .team-table .zero { color: var(--dim); }
-  .team-table .hot { color: var(--red); font-weight: 700; }
-  .team-table .warm { color: var(--amber); font-weight: 700; }
+  .team-table .zero { color: var(--dim); opacity: 0.6; }
+  /* A count that is a problem gets a tinted chip; everything else stays
+     plain text, so the eye goes to the three or four cells that matter
+     instead of a table where every other number is bold and coloured. */
+  .cnt {
+    display: inline-block;
+    min-width: 26px;
+    padding: 1px 7px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .cnt.hot  { background: rgba(244, 63, 94, 0.14); color: #fb7185; }
+  .cnt.warm { background: rgba(240, 180, 41, 0.12); color: #fbbf24; }
+  .cell-sub { display: block; font-size: 10.5px; color: var(--muted-foreground); margin-top: 2px; font-weight: 400; }
+  .cell-sub.hot { color: #fb7185; }
+  /* Hours this week against the capacity so far: the number, then a thin bar. */
+  .hbar { display: inline-flex; flex-direction: column; align-items: stretch; gap: 3px; min-width: 64px; }
+  .hbar-track { height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+  .hbar-fill { height: 100%; border-radius: 4px; background: var(--chart-2); }
+  .hbar.low .hbar-fill { background: #f0b429; }
+  .hbar.low .hbar-num { color: #fbbf24; }
+  .hbar-num { font-size: 12px; font-weight: 600; direction: ltr; unicode-bidi: isolate; }
+  .hbar-num small { color: var(--muted-foreground); font-weight: 400; }
+  /* "Who to look at first" as a bar, not a bare 706 nobody can interpret. */
+  .attn-bar { display: inline-block; width: 56px; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.07); overflow: hidden; vertical-align: middle; }
+  .attn-bar > span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #f0b429, #f43f5e); }
+
+  /* ---- Entrance (playReveal) ----
+     Each block rises a few pixels and fades in, 55ms after the one before
+     it. The final keyframe is `transform: none`, not a zero translate: a
+     leftover transform would make every card a containing block for the
+     fixed-position date picker inside it. */
+  @keyframes reveal-up {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* Not `.reveal`: that name already belongs to the secret field's eye
+     button (position: absolute), and sharing it pulled every card on the
+     page out of the flow into one overlapping pile. */
+  /* `backwards`, not `both`: a filled-forward animation keeps its effect
+     applied after it ends, and an applied transform — even `none` computed
+     as an identity matrix — makes every animated card its own stacking
+     context. The date picker's popup was then trapped inside its header's
+     context and painted *under* the tiles that follow it in the page.
+     `backwards` still holds the hidden first frame through the stagger delay
+     and leaves nothing behind once the entrance is over. */
+  .reveal-in {
+    animation: reveal-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: calc(var(--ri, 0) * 55ms);
+  }
+  /* And for the half-second the entrance is running (or any other stacking
+     context an ancestor happens to create): whatever holds an open picker
+     is lifted above its siblings. */
+  .page > :has(.jdp-pop:not([hidden])),
+  .reveal-in:has(.jdp-pop:not([hidden])) { position: relative; z-index: 90; }
+  /* While a page waits for its data, its body stays invisible rather than
+     painting piecemeal and then replaying as an entrance. */
+  .reveal-wait > :not(.home-head):not(.page-head-row):not(.page-head) { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-in { animation: none; }
+    .reveal-wait > * { opacity: 1 !important; }
+  }
+
+  /* ---- Home ---- */
+  .home-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .home-head .page-head { margin: 0; flex: 1 1 320px; }
+  /* One compact row of controls beside the title — it used to be a whole
+     card with its own heading and a lone "کامل" tag in the corner. */
+  .filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .filter-bar .jdp-field { min-width: 0; margin: 0; }
+  .filter-bar .jdp-field > label { display: none; }
+  .filter-bar .jdp-btn { height: 34px; min-width: 120px; padding: 0 10px; font-size: 12.5px; }
+  .filter-bar button { height: 34px; padding: 0 12px; font-size: 12.5px; }
+  .filter-bar .fb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 2px; }
+  .load-state { font-size: 11.5px; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 6px; }
+  .load-state .dot { width: 6px; height: 6px; border-radius: 50%; background: #2dd4a7; }
+  .load-state.busy .dot { background: #f0b429; animation: pulse 1s ease-in-out infinite; }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .card-head h4 { margin: 0; font-size: 15px; font-weight: 600; }
+  .card-head .hint { font-size: 12px; color: var(--muted-foreground); }
+  .table-scroll { overflow-x: auto; margin: 0 -8px; padding: 0 8px; }
+  .table-foot { font-size: 11px; color: var(--muted-foreground); margin-top: 12px; display: flex; gap: 6px; align-items: center; }
+
+  /* Task list: one row per ticket instead of a two-column wall of cards,
+     each with a white owner button and eight chips. Columns line up, so the
+     eye can run down "owner" or "late by" without reading every card. */
+  .tl { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .tl-row {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) 150px 108px 92px 96px;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+  }
+  .tl-row:last-child { border-bottom: none; }
+  .tl-row:hover { background: rgba(255, 255, 255, 0.025); }
+  .tl-head { font-size: 11px; color: var(--muted-foreground); background: rgba(255, 255, 255, 0.02); padding-block: 7px; }
+  .tl-head:hover { background: rgba(255, 255, 255, 0.02); }
+  .tl-title { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .tl-title a { color: var(--foreground); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+  .tl-title a:hover { color: var(--cyan); text-decoration: none; }
+  .tl-title .tl-sub { font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-owner {
+    display: inline-flex; align-items: center; gap: 6px; min-width: 0;
+    background: none; border: none; padding: 0; height: auto;
+    color: var(--muted-foreground); font-size: 12px; font-weight: 400; cursor: pointer;
+  }
+  .tl-owner:hover { color: var(--foreground); background: none; }
+  .tl-owner .av {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(255, 255, 255, 0.08); color: var(--foreground); font-size: 10px; font-weight: 600;
+  }
+  .tl-owner .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-cell { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
+  .tl-late { font-size: 11.5px; font-weight: 600; color: #fb7185; font-variant-numeric: tabular-nums; }
+  .tl-due { font-size: 11.5px; color: var(--muted-foreground); }
+  .tl-flag { font-size: 10.5px; color: #fbbf24; }
+  .tl-hours { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+  .mr-link { direction: ltr; unicode-bidi: isolate; }
+  .tl-more { display: flex; justify-content: center; padding: 10px; }
+  .tl-more button { font-size: 12px; height: 32px; }
+  .people-filter { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+  .pf-chip {
+    height: 28px; padding: 0 10px; border-radius: var(--radius-full);
+    background: transparent; border: 1px solid var(--border); color: var(--muted-foreground);
+    font-size: 12px; font-weight: 400;
+  }
+  .pf-chip:hover { background: var(--accent); color: var(--foreground); }
+  .pf-chip.on { background: var(--accent); border-color: var(--border-strong); color: var(--foreground); }
+  .pf-chip .c { opacity: 0.6; font-size: 11px; margin-inline-start: 4px; font-variant-numeric: tabular-nums; }
+  /* Narrow: key + title on the first line, owner / status / MR / due
+     flowing on the second — not one field per line. */
+  @media (max-width: 1100px) {
+    .tl-row.tl-head { display: none; }
+    .tl-row { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+    .tl-row > .tl-title { flex: 1 1 calc(100% - 110px); }
+    .tl-row > .tl-owner, .tl-row > .tl-cell { flex: 0 0 auto; }
+  }
 
   /* Avatar Cell in Table */
   .dev-avatar-cell {
@@ -1016,11 +1164,14 @@
 
   /* Attention List */
   .attn { display: flex; flex-direction: column; gap: 6px; }
+  /* Icon in its own narrow column, title and reason stacked beside it — as a
+     wrapping flex row the long title pushed onto a new line and left the
+     icon alone above it. */
   .attn-item {
-    display: flex;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 2px 8px;
     border: 1px solid var(--border);
     border-inline-start-width: 3px;
     border-radius: var(--radius-sm);
@@ -1030,8 +1181,9 @@
   }
   .attn-item.high { border-inline-start-color: var(--red); }
   .attn-item.mid  { border-inline-start-color: var(--amber); }
-  .attn-item .why { color: var(--muted-foreground); font-size: 11px; }
-  .attn-item .grow { flex: 1 1 auto; min-width: 0; }
+  .attn-item .why { grid-column: 2; color: var(--muted-foreground); font-size: 11px; }
+  .attn-item .grow { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .attn-item > :not(.grow):not(.why):not(:first-child) { grid-column: 2; }
   .attn-empty {
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
@@ -1061,6 +1213,14 @@
     transition: border-color 0.15s, transform 0.15s;
   }
   .task-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  /* The developer page's ticket list: one column, two lines per ticket. */
+  .task-cards.compact { display: flex; flex-direction: column; gap: 6px; }
+  .task-cards.compact .task-card { gap: 6px; padding: 10px 14px; }
+  .task-cards.compact .task-card:hover { transform: none; }
+  .task-cards.compact .task-title { direction: inherit; text-align: right; }
+  .task-cards.compact .task-meta { gap: 6px 8px; }
+  .task-cards.compact .task-meta > .task-foot { margin-inline-start: auto; gap: 2px 10px; }
+  .task-cards.compact .task-foot > span + span::before { content: '·'; margin-inline-end: 10px; color: var(--border-strong); }
   .task-card.needs-worklog { border-color: rgba(245, 158, 11, 0.4); }
   .task-card.needs-worklog .task-title { font-weight: 600; }
   .task-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -1124,6 +1284,9 @@
   .branch-pill.develop { background: rgba(16, 185, 129, 0.15); color: #34d399; }
   .branch-pill.other   { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
   .task-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     background: rgba(168, 85, 247, 0.15);
     color: #c084fc;
     border-radius: var(--radius-sm);
@@ -1132,7 +1295,12 @@
     font-family: var(--font-mono);
     direction: ltr;
     unicode-bidi: isolate;
-    display: inline-block;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+  }
+  a.task-pill:hover {
+    background: rgba(168, 85, 247, 0.25);
+    text-decoration: none;
   }
 
   /* Merge Requests View */
@@ -1156,6 +1324,18 @@
     margin: 0 0 10px;
   }
   .settings-row { display: flex; flex-wrap: wrap; gap: 14px 20px; }
+  .settings-fold, .page > .card.settings-fold { padding: 0; }
+  .settings-fold > summary {
+    list-style: none; cursor: pointer; user-select: none;
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 18px; font-size: 13px; font-weight: 600;
+  }
+  .settings-fold > summary::-webkit-details-marker { display: none; }
+  .settings-fold > summary::after { content: '▾'; margin-inline-start: auto; color: var(--muted-foreground); transition: transform 0.15s; }
+  .settings-fold[open] > summary::after { transform: rotate(180deg); }
+  .settings-fold > summary .fold-hint { font-size: 11.5px; font-weight: 400; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .settings-fold > .settings-row { padding: 4px 18px 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+  #mrError:empty { display: none; }
 
   .mr-body { display: flex; gap: 16px; align-items: flex-start; min-width: 0; }
   .tabs {
@@ -1290,6 +1470,11 @@
     max-height: calc(100vh - 100px);
   }
   @media (max-width: 1000px) { .dev-rail { position: static; max-height: none; } }
+  /* Stacked above the page, a one-per-line roster was a full screen of
+     names before anyone's data; as a grid it is two short rows. */
+  @media (max-width: 1000px) {
+    .dev-rail .dev-roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px; }
+  }
 
   .dev-rail-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .dev-rail-title { font-size: 13px; font-weight: 600; }
@@ -1331,6 +1516,18 @@
     direction: ltr; text-align: start;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  /* This week's logged hours against what the week has offered so far —
+     amber once it falls under three quarters of that, so a gap is visible
+     from the list without opening anyone. */
+  .dev-roster-item .rhours {
+    font-size: 10.5px; color: var(--muted-foreground);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dev-roster-item .rhours.low { color: var(--amber); }
+
+  /* ساعت کارکرد pane */
+  .hours-note { font-size: 12px; color: var(--muted-foreground); margin: 4px 0 10px; }
+  .hours-note.warn { color: var(--amber); }
   .dev-roster-item .flag {
     font-size: 10px; font-weight: 600;
     color: #fb7185;
@@ -1345,19 +1542,33 @@
   .dev-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 
   /* Dev hero — identity, the one number, and the caveat that number needs */
+  /* Ring | who and the chips | the three actions, stacked. As a wrapping flex
+     row, the actions stole the middle column's width at ordinary sizes and
+     the chips fell into a one-per-line tower. Sized off the pane itself
+     (container query), not the window — the roster rail takes 280px of it. */
+  .dev-main { container: devmain / inline-size; }
   .dev-hero {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 18px;
-    flex-wrap: wrap;
+    gap: 14px 20px;
   }
-  .hero-id { flex: 1 1 260px; min-width: 0; }
+  .hero-id { min-width: 0; }
   .hero-name { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .hero-meta { font-size: 12px; color: var(--muted-foreground); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-meta { font-size: 12px; color: var(--muted-foreground); margin-top: 4px; display: flex; gap: 6px 12px; flex-wrap: wrap; align-items: center; }
+  .hero-meta .tag { font-size: 11px; }
+  .hero-how { cursor: help; border-bottom: 1px dotted currentColor; }
   .hero-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-  .hero-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-inline-start: auto; }
+  .hero-actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+  .hero-actions button { height: 32px; font-size: 12px; padding: 0 12px; justify-content: flex-start; }
+  @container devmain (max-width: 720px) {
+    .dev-hero { grid-template-columns: auto minmax(0, 1fr); }
+    .hero-actions { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+  }
+  .dev-tabbar .seg { width: 100%; }
+  .page-head-row > .filter-bar { margin-inline-start: auto; }
   .hero-caveat {
-    flex: 1 1 100%;
+    grid-column: 1 / -1;
     font-size: 11.5px;
     color: var(--muted-foreground);
     line-height: 1.7;
@@ -1463,6 +1674,9 @@
   .seg-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
 
   .dev-tabbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  /* Wrap rather than scroll: a scrolled tab strip hid its last tab behind
+     the card edge with nothing to say it was there. */
+  .dev-tabbar .seg { flex-wrap: wrap; overflow: visible; }
 
   /* ---- Chart cards: CardHeader (title + description + action) over a plot.
      Mirrors ChartAreaInteractive in the sample. */
@@ -1485,7 +1699,9 @@
     gap: 14px;
   }
   .chart-head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-  .chart-heading { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  /* A floor on the heading's width: without one, a range toggle beside it
+     squeezed a two-line description into a ten-line column. */
+  .chart-heading { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
   .chart-title { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--foreground); }
   .chart-desc { font-size: 12px; line-height: 1.6; color: var(--muted-foreground); }
   .chart-action { flex-shrink: 0; }
@@ -1510,11 +1726,13 @@
   }
 
   /* ---- Horizontal Tabs (Months/Sprints) — kept for the task panes */
+  /* Wrap, don't scroll: a sideways-scrolling strip hid its last tabs (and a
+     scrollbar sat under the first row) with nothing to say they were there. */
   .htabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 8px;
+    padding-bottom: 10px;
     margin-bottom: 14px;
     border-bottom: 1px solid var(--border);
   }
@@ -2190,20 +2408,25 @@
        live. Moving it up would only trade that for covering the nav items;
        the left corner is over the content panel, which scrolls away under it
        rather than being permanently hidden by it. */
-    left: 16px;
-    bottom: 16px;
+    /* One quiet line rather than a two-line card: at 320px wide it sat on
+       top of whatever the content panel had in that corner. */
+    left: 12px;
+    bottom: 10px;
     z-index: 90;
-    max-width: min(320px, calc(100vw - 32px));
-    padding: 8px 12px;
-    border-radius: var(--radius-lg);
+    max-width: calc(100vw - 24px);
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
     border: 1px solid var(--border);
-    background: rgba(26, 26, 26, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: #d4d4d4;
-    font-size: 11px;
+    background: rgba(20, 20, 20, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #a3a3a3;
+    font-size: 10.5px;
     line-height: 1.6;
-    box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    display: flex;
+    gap: 6px;
+    opacity: 0.85;
     /* It floats over the page, so it must never swallow a click meant for
        whatever sits underneath it. */
     pointer-events: none;
@@ -2237,12 +2460,14 @@
   /* Settings Page */
   .settings-page { display: flex; flex-direction: column; gap: 14px; }
   .settings-page-head { border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+  /* Wraps instead of scrolling — the last settings tab was cut off at the
+     card edge behind a thin scrollbar. */
   .panel-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     margin-bottom: 12px;
     border-bottom: 1px solid var(--border);
-    overflow-x: auto;
   }
   .panel-tab {
     background: transparent;
@@ -2259,6 +2484,21 @@
   }
   .panel-tab:hover { color: var(--foreground); background: transparent; }
   .panel-tab.active { color: var(--foreground); border-bottom-color: var(--foreground); font-weight: 600; }
+
+  /* "@user" handles are Latin inside an RTL line: isolated, or the @ lands
+     on the wrong end ("sara.ahmadi@"). */
+  .maint-user, .dev-user-handle { direction: ltr; unicode-bidi: isolate; text-align: right; }
+
+  .file-pick { flex: 1; min-width: 180px; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; }
+  .file-pick input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .file-pick-btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+    border: 1px dashed var(--border-strong); border-radius: var(--radius-md);
+    font-size: 12.5px; color: var(--foreground); white-space: nowrap;
+  }
+  .file-pick:hover .file-pick-btn { background: var(--accent); }
+  .file-pick:focus-within .file-pick-btn { outline: 2px solid var(--ring, var(--cyan)); outline-offset: 2px; }
+  .file-pick-name { font-size: 12px; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
   .settings-panel { display: flex; flex-direction: column; gap: 12px; }
   .settings-panel[hidden] { display: none !important; }
@@ -2453,7 +2693,7 @@
   .sentry-item.lvl-warning { border-inline-start-color: var(--amber); }
   .sentry-item.lvl-info, .sentry-item.lvl-debug { border-inline-start-color: var(--dim); }
   .sentry-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .sentry-title { flex: 1; min-width: 0; font-weight: 600; word-break: break-word; color: var(--foreground); text-decoration: none; font-size: 13px; }
+  .sentry-title { flex: 1; min-width: 0; font-weight: 600; word-break: break-word; color: var(--foreground); text-decoration: none; font-size: 13px; text-align: right; }
   .sentry-title:hover { color: var(--cyan); text-decoration: none; }
   .sentry-level {
     border-radius: var(--radius-full);
@@ -2468,7 +2708,14 @@
   .sentry-level.lvl-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
   .sentry-level.lvl-info, .sentry-level.lvl-debug { background: rgba(255, 255, 255, 0.08); color: var(--muted-foreground); }
   .sentry-culprit { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; word-break: break-all; }
-  .sentry-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dim); margin-top: 6px; }
+  .sentry-meta { display: flex; gap: 6px 12px; flex-wrap: wrap; align-items: center; font-size: 11px; color: var(--dim); margin-top: 6px; }
+  .sentry-actions { display: inline-flex; gap: 6px; margin-inline-start: auto; }
+  /* Tags had no style of their own and ran together as one string
+     ("Java 21region: eu-west-1server: …"). */
+  .sentry-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  .sentry-tags .tag { direction: ltr; unicode-bidi: isolate; }
+  .sentry-detail .sentry-resolve { margin-inline-start: auto; height: 30px; font-size: 12px; }
+  .sentry-actions button, .sentry-actions .jira-badge { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; font-size: 11.5px; }
   .sentry-stack {
     background: var(--background);
     border: 1px solid var(--border);
@@ -2757,6 +3004,43 @@
 
   /* Misc helpers */
   .empty { color: var(--dim); padding: 20px 0; text-align: center; font-size: 13px; }
+
+  /* ---- Watermark empty state ---- */
+  .empty-wm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 60px 24px;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+  }
+  .empty-wm .wm-icon {
+    opacity: 0.08;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    filter: blur(0.3px);
+  }
+  .empty-wm .wm-icon svg { display: block; width: 100%; height: 100%; }
+  .empty-wm .wm-text {
+    color: var(--muted-foreground);
+    font-size: 13.5px;
+    line-height: 1.65;
+    max-width: 300px;
+    opacity: 0.75;
+  }
+  /* card that wraps an empty-wm: full height and centered */
+  .card.empty-wm-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+    flex: 1;
+  }
   .error-box { background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35); color: #fecdd3; border-radius: var(--radius-sm); padding: 10px; font-size: 12.5px; }
   .group-title { font-size: 12px; font-weight: 600; color: var(--foreground); margin: 10px 0 2px; }
   .save-state { font-size: 11.5px; color: var(--muted-foreground); }
@@ -2773,6 +3057,10 @@
        scrolls sideways if it must, the same pattern .badges already uses
        for the same reason. */
     .side-nav {
+      /* flex-basis too: the desktop rule's `flex: 0 0 256px` was a width, and
+         once the layout turns into a column it became a 256px-tall bar with
+         one row of icons floating in the middle of it. */
+      flex: 0 0 auto;
       width: 100%; height: auto; position: static; min-height: 0;
       border-inline-end: none; border-bottom: 1px solid var(--border);
       flex-direction: row; flex-wrap: nowrap; align-items: center;
@@ -2956,9 +3244,12 @@
 
       <!-- ---- home: the team at a glance, then the work itself ---- -->
       <section class="page" id="homePage" hidden>
-        <div class="page-head">
-          <h1>داشبورد</h1>
-          <p>مرور کلی تیم، کد ریویو و تسک‌های در جریان</p>
+        <div class="home-head">
+          <div class="page-head">
+            <h1>داشبورد</h1>
+            <p>مرور کلی تیم، کد ریویو و تسک‌های در جریان</p>
+          </div>
+          <div id="homeFilters" class="filter-bar"></div>
         </div>
         <div id="homeTeam"><div class="card"><div class="empty">در حال بارگذاری…</div></div></div>
         <div id="homeTasks"></div>
@@ -2966,20 +3257,24 @@
 
       <!-- ---- merge requests ---- -->
       <section class="page" id="mrPanelWrap" hidden>
-        <div class="page-head">
-          <h1>کد ریویو</h1>
-          <p>Merge Requestهای باز پروژه‌ی فعال و گزارش ریویوی هرکدام</p>
+        <!-- Title and the two controls used every day on one row; the six
+             review options fold away underneath, since they are set once and
+             were pushing the MR list itself below the fold. -->
+        <div class="page-head-row">
+          <div class="page-head">
+            <h1>کد ریویو</h1>
+            <p>Merge Requestهای باز پروژه‌ی فعال و گزارش ریویوی هرکدام</p>
+          </div>
+          <div class="row" style="gap:8px">
+            <label class="switch-badge" id="autoReviewLabel" title="با روشن بودن این، هر MR باز به‌صورت خودکار (بدون کلیک دستی) ریویو می‌شود">
+              <span class="switch"><input type="checkbox" id="autoReview" /><span class="track"></span><span class="thumb"></span></span>
+              <i class="ico i-refresh ico-cyan"></i> ریویوی خودکار
+            </label>
+            <button class="btn-refresh" id="refreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی لیست MRها</button>
+          </div>
         </div>
-        <div class="card">
-        <div class="row" style="justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px">
-          <label class="switch-badge" id="autoReviewLabel" title="با روشن بودن این، هر MR باز به‌صورت خودکار (بدون کلیک دستی) ریویو می‌شود">
-            <span class="switch"><input type="checkbox" id="autoReview" /><span class="track"></span><span class="thumb"></span></span>
-            <i class="ico i-refresh ico-cyan"></i> ریویوی خودکار
-          </label>
-          <button class="btn-refresh" id="refreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی لیست MRها</button>
-        </div>
-        <div class="settings-group">
-          <p class="settings-group-title">تنظیمات ریویو</p>
+        <details class="card settings-fold">
+          <summary><i class="ico i-settings ico-muted"></i> تنظیمات ریویو <span class="fold-hint">کامنت خطی، Draftها، Approve خودکار، حالت ایجنت، پوش گزارش</span></summary>
           <div class="settings-row">
             <label class="check"><input type="checkbox" id="setInline" /> کامنت خطی روی همان خط کد</label>
             <label class="check"><input type="checkbox" id="setSkipDrafts" /> رد کردن MRهای Draft در حالت خودکار</label>
@@ -2988,9 +3283,8 @@
             <label class="check"><input type="checkbox" id="setAgentMode" title="فقط با موتور claude-cli: MR در یک worktree جدا چک‌اوت می‌شود و ایجنت خودش کل پروژه را می‌گردد (فایل‌های مرتبط، صداکننده‌ها، تست‌ها) — نه فقط دیف. چک‌اوت خودت دست نمی‌خورد." /> <i class="ico i-bot ico-violet"></i> ریویوی کل پروژه با ایجنت (claude-cli)</label>
             <label class="check"><input type="checkbox" id="setPushReport" title="بعد از هر ریویو، فایل review/MR-<iid>.md را با API گیت‌لب مستقیم روی شاخه‌ی خودِ همان MR کامیت می‌کند (نه روی چک‌اوت محلی). بدون این، فایل فقط در کپی محلی نوشته می‌شود و به MR نمی‌رسد مگر دستی کامیتش کنی." /> <i class="ico i-upload ico-cyan"></i> پوش گزارش روی شاخه‌ی MR</label>
           </div>
-        </div>
+        </details>
         <div id="mrError"></div>
-        </div>
         <div class="card mr-body">
           <div class="tabs" id="tabs"></div>
           <div class="mr-content" id="mrPanel"><div class="empty">در حال بارگذاری…</div></div>
@@ -3024,7 +3318,10 @@
             <h1>آنالیز افراد تیم</h1>
             <p>یک نفر را انتخاب کن تا کارنامه‌ی کامل او در همه‌ی پروژه‌ها باز شود. حلقه‌ی دور آواتار نقش گیت‌لبی فرد را نشان می‌دهد — نیلی Maintainer، طلایی Owner.</p>
           </div>
-          <button class="ghost" id="devBackBtn">← بازگشت به خانه</button>
+          <div class="filter-bar">
+            <div id="devFilters" class="filter-bar"></div>
+            <button class="ghost" id="devBackBtn">← بازگشت به خانه</button>
+          </div>
         </div>
         <div class="dev-layout">
           <aside class="card dev-rail">
@@ -3040,7 +3337,7 @@
             </label>
           </aside>
           <div class="dev-main" id="devMain">
-            <div class="card"><div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div></div>
+            <div class="card empty-wm-card"><div class="empty-wm"><span class="wm-icon" aria-hidden="true" style="width:96px;height:96px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><path d="M32 4 L58 19 L32 34 L6 19 Z" fill="#A5B4FC"/><path d="M6 19 L32 34 L32 60 L6 45 Z" fill="#6366F1"/><path d="M58 19 L58 45 L32 60 L32 34 Z" fill="#4338CA"/></svg></span><span class="wm-text">یک توسعه‌دهنده را از لیست کنار انتخاب کن — یا از «خانه» نمای کل تیم را ببین.</span></div></div>
           </div>
         </div>
       </section>
@@ -3070,8 +3367,16 @@
               <button class="ghost" id="kbCancelBtn" style="display:none">انصراف از ویرایش</button>
             </div>
             <div class="row">
-              <input type="file" id="kbFile" accept=".md,.txt" style="flex:1; min-width:150px" />
-              <button class="ghost" id="kbUploadBtn">آپلود</button>
+              <!-- The native picker rendered as the browser's own English
+                   "Choose File / No file chosen" in the middle of a Persian
+                   page; the input stays (for the upload code) but is hidden
+                   behind a styled label. -->
+              <label class="file-pick">
+                <input type="file" id="kbFile" accept=".md,.txt" onchange="document.getElementById('kbFileName').textContent = this.files[0] ? this.files[0].name : 'فایلی انتخاب نشده'" />
+                <span class="file-pick-btn"><i class="ico i-file-text ico-muted"></i> انتخاب فایل ‎.md / .txt</span>
+                <span class="file-pick-name" id="kbFileName">فایلی انتخاب نشده</span>
+              </label>
+              <button class="ghost" id="kbUploadBtn"><i class="ico i-upload ico-cyan"></i> آپلود</button>
             </div>
             <div id="kbList" style="margin-top:14px"><div class="empty">در حال بارگذاری…</div></div>
           </div>
@@ -3182,8 +3487,8 @@
 
 <!-- ---- edition banner ---- -->
 <aside class="edition-banner" dir="ltr" aria-hidden="true">
-  <div class="eb-title">Powered by Business Analyzer — Free Community Edition</div>
-  <div class="eb-sub">Commercial license available → contact Javid Sattar</div>
+  <span class="eb-title">Business Analyzer · Free Community Edition</span>
+  <span class="eb-sub">· Commercial license: Javid Sattar</span>
 </aside>
 
 <!-- ---- model picker modal ---- -->
@@ -3229,6 +3534,8 @@ function splashShow(text) {
   el.hidden = false;
   el.classList.remove('out');
   splashShownAt = Date.now();
+  // Whatever page is under the splash replays its entrance when it lifts.
+  if (currentPage) armReveal(currentPage);
 }
 
 // Waits out whatever's left of SPLASH_MIN_MS, then fades out and — only
@@ -3240,6 +3547,9 @@ function splashHide() {
   const remaining = SPLASH_MIN_MS - (Date.now() - splashShownAt);
   setTimeout(() => {
     el.classList.add('out');
+    // The page's entrance starts as the splash fades, not after: the two
+    // overlapping reads as one motion rather than two separate steps.
+    if (currentPage) tryReveal(currentPage);
     const onDone = (e) => {
       if (e.target !== el || e.propertyName !== 'opacity') return;
       el.hidden = true;
@@ -3471,6 +3781,41 @@ const MOCK_TEAM_ROWS = {
 // actually runs its own connection, which is what "اتصال جدا" in the
 // settings panel is for.
 let MOCK_ACTIVE_PROJECT_ID = 'nexus/core-platform';
+
+// Weekly/monthly logged hours for the demo, in the exact shape
+// lib/worklogHours.js returns. Deterministic per username (not random), so
+// a person's bars don't change on every reload, and varied enough that one
+// short week and one overtime week show up somewhere on the team.
+function mockWorklogHours(username) {
+  const DAY = 86400000;
+  const seed = String(username).split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  const fmtDM = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { day: 'numeric', month: 'short' });
+  const fmtM = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'long' });
+  const fmtY = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric' });
+  const now = new Date();
+  const sinceSat = (now.getDay() + 1) % 7;               // Sat=0 … Fri=6
+  const workedSoFar = Math.min(5, sinceSat + 1);         // Sat–Wed working
+  const sat = new Date(now.getFullYear(), now.getMonth(), now.getDate() - sinceSat);
+  const weekHours = [38, 41, 29, 36, 44, 33, 40, 35];
+  const weeks = [];
+  for (let k = 7; k >= 0; k--) {
+    const ws = new Date(sat.getTime() - k * 7 * DAY);
+    const current = k === 0;
+    const soFar = current ? workedSoFar * 8 : 40;
+    const hours = current ? Math.round(soFar * (0.62 + (seed % 4) * 0.12)) : weekHours[(seed + k) % weekHours.length];
+    weeks.push({ key: ws.toISOString().slice(0, 10), label: fmtDM.format(ws), current, hours, capacityHours: 40, capacitySoFarHours: soFar });
+  }
+  const monthHours = [158, 171, 139, 182, 150, 166];
+  const months = [];
+  for (let m = 5; m >= 0; m--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - m * 30);
+    const current = m === 0;
+    const soFar = current ? Math.min(176, 8 * Math.max(1, Math.round(now.getDate() * 5 / 7))) : 176;
+    const hours = current ? Math.round(soFar * (0.7 + (seed % 3) * 0.1)) : monthHours[(seed + m) % monthHours.length];
+    months.push({ key: 'm' + m, label: fmtM.format(d) + ' ' + fmtY.format(d), current, hours, capacityHours: 176, capacitySoFarHours: soFar });
+  }
+  return { weeks, months, thisWeek: weeks[weeks.length - 1], thisMonth: months[months.length - 1], hoursPerDay: 8, issueCount: 24, capped: false, error: null };
+}
 
 // The masked connections shape describeConnections() on the server returns —
 // kept identical here so the settings panel's rendering code (which only
@@ -4088,7 +4433,14 @@ async function handleMockApi(path, options = {}) {
       attention: 0,
       tasks: []
     };
-    return row;
+    // The same hours the developer page shows, so the roster's "این هفته"
+    // line and the ساعت کارکرد pane agree for every mock person.
+    const wh = mockWorklogHours(author);
+    return {
+      ...row,
+      hoursThisWeek: wh.thisWeek.hours, capacityThisWeekSoFar: wh.thisWeek.capacitySoFarHours,
+      hoursThisMonth: wh.thisMonth.hours, capacityThisMonthSoFar: wh.thisMonth.capacitySoFarHours,
+    };
   }
 
   // Developer score & rating
@@ -4126,6 +4478,7 @@ async function handleMockApi(path, options = {}) {
       // the demo should show that badge ("نمایش N از M تسک") rather than
       // hide the one case where the count and the list disagree on purpose.
       jiraTasksTotal: 22,
+      worklogHours: mockWorklogHours(author),
       totalMRs: 14,
       reportedMRs: 12,
       roundTripMRs: 2,
@@ -5135,7 +5488,8 @@ function renderProjectsPanel() {
         '<strong>' + esc(p.name) + '</strong> ' + (String(p.id) === String(S.activeProjectId) ? '<span class="tag" style="color:var(--cyan)">فعال</span>' : '') +
         (p.fromEnv ? ' <span class="tag">(از secrets.env)</span>' : '') +
         (isolated(p).length ? ' <span class="tag" style="color:var(--violet)" title="این پروژه اتصال جداگانه‌ی خودش را برای این‌ها دارد">اتصال جدا: ' + isolated(p).join('، ') + '</span>' : '') +
-        '<div class="tag mono" style="direction:ltr;text-align:start">شناسه: ' + esc(p.id) + (p.path ? ' — ' + esc(p.path) : ' — مسیر تنظیم نشده') + '</div>' +
+        '<div class="tag">شناسه: <bdi class="mono" dir="ltr">' + esc(p.id) + '</bdi>' +
+          (p.path ? ' · مسیر: <bdi class="mono" dir="ltr">' + esc(p.path) + '</bdi>' : ' · مسیر تنظیم نشده') + '</div>' +
       '</div>' +
       '<div class="row" style="flex:0 0 auto">' +
         '<button class="ghost" data-edit-project="' + esc(p.id) + '" style="padding:4px 9px;font-size:12px"><i class="ico i-pencil ico-muted"></i> ویرایش</button>' +
@@ -5457,7 +5811,7 @@ function branchPill(mr) {
   const cls = mr.targetIsDevelop ? 'develop' : 'other';
   const icon = mr.targetIsDevelop ? '●' : '▲';
   return '<span class="branch-pill ' + cls + '" title="' + esc(mr.sourceBranch + ' → ' + mr.targetBranch) + '">' + icon + ' ' + esc(mr.targetBranch) + '</span>' +
-    (mr.task ? ' <span class="task-pill">' + esc(mr.task) + '</span>' : '');
+    (mr.task ? ' ' + (mr.jiraUrl ? '<a class="task-pill" href="' + esc(mr.jiraUrl) + '" target="_blank" rel="noreferrer">' + esc(mr.task) + ' <i class="ico i-ticket"></i></a>' : '<span class="task-pill">' + esc(mr.task) + ' <i class="ico i-ticket"></i></span>') : '');
 }
 
 function renderTabs() {
@@ -5472,7 +5826,7 @@ function renderTabs() {
       '<div class="tab-top">' +
         '<span class="order-badge" title="ترتیب merge">' + esc(mr.mergeOrder) + '</span>' +
         '<span class="dot ' + jobDotClass(job, mr) + '"></span>' +
-        '<span class="label">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</span>' +
+        '<span class="label"><bdi dir="ltr">!' + esc(mr.iid) + '</bdi> — <bdi>' + esc(mr.title) + '</bdi></span>' +
       '</div>' +
       '<div class="tab-meta">' + esc(mr.author) + (mr.draft ? ' · Draft' : '') + (mr.approved ? ' · <i class="ico i-check-circle ico-green"></i> approved' : '') + '</div>' +
       '<div class="tab-meta">' + branchPill(mr) + '</div>' +
@@ -5534,7 +5888,7 @@ function renderMrContext(ctx) {
     jiraBlock =
       '<div class="task-card" style="margin-top:10px">' +
         '<div class="task-head">' +
-          '<span class="task-pill">' + esc(j.key) + '</span>' +
+          '<a class="task-pill" href="' + esc(j.url) + '" target="_blank" rel="noreferrer">' + esc(j.key) + ' <i class="ico i-ticket"></i></a>' +
           '<a class="task-title" href="' + esc(j.url) + '" target="_blank" rel="noreferrer" title="' + esc(j.summary || '') + '">' +
             esc(j.summary || '(بدون عنوان)') + '</a>' +
         '</div>' +
@@ -5588,11 +5942,11 @@ function renderStream(job) {
 function renderMrPanel() {
   const panel = document.getElementById('mrPanel');
   if (!S.mrs.length) {
-    panel.innerHTML = '<div class="empty">هیچ Merge Request بازی پیدا نشد.</div>';
+    panel.innerHTML = emptyWm('هیچ Merge Request بازی پیدا نشد.');
     return;
   }
   const mr = S.mrs.find((m) => keyOf(m.projectId, m.iid) === S.activeKey);
-  if (!mr) { panel.innerHTML = '<div class="empty">یک MR را از کنار انتخاب کن.</div>'; return; }
+  if (!mr) { panel.innerHTML = emptyWm('یک MR را از کنار انتخاب کن.'); return; }
 
   const key = keyOf(mr.projectId, mr.iid);
   const job = S.jobs[key];
@@ -5642,7 +5996,7 @@ function renderMrPanel() {
 
   panel.innerHTML =
     '<div class="row" style="justify-content:space-between">' +
-      '<strong style="word-break:break-word">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</strong>' +
+      '<strong style="word-break:break-word"><bdi dir="ltr">!' + esc(mr.iid) + '</bdi> — <bdi>' + esc(mr.title) + '</bdi></strong>' +
       (mr.webUrl ? '<a href="' + esc(mr.webUrl) + '" target="_blank" rel="noreferrer">باز کردن در گیت‌لب ↗</a>' : '') +
     '</div>' +
     '<div class="meta-grid">' +
@@ -5927,6 +6281,7 @@ document.getElementById('kbUploadBtn').onclick = async () => {
   try {
     await api('/api/knowledge', { method: 'POST', body: JSON.stringify({ title: f.name, ext, fileBase64: btoa(bin) }) });
     input.value = '';
+    document.getElementById('kbFileName').textContent = 'فایلی انتخاب نشده';
     await loadKb();
   } catch (e) { alert('خطا: ' + e.message); }
 };
@@ -5951,7 +6306,8 @@ async function deleteKb(id) {
 // not a restructure.
 // Which bucket of the home page's task board is open. Home state is kept
 // apart from DEV so navigating between people cannot reset it.
-const HOME = { taskBucket: null };
+const HOME = { taskBucket: null, taskOwner: null, taskLimit: 15 };
+const TASK_PAGE = 15;
 
 const DEV = {
   roster: [], selected: null, analytics: null, score: null, since: '', until: '',
@@ -6005,12 +6361,98 @@ function showPage(name) {
   for (const btn of document.querySelectorAll('[data-page]')) {
     btn.classList.toggle('on', btn.dataset.page === page);
   }
+  armReveal(page);
   // Returned so a caller that needs to know "is the page it just opened
   // actually ready" — the boot/project-switch splash — can await it.
-  if (page === 'home') return openHome();
-  if (page === 'devs') return openDevPage();
-  if (page === 'sentry') return loadSentry();
-  if (page === 'settings') return openSettings();
+  let opened;
+  if (page === 'home') opened = openHome();
+  else if (page === 'devs') opened = openDevPage();
+  else if (page === 'sentry') opened = loadSentry();
+  else if (page === 'settings') opened = openSettings();
+  tryReveal(page); // pages whose content is already in hand play right away
+  return opened;
+}
+
+// ---- entrance: a page's sections arrive one after another -------------------
+// Opening a page fades its blocks in top to bottom — header, then each tile,
+// card and row in document order — instead of everything landing in a single
+// frame. The entrance is armed when a page opens and spent on the first
+// render that has its real content, and only then: the home table
+// re-renders on every row that arrives, and replaying the entrance on each
+// of those would be a strobe, not an entrance.
+const REVEAL_SEL = [
+  '.home-head', '.page-head-row', '.page > .page-head', '.filter-bar',
+  '.kpi', '.card', '.chart-card', '.fold', '.dev-hero', '.dev-tabbar', '.band',
+  '.team-table tbody tr', '.tl-row', '.task-card', '.sentry-item',
+  '.dev-roster-item', '.attn-item', '.people-filter', '.htabs', '.tab',
+].join(',');
+const REVEAL_ROOTS = { home: 'homePage', review: 'mrPanelWrap', devs: 'devPage', devmain: 'devMain', sentry: 'sentryPage', settings: 'settingsPage' };
+// Most a page waits for its data before playing with whatever it has — a
+// cold GitLab crawl can take many seconds, and a blank page is worse than a
+// half-filled one.
+const REVEAL_MAX_WAIT_MS = 1500;
+const REVEAL_ARMED = new Map(); // key -> armed-at ms
+const REVEAL_PLAYED_EARLY = new Set();
+
+function armReveal(key) {
+  if (!REVEAL_ROOTS[key]) return;
+  REVEAL_ARMED.set(key, Date.now());
+  REVEAL_PLAYED_EARLY.delete(key);
+  const root = document.getElementById(REVEAL_ROOTS[key]);
+  if (root) root.classList.add('reveal-wait');
+  setTimeout(() => tryReveal(key), REVEAL_MAX_WAIT_MS);
+}
+
+function revealReady(key) {
+  if (key === 'home') return DEV.roster.length > 0 && DEV.teamPending <= 0;
+  if (key === 'devs' || key === 'devmain') return !DEV.selected || !!DEV.analytics;
+  if (key === 'sentry') return !SENTRY.loading;
+  return true;
+}
+
+function splashUp() {
+  const el = document.getElementById('splashOverlay');
+  return el && !el.hidden && !el.classList.contains('out');
+}
+
+function tryReveal(key) {
+  const armedAt = REVEAL_ARMED.get(key);
+  if (armedAt == null) return;
+  if (splashUp()) return; // splashHide() plays it once the page is uncovered
+  // (-50: the fallback timer fires at the deadline, and a timer landing a
+  // millisecond early must not read as "not yet" with nothing left to retry.)
+  const ready = revealReady(key);
+  if (!ready && Date.now() - armedAt < REVEAL_MAX_WAIT_MS - 50) return;
+  // Played early on a loading state, it stays armed: the real content then
+  // plays in when it lands, instead of snapping in under a finished entrance.
+  // Only once early, though — home re-renders on every row that arrives, and
+  // each of those replaying the page would be a strobe.
+  if (!ready) {
+    if (REVEAL_PLAYED_EARLY.has(key)) return;
+    REVEAL_PLAYED_EARLY.add(key);
+  } else {
+    REVEAL_ARMED.delete(key);
+    REVEAL_PLAYED_EARLY.delete(key);
+  }
+  const root = document.getElementById(REVEAL_ROOTS[key]);
+  if (!root) return;
+  root.classList.remove('reveal-wait');
+  playReveal(root);
+}
+
+// `after`: only elements that come after this one — a tab switch replays the
+// pane below the strip, not the header above it.
+function playReveal(root, after) {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  let i = 0;
+  for (const el of root.querySelectorAll(REVEAL_SEL)) {
+    if (after && (after.contains(el) || !(after.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING))) continue;
+    if (!el.getClientRects().length) continue; // hidden: nothing to animate
+    el.style.setProperty('--ri', Math.min(i++, 22));
+    el.classList.remove('reveal-in');
+    void el.offsetWidth; // restart the animation if it already ran on this node
+    el.classList.add('reveal-in');
+  }
 }
 
 // The roster is what both Home and the Developers page are built from, so it
@@ -6032,7 +6474,7 @@ function openDevPage() {
   if (!DEV.roster.length) loadDevRoster();
   else if (DEV.selected) renderDevMain();
   else document.getElementById('devMain').innerHTML =
-    '<div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن — یا از «خانه» نمای کل تیم را ببین.</div>';
+    '<div class="card empty-wm-card">' + emptyWm('یک توسعه‌دهنده را از لیست کنار انتخاب کن — یا از «خانه» نمای کل تیم را ببین.', 'lg') + '</div>';
 }
 
 function scoreClass(score) {
@@ -6126,8 +6568,15 @@ async function loadDevRoster(force) {
     return;
   }
   renderDevRoster();
-  if (currentPage === 'home') { renderTeam(); renderTeamTasks(); loadTeam(); }
-  else if (currentPage === 'devs') openDevPage();
+  if (currentPage === 'home') {
+    renderTeam(); renderTeamTasks();
+    // Returned so the boot/project-switch splash lifts on a filled page, not
+    // on a table of loading placeholders that then fill in one row at a time
+    // under the entrance. Capped: a cold GitLab crawl must not hold the
+    // splash up — past the cap the page opens and the rest streams in.
+    return Promise.race([loadTeam(), new Promise((r) => setTimeout(r, 6000))]);
+  }
+  if (currentPage === 'devs') openDevPage();
 }
 
 // e.g. "3 دقیقه پیش" — used for both the roster and the per-developer cache notes.
@@ -6259,12 +6708,21 @@ function renderDevRoster() {
       const attnCount = rosterAttentionCount(row);
       const flag = attnCount
         ? '<span class="flag" title="' + attnCount + ' مورد نیازمند رسیدگی">' + attnCount + '</span>' : '';
+      // Only once the row has loaded and Jira answered — a missing figure
+      // stays missing rather than showing as "0 ساعت".
+      const hours = row && row.hoursThisWeek != null
+        ? '<span class="rhours' + (row.capacityThisWeekSoFar && row.hoursThisWeek < row.capacityThisWeekSoFar * 0.75 ? ' low' : '') + '"' +
+            ' title="ساعت ثبت‌شده در جیرا — این هفته، از ' + fmtHours(row.capacityThisWeekSoFar) + ' ساعتِ کاری تا امروز؛ این ماه ' +
+            fmtHours(row.hoursThisMonth) + ' از ' + fmtHours(row.capacityThisMonthSoFar) + '">' +
+            '⏱ هفته ' + fmtHours(row.hoursThisWeek) + 'h · ماه ' + fmtHours(row.hoursThisMonth) + 'h</span>'
+        : '';
       return '<div class="dev-roster-item ' + (DEV.selected === d.username ? 'active' : '') + '" data-username="' + esc(d.username) + '"' +
         ' tabindex="0" role="button" aria-pressed="' + (DEV.selected === d.username) + '">' +
         '<span class="avatar-sm ' + roleClass(d) + '"' + roleTitle(d) + '>' + esc(initials(d.name || d.username)) + '</span>' +
         '<span class="grow">' +
           '<span class="rn">' + esc(d.name || d.username) + '</span>' +
           '<span class="rh">@' + esc(d.username) + '</span>' +
+          hours +
         '</span>' + flag + score + '</div>';
     }).join('');
   box.querySelectorAll('[data-username]').forEach((el) => activate(el, () => selectDeveloper(el.dataset.username)));
@@ -6309,36 +6767,67 @@ async function loadTeam(force) {
 // what are they on right now, what is going wrong, what shipped. The score
 // comes last on purpose - it is a summary of the past, not a reason to walk
 // over to someone's desk this morning.
+// Stale MRs ride along under "MR باز" and the merge median under
+// "merge‌شده" rather than as columns of their own: twelve columns needed a
+// horizontal scrollbar at every normal window width.
 const TEAM_COLUMNS = [
   { key: 'name', label: 'توسعه‌دهنده', sort: (r) => r.name || '' },
   { key: 'inProgressCount', label: 'در حال انجام', hint: 'تسک‌های جیرا در وضعیت In Progress/In Review' },
-  { key: 'openMrs', label: 'MR باز', hint: 'Merge Requestهای هنوز باز' },
-  { key: 'staleOpenMrs', label: 'MR راکد', hot: true, hint: 'MRهایی که بیش از ۷۲ ساعت باز مانده‌اند — میانه‌ی این تیم برای merge بین ۴ تا ۲۶ ساعت است' },
+  { key: 'openMrs', label: 'MR باز', hint: 'Merge Requestهای هنوز باز — زیرش: چندتا بیش از ۷۲ ساعت باز مانده (میانه‌ی merge این تیم ۴ تا ۲۶ ساعت است)' },
   { key: 'overdueCount', label: 'عقب‌افتاده', hot: true, hint: 'تسک‌های بسته‌نشده‌ای که از Due date گذشته‌اند' },
   { key: 'blockedNoMr', label: 'بدون MR', warm: true, hint: 'تسک در حال انجام که هیچ Merge Requestی برایش باز نشده' },
   { key: 'missingWorklogCount', label: 'بدون ثبت زمان', warm: true, hint: 'تسک‌های رسیده به Review/Done که Time Spent ندارند' },
+  { key: 'hoursThisWeek', label: 'ساعت این هفته', hint: 'ساعت ثبت‌شده در جیرا این هفته، در برابر ساعت کاریِ گذشته تا امروز' },
   { key: 'doneCount', label: 'Done', hint: 'تسک‌های به سرانجام رسیده در این بازه' },
-  { key: 'mergedCount', label: 'MR merge‌شده', hint: 'در این بازه' },
-  { key: 'medianOpenToMergeHours', label: 'میانه‌ی merge', hours: true, hint: 'از باز شدن MR تا merge شدنش' },
+  { key: 'mergedCount', label: 'merge‌شده', hint: 'در این بازه — زیرش: میانه‌ی زمان از باز شدن MR تا merge' },
   { key: 'score', label: 'امتیاز', hint: 'امتیاز خودکار — تفکیکش در صفحه‌ی خود فرد' },
   { key: 'attention', label: 'اولویت رسیدگی', hint: 'فقط از روی چیزهایی که همین حالا اشکال دارند ساخته می‌شود، نه از امتیاز کل' },
 ];
 
-function teamCell(row, col) {
+function initialsOf(name) {
+  const raw = String(name || '??').trim();
+  const parts = raw.split(/\s+/);
+  return (parts.length > 1 ? parts[0][0] + parts[1][0] : raw.slice(0, 2)).toUpperCase();
+}
+
+// maxAttention: the highest attention on the table, so each bar is relative
+// to the person who most needs looking at today.
+function teamCell(row, col, maxAttention) {
   if (col.key === 'name') {
     const trend = row.trend && row.trend.delta != null ? trendChip(row.trend.delta) : '';
     const rawName = row.name || row.username || '??';
-    const parts = rawName.trim().split(/\s+/);
-    const initials = parts.length > 1 ? (parts[0][0] + parts[1][0]) : rawName.slice(0, 2);
     const who = rosterEntry(row.username);
-    return '<td class="who"><div class="dev-avatar-cell"><span class="avatar-sm ' + roleClass(who) + '"' + roleTitle(who) + '>' + esc(initials.toUpperCase()) + '</span><div class="dev-name-col"><span class="dev-display-name">' + esc(rawName) + '</span><span class="dev-user-handle">@' + esc(row.username || '') + '</span></div>' + trend + '</div></td>';
+    return '<td class="who"><div class="dev-avatar-cell"><span class="avatar-sm ' + roleClass(who) + '"' + roleTitle(who) + '>' + esc(initialsOf(rawName)) + '</span><div class="dev-name-col"><span class="dev-display-name">' + esc(rawName) + '</span><span class="dev-user-handle">@' + esc(row.username || '') + '</span></div>' + trend + '</div></td>';
   }
   const v = row[col.key];
   if (v == null) return '<td class="num zero">—</td>';
-  if (col.hours) return '<td class="num">' + esc(humanHours(v)) + '</td>';
   if (col.key === 'score') return '<td class="num"><span class="score-pill ' + scoreClass(v) + '">' + v + '</span></td>';
-  const cls = v === 0 ? 'zero' : (col.hot ? 'hot' : (col.warm ? 'warm' : ''));
-  return '<td class="num ' + cls + '">' + v + '</td>';
+  if (col.key === 'openMrs') {
+    return '<td class="num' + (v ? '' : ' zero') + '">' + v +
+      (row.staleOpenMrs ? '<span class="cell-sub hot">' + row.staleOpenMrs + ' راکد</span>' : '') + '</td>';
+  }
+  if (col.key === 'mergedCount') {
+    return '<td class="num' + (v ? '' : ' zero') + '">' + v +
+      (row.medianOpenToMergeHours != null ? '<span class="cell-sub">میانه ' + esc(humanHours(row.medianOpenToMergeHours)) + '</span>' : '') + '</td>';
+  }
+  if (col.key === 'hoursThisWeek') {
+    const cap = row.capacityThisWeekSoFar || 0;
+    const pct = cap ? Math.min(100, Math.round((v / cap) * 100)) : 0;
+    const low = cap && v < cap * 0.75;
+    return '<td class="num"><span class="hbar' + (low ? ' low' : '') + '" title="' +
+      esc('این هفته ' + fmtHours(v) + ' از ' + fmtHours(cap) + ' ساعت کاریِ تا امروز — این ماه ' + fmtHours(row.hoursThisMonth) + ' از ' + fmtHours(row.capacityThisMonthSoFar)) + '">' +
+      '<span class="hbar-num">' + fmtHours(v) + (cap ? '<small> / ' + fmtHours(cap) + '</small>' : '') + '</span>' +
+      (cap ? '<span class="hbar-track"><span class="hbar-fill" style="width:' + pct + '%"></span></span>' : '') +
+    '</span></td>';
+  }
+  if (col.key === 'attention') {
+    const pct = maxAttention ? Math.max(4, Math.round((v / maxAttention) * 100)) : 0;
+    return '<td class="num" title="' + esc('اولویت رسیدگی: ' + v) + '">' +
+      (v ? '<span class="attn-bar"><span style="width:' + pct + '%"></span></span>' : '<span class="zero">—</span>') + '</td>';
+  }
+  if (v === 0) return '<td class="num zero">0</td>';
+  if (col.hot || col.warm) return '<td class="num"><span class="cnt ' + (col.hot ? 'hot' : 'warm') + '">' + v + '</span></td>';
+  return '<td class="num">' + v + '</td>';
 }
 
 function trendChip(delta) {
@@ -6363,8 +6852,9 @@ function renderTeam() {
 
   const head = TEAM_COLUMNS.map((c) => (
     '<th class="' + (c.key === sortKey ? 'on' : '') + '" data-teamsort="' + c.key + '" title="' + esc(c.hint || 'مرتب‌سازی') + '">' +
-      esc(c.label) + (c.key === sortKey ? ' &#9662;' : '') + '</th>'
+      esc(c.label) + '</th>'
   )).join('');
+  const maxAttention = Math.max(0, ...loaded.map((r) => r.attention || 0));
 
   // tabindex/role on the clickable rows: opening a person's page was
   // mouse-only, so a whole page of this dashboard was unreachable by
@@ -6383,40 +6873,30 @@ function renderTeam() {
       return '<tr><td class="who">' + esc(r.name || r.username) + '</td>' +
         TEAM_COLUMNS.slice(1).map(() => '<td class="num"><span class="team-loading"></span></td>').join('') + '</tr>';
     }
-    return '<tr ' + openable(r.username) + '>' + TEAM_COLUMNS.map((c) => teamCell(r, c)).join('') + '</tr>';
+    return '<tr ' + openable(r.username) + '>' + TEAM_COLUMNS.map((c) => teamCell(r, c, maxAttention)).join('') + '</tr>';
   }).join('');
 
+  renderHomeFilters();
+
   const sum = teamSummary(loaded);
+  // Before the first row lands every sum is 0, and a green "0 overdue" would
+  // be claiming something nobody has checked yet.
+  const none = !loaded.length;
+  const k = (value, label, sub, cls) => kpi(none ? '—' : value, label, none ? 'در حال خواندن…' : sub, none ? '' : cls);
   main.innerHTML =
-    '<div class="card">' +
-      '<div class="row" style="justify-content:space-between; margin-bottom:14px">' +
-        '<strong><i class="ico i-users ico-cyan"></i> نمای تیم — ' + DEV.roster.length + ' نفر</strong>' +
-        '<span class="tag">' + (DEV.teamPending > 0 ? 'در حال خواندن ' + DEV.teamPending + ' نفر…' : 'کامل') + '</span>' +
-      '</div>' +
-      '<div class="date-filter">' +
-        renderDatePicker('teamSince', DEV.since, 'از تاریخ') +
-        renderDatePicker('teamUntil', DEV.until, 'تا تاریخ') +
-        '<button id="teamFilterApply">اعمال فیلتر</button>' +
-        '<button class="ghost" id="teamFilterClear">پاک کردن</button>' +
-        '<button class="btn-refresh" id="teamRefreshBtn"><i class="ico i-refresh ico-cyan"></i> محاسبه‌ی دوباره</button>' +
-      '</div>' +
+    '<div class="kpi-row cols-6">' +
+      k(sum.inProgress, 'در حال انجام', 'تسک‌های In Progress / In Review', '') +
+      k(sum.openMrs, 'Merge Request باز', sum.staleOpenMrs ? sum.staleOpenMrs + ' تا بیش از ۷۲ ساعت باز مانده' : 'هیچ‌کدام راکد نیست', sum.staleOpenMrs ? 'warn' : '') +
+      k(sum.overdue, 'عقب‌افتاده از Due date', sum.overdue ? 'تسک باز که سررسیدش گذشته' : 'هیچ تسکی عقب نیست', sum.overdue ? 'bad' : 'good') +
+      k(sum.blockedNoMr, 'در جریان، بدون MR', 'شروع شده ولی هنوز کدی ثبت نشده', sum.blockedNoMr ? 'warn' : '') +
+      k(sum.missingWorklog, 'بدون ثبت زمان', 'تمام‌شده ولی زمانی رویش ثبت نشده', sum.missingWorklog ? 'warn' : '') +
+      k(sum.medianScore == null ? '—' : sum.medianScore, 'میانه‌ی امتیاز تیم', sum.scored + ' از ' + DEV.roster.length + ' نفر امتیاز دارند', '') +
     '</div>' +
-    '<div>' +
-    '<div class="band"><h4>وضعیت امروزِ تیم</h4>' +
-      '<span class="band-note">جمع همه‌ی افرادی که تا اینجا خوانده شده‌اند (' + loaded.length + ' از ' + DEV.roster.length + ')</span></div>' +
-    '<div class="kpi-row">' +
-      kpi(sum.inProgress, 'تسک در حال انجام', '', '') +
-      kpi(sum.openMrs, 'Merge Request باز', sum.staleOpenMrs ? sum.staleOpenMrs + ' تا بیش از ۷۲ ساعت باز مانده' : 'هیچ‌کدام راکد نیست', sum.staleOpenMrs ? 'warn' : '') +
-      kpi(sum.overdue, 'تسک عقب‌افتاده از Due date', '', sum.overdue ? 'bad' : 'good') +
-      kpi(sum.blockedNoMr, 'تسک در جریان بدون MR', 'کاری که شروع شده ولی هنوز کدی برایش ثبت نشده', sum.blockedNoMr ? 'warn' : '') +
-      kpi(sum.missingWorklog, 'تسک Review/Done بدون ثبت زمان', 'تا این پر نشود، دقت تخمین برای این تسک‌ها قابل محاسبه نیست', sum.missingWorklog ? 'warn' : '') +
-      kpi(sum.medianScore == null ? '—' : sum.medianScore, 'میانه‌ی امتیاز تیم', sum.scored + ' نفر امتیاز قابل محاسبه دارند', '') +
-    '</div></div>' +
     '<div class="card">' +
-      '<div class="band"><h4>نفر به نفر</h4>' +
-        '<span class="band-note">روی هر ردیف کلیک کن تا صفحه‌ی کامل همان فرد باز شود. ستون‌ها قابل مرتب‌سازی‌اند؛ پیش‌فرض روی «اولویت رسیدگی» است.</span></div>' +
-      '<div style="overflow-x:auto"><table class="team-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
-      '<div class="muted" style="font-size:11px;margin-top:10px"><i class="ico i-alert ico-amber"></i> ستون امتیاز ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی — فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده.</div>' +
+      '<div class="card-head"><h4>نفر به نفر</h4>' +
+        '<span class="hint">روی هر ردیف بزن تا صفحه‌ی همان فرد باز شود · روی سرستون بزن تا مرتب شود</span></div>' +
+      '<div class="table-scroll"><table class="team-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<div class="table-foot"><i class="ico i-alert ico-amber"></i> امتیاز ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی — فقط از داده‌ای ساخته می‌شود که خودِ این سرویس جمع کرده.</div>' +
     '</div>';
 
   main.querySelectorAll('[data-open]').forEach((el) => activate(el, () => selectDeveloper(el.dataset.open)));
@@ -6425,17 +6905,44 @@ function renderTeam() {
     el.setAttribute('role', 'button');
     activate(el, () => { DEV.teamSort = el.dataset.teamsort; renderTeam(); });
   });
-  document.getElementById('teamFilterApply').onclick = () => {
-    DEV.since = document.getElementById('teamSince').value;
-    DEV.until = document.getElementById('teamUntil').value;
-    DEV.team = {};
-    loadTeam();
-  };
-  document.getElementById('teamFilterClear').onclick = () => {
-    DEV.since = ''; DEV.until = ''; DEV.team = {};
-    loadTeam();
-  };
-  document.getElementById('teamRefreshBtn').onclick = () => { DEV.team = {}; loadTeam(true); };
+}
+
+// The date range and refresh, beside the page title. Built once and then only
+// its loading indicator is touched: rebuilding it on every row that arrives
+// (the old behaviour) closed a date picker the moment someone opened it.
+function renderHomeFilters() {
+  const bar = document.getElementById('homeFilters');
+  if (!bar) return;
+  const loaded = DEV.roster.filter((d) => DEV.team[d.username]).length;
+  const busy = DEV.teamPending > 0;
+  const stateHtml = '<span class="dot"></span>' + (busy
+    ? 'در حال خواندن ' + (DEV.roster.length - loaded) + ' از ' + DEV.roster.length + ' نفر…'
+    : DEV.roster.length + ' نفر');
+  if (!bar.dataset.built || bar.dataset.since !== (DEV.since || '') || bar.dataset.until !== (DEV.until || '')) {
+    bar.innerHTML =
+      '<span class="load-state" id="homeLoadState"></span>' +
+      '<span class="fb-sep"></span>' +
+      renderDatePicker('teamSince', DEV.since, 'از تاریخ', 'از تاریخ') +
+      renderDatePicker('teamUntil', DEV.until, 'تا تاریخ', 'تا تاریخ') +
+      '<button id="teamFilterApply">اعمال</button>' +
+      ((DEV.since || DEV.until) ? '<button class="ghost" id="teamFilterClear">پاک کردن</button>' : '') +
+      '<button class="ghost" id="teamRefreshBtn" title="همه‌ی افراد را دوباره از گیت‌لب و جیرا بخوان"><i class="ico i-refresh ico-cyan"></i> محاسبه‌ی دوباره</button>';
+    bar.dataset.built = '1';
+    bar.dataset.since = DEV.since || '';
+    bar.dataset.until = DEV.until || '';
+    document.getElementById('teamFilterApply').onclick = () => {
+      DEV.since = document.getElementById('teamSince').value;
+      DEV.until = document.getElementById('teamUntil').value;
+      DEV.team = {};
+      loadTeam();
+    };
+    const clear = document.getElementById('teamFilterClear');
+    if (clear) clear.onclick = () => { DEV.since = ''; DEV.until = ''; DEV.team = {}; loadTeam(); };
+    document.getElementById('teamRefreshBtn').onclick = () => { DEV.team = {}; loadTeam(true); };
+  }
+  const st = document.getElementById('homeLoadState');
+  st.className = 'load-state' + (busy ? ' busy' : '');
+  st.innerHTML = stateHtml;
 }
 
 // ---- Home: tasks & duties across the whole team -----------------------------
@@ -6479,55 +6986,60 @@ function allTeamTasks() {
   return out;
 }
 
-function reasonChips(t) {
-  const chips = [];
-  if (t.overdueDays != null) chips.push('<span class="rt-badge yes"><i class="ico i-calendar ico-amber"></i> ' + t.overdueDays + ' روز تأخیر</span>');
-  else if (t.dueDate) chips.push('<span class="chip-quiet"><i class="ico i-calendar ico-amber"></i> سررسید ' + esc(faDate(t.dueDate)) + '</span>');
-  if (t.reasons.includes('no-mr')) chips.push('<span class="rt-badge unk">بدون MR</span>');
-  if (t.reasons.includes('no-worklog')) chips.push('<span class="rt-badge unk">بدون ثبت زمان</span>');
-  return chips.join('');
-}
-
-function teamTaskCard(t) {
+// One ticket as one row of the task list. Project and sprint sit under the
+// title in small text; they were two more chips on every card before.
+function teamTaskRow(t) {
   const statusCls = t.statusCategory === 'done' ? 'st-done'
     : t.statusCategory === 'indeterminate' ? 'st-doing' : 'st-todo';
   const mrs = (t.mrs || []).map((m) => (
     '<a class="mr-link' + (m.state === 'merged' ? ' merged' : '') + '" href="' + esc(m.webUrl) +
-      '" target="_blank" rel="noreferrer">' + (m.state === 'merged' ? '<i class="ico i-check ico-green"></i> ' : '') + '!' + esc(m.iid) + '</a>'
+      '" target="_blank" rel="noreferrer" title="' + (m.state === 'merged' ? 'merge شده' : 'باز') + '">!' + esc(m.iid) + '</a>'
   )).join('');
-  return '<div class="task-card' + (t.reasons.includes('no-worklog') ? ' needs-worklog' : '') + '">' +
-    '<div class="task-head">' +
-      '<span class="task-pill">' + esc(t.key) + '</span>' +
-      '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer" title="' + esc(t.summary) + '">' +
-        esc(t.summary || '(بدون عنوان)') + '</a>' +
+  const mrCell = mrs || (t.reasons.includes('no-mr') ? '<span class="tl-flag">بدون MR</span>' : '<span class="zero">—</span>');
+  const due = t.overdueDays != null
+    ? '<span class="tl-late" title="سررسید ' + esc(faDate(t.dueDate)) + '">' + (t.overdueDays ? t.overdueDays + ' روز تأخیر' : 'سررسید امروز') + '</span>'
+    : (t.dueDate ? '<span class="tl-due">' + esc(faDate(t.dueDate)) + '</span>' : '<span class="zero">—</span>');
+  const hours = (t.estimateHours != null || t.spentHours != null)
+    ? '<span class="tl-hours" title="ثبت‌شده / تخمین (ساعت)">' + (t.spentHours != null ? esc(t.spentHours) : '0') + ' / ' + (t.estimateHours != null ? esc(t.estimateHours) : '?') + 'h</span>'
+    : '';
+  const sub = [t.project, t.sprint].filter(Boolean).map(esc).join(' · ');
+  return '<div class="tl-row' + (t.reasons.includes('no-worklog') ? ' needs-worklog' : '') + '">' +
+    '<a class="task-pill" href="' + esc(t.url) + '" target="_blank" rel="noreferrer">' + esc(t.key) + '</a>' +
+    '<div class="tl-title">' +
+      '<a href="' + esc(t.url) + '" target="_blank" rel="noreferrer" dir="auto" title="' + esc(t.summary) + '">' + esc(t.summary || '(بدون عنوان)') + '</a>' +
+      (sub ? '<span class="tl-sub">' + sub + '</span>' : '') +
     '</div>' +
-    '<div class="task-meta">' +
-      '<button class="owner-chip" data-openowner="' + esc(t.owner) + '" title="باز کردن صفحه‌ی این فرد">&#128100; ' + esc(t.ownerName) + '</button>' +
-      (t.status ? '<span class="status-chip ' + statusCls + '">' + esc(t.status) + '</span>' : '') +
-      mrs + reasonChips(t) +
-    '</div>' +
-    '<div class="task-foot">' +
-      (t.project ? '<span><i class="ico i-folder ico-muted"></i> ' + esc(t.project) + '</span>' : '') +
-      (t.sprint ? '<span><i class="ico i-sprint ico-cyan"></i> ' + esc(t.sprint) + '</span>' : '') +
-      (t.estimateHours != null ? '<span>تخمین ' + esc(t.estimateHours) + ' ساعت</span>' : '') +
-      (t.spentHours != null ? '<span>ثبت‌شده ' + esc(t.spentHours) + ' ساعت</span>' : '') +
-    '</div>' +
+    '<button class="tl-owner" data-openowner="' + esc(t.owner) + '" title="باز کردن صفحه‌ی ' + esc(t.ownerName) + '">' +
+      '<span class="av">' + esc(initialsOf(t.ownerName)) + '</span><span class="nm">' + esc(t.ownerName) + '</span></button>' +
+    '<div class="tl-cell">' + (t.status ? '<span class="status-chip ' + statusCls + '">' + esc(t.status) + '</span>' : '') +
+      (t.reasons.includes('no-worklog') ? '<span class="tl-flag">بدون ثبت زمان</span>' : '') + '</div>' +
+    '<div class="tl-cell">' + mrCell + '</div>' +
+    '<div class="tl-cell">' + due + hours + '</div>' +
   '</div>';
 }
 
 function renderTeamTasks() {
   const box = document.getElementById('homeTasks');
   if (!box) return;
-  const tasks = allTeamTasks();
-  const loaded = DEV.roster.filter((d) => DEV.team[d.username] && !DEV.team[d.username].error).length;
+  const all = allTeamTasks();
 
-  if (!tasks.length) {
-    box.innerHTML = '<div class="card"><div class="band"><h4>تسک‌ها و وظایف</h4></div>' +
+  if (!all.length) {
+    box.innerHTML = '<div class="card"><div class="card-head"><h4>تسک‌ها و وظایف</h4></div>' +
       '<div class="empty">' + (DEV.teamPending > 0
         ? 'در حال خواندن تسک‌های تیم…'
         : 'هیچ تسک بازی برای تیم پیدا نشد.') + '</div></div>';
     return;
   }
+
+  // Person filter first, so the tab counts answer "how many of *hers* are
+  // late" once someone is picked.
+  const owners = [];
+  for (const d of DEV.roster) {
+    const n = all.filter((t) => t.owner === d.username).length;
+    if (n) owners.push({ username: d.username, name: d.name || d.username, n });
+  }
+  if (HOME.taskOwner && !owners.some((o) => o.username === HOME.taskOwner)) HOME.taskOwner = null;
+  const tasks = HOME.taskOwner ? all.filter((t) => t.owner === HOME.taskOwner) : all;
 
   const counts = {};
   for (const b of TASK_BUCKETS) counts[b.id] = tasks.filter(b.match).length;
@@ -6542,23 +7054,42 @@ function renderTeamTasks() {
     '</button>'
   )).join('');
 
+  const people = owners.length > 1
+    ? '<div class="people-filter">' +
+        '<button class="pf-chip' + (!HOME.taskOwner ? ' on' : '') + '" data-taskowner="">همه<span class="c">' + all.length + '</span></button>' +
+        owners.map((o) => '<button class="pf-chip' + (HOME.taskOwner === o.username ? ' on' : '') + '" data-taskowner="' + esc(o.username) + '">' +
+          esc(o.name) + '<span class="c">' + o.n + '</span></button>').join('') +
+      '</div>'
+    : '';
+
   const shown = tasks.filter(bucket.match);
+  const visible = shown.slice(0, HOME.taskLimit);
+  const rest = shown.length - visible.length;
   box.innerHTML =
     '<div class="card">' +
-    '<div class="band"><h4>تسک‌ها و وظایف</h4>' +
-      '<span class="band-note">' + tasks.length + ' تسک از ' + loaded + ' نفر' +
-      (DEV.teamPending > 0 ? ' — بقیه در حال خواندن…' : '') +
-      '. هر تسک نامِ صاحبش را دارد؛ روی آن بزن تا صفحه‌ی همان فرد باز شود.</span></div>' +
+    '<div class="card-head"><h4>تسک‌ها و وظایف</h4>' +
+      '<span class="hint">' + all.length + ' تسک از ' + owners.length + ' نفر' +
+      (DEV.teamPending > 0 ? ' — بقیه در حال خواندن…' : '') + '</span></div>' +
+    people +
     '<div class="htabs">' + tabs + '</div>' +
-    '<div class="chart-note" style="margin-bottom:8px">' + esc(bucket.note) + '</div>' +
+    '<div class="chart-note" style="margin-bottom:10px">' + esc(bucket.note) + '</div>' +
     (shown.length
-      ? '<div class="task-cards two-col">' + shown.map(teamTaskCard).join('') + '</div>'
+      ? '<div class="tl">' +
+          '<div class="tl-row tl-head"><span>کلید</span><span>عنوان</span><span>مسئول</span><span>وضعیت</span><span>MR</span><span>سررسید · ساعت</span></div>' +
+          visible.map(teamTaskRow).join('') +
+          (rest > 0 ? '<div class="tl-more"><button class="ghost" data-taskmore>نمایش ' + Math.min(rest, TASK_PAGE) + ' تای بعدی (' + rest + ' باقی‌مانده)</button></div>' : '') +
+        '</div>'
       : '<div class="empty">هیچ تسکی در این دسته نیست.</div>') +
     '</div>';
 
   for (const btn of box.querySelectorAll('[data-taskbucket]')) {
-    btn.onclick = () => { HOME.taskBucket = btn.dataset.taskbucket; renderTeamTasks(); };
+    btn.onclick = () => { HOME.taskBucket = btn.dataset.taskbucket; HOME.taskLimit = TASK_PAGE; renderTeamTasks(); };
   }
+  for (const btn of box.querySelectorAll('[data-taskowner]')) {
+    btn.onclick = () => { HOME.taskOwner = btn.dataset.taskowner || null; HOME.taskLimit = TASK_PAGE; renderTeamTasks(); };
+  }
+  const more = box.querySelector('[data-taskmore]');
+  if (more) more.onclick = () => { HOME.taskLimit += TASK_PAGE; renderTeamTasks(); };
   for (const btn of box.querySelectorAll('[data-openowner]')) {
     btn.onclick = () => selectDeveloper(btn.dataset.openowner);
   }
@@ -6570,6 +7101,7 @@ function renderTeamTasks() {
 function renderHome() {
   renderTeam();
   renderTeamTasks();
+  tryReveal('home');
 }
 
 function teamSummary(rows) {
@@ -6584,30 +7116,11 @@ function teamSummary(rows) {
   };
 }
 
-// The icon and the state pill both come from `cls`, the way the sample's
-// SectionCards drives its lucide icon and growth badge off one metric.
-// Nothing here is invented: the previous version drew a sparkline from a
-// hardcoded array, so every card on the page showed the same fake trend.
-const KPI_ICONS = {
-  bad:   '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
-  warn:  '<circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path>',
-  good:  '<path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path>',
-  quiet: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path>',
-};
+// The state a tile's `cls` stands for, kept as words for its tooltip.
 const KPI_PILL_LABEL = { bad: 'نیاز به رسیدگی', warn: 'هشدار', good: 'مطلوب' };
-// state markers, not trend arrows — these cards report a condition, and a
-// downward arrow would claim a direction we never measured
-const KPI_PILL_ICON = {
-  bad:  '<circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path>',
-  warn: '<path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>',
-  good: '<path d="M20 6 9 17l-5-5"></path>',
-};
 // Emits the mask-based icon tag. Kept as a helper for code that picks an
 // icon at runtime; static sites write the tag directly.
 const ico = (name, tone) => '<i class="ico i-' + name + (tone ? ' ico-' + tone : '') + '"></i>';
-
-const lucide = (paths) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" ' +
-  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>';
 
 // `outOf` renders the "of N" half of a progress figure. It exists because
 // two callers were passing '<small>/24</small>' as the value, and the value
@@ -6618,18 +7131,14 @@ function kpi(value, label, sub, cls, outOf) {
   const main = typeof value === 'string' ? esc(value) : value;
   const suffix = outOf == null ? '' : '<small>/' + esc(outOf) + '</small>';
   const key = cls === 'bad' || cls === 'warn' || cls === 'good' ? cls : 'quiet';
-  const icon = '<span class="kpi-icon">' + lucide(KPI_ICONS[key]) + '</span>';
-  const pill = KPI_PILL_LABEL[key]
-    ? '<span class="kpi-pill ' + key + '">' + lucide(KPI_PILL_ICON[key]) + KPI_PILL_LABEL[key] + '</span>'
-    : '';
+  // The state word stays available as a tooltip; on the tile itself the
+  // colour already says it.
+  const state = KPI_PILL_LABEL[key] ? ' — ' + KPI_PILL_LABEL[key] : '';
 
-  return '<div class="kpi ' + (cls || '') + '">' +
-    '<div class="kpi-header">' + icon + pill + '</div>' +
-    '<div class="kpi-body">' +
-      '<div class="l">' + esc(label) + '</div>' +
-      '<div class="n">' + main + suffix + '</div>' +
-      (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
-    '</div>' +
+  return '<div class="kpi ' + (cls || '') + '" title="' + esc(label + state + (sub ? '\n' + sub : '')) + '">' +
+    '<div class="l">' + esc(label) + '</div>' +
+    '<div class="n">' + main + suffix + '</div>' +
+    (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') +
   '</div>';
 }
 
@@ -6643,6 +7152,10 @@ async function selectDeveloper(username) {
     currentPage = 'devs';
     for (const [key, id] of Object.entries(PAGES)) document.getElementById(id).hidden = key !== 'devs';
     for (const btn of document.querySelectorAll('[data-page]')) btn.classList.toggle('on', btn.dataset.page === 'devs');
+    armReveal('devs');
+  } else {
+    // Same page, another person: their page plays in, the roster stays put.
+    armReveal('devmain');
   }
   renderDevRoster();
   await loadDevMain();
@@ -6650,7 +7163,7 @@ async function selectDeveloper(username) {
 
 async function loadDevMain(force) {
   const main = document.getElementById('devMain');
-  if (!DEV.selected) { main.innerHTML = '<div class="card"><div class="empty">یک توسعه‌دهنده را از لیست کنار انتخاب کن.</div></div>'; return; }
+  if (!DEV.selected) { main.innerHTML = '<div class="card empty-wm-card">' + emptyWm('یک توسعه‌دهنده را از لیست کنار انتخاب کن — یا از «خانه» نمای کل تیم را ببین.', 'lg') + '</div>'; return; }
   // A cache hit answers in well under a second; only a genuine miss/refresh
   // pays the "read every MR's branch authors" cost, so this message only
   // shows up when it's actually true.
@@ -6741,13 +7254,13 @@ function renderDevMain() {
         '<div class="hero-name">' + esc(displayName) + trendBadge + '</div>' +
         '<div class="hero-meta">' +
           '<span dir="ltr">@' + esc(DEV.selected) + '</span>' +
-
-          (auto.reason ? '<span title="' + esc(auto.reason) + '">چطور حساب شد؟</span>' : '') +
+          (auto.reason ? '<span class="hero-how" title="' + esc(auto.reason) + '">چطور حساب شد؟</span>' : '') +
+          cacheNote +
         '</div>' +
         '<div class="hero-chips">' + roleChip(DEV.selected) + activityChip(a.lastActivityMs) + attentionChip + manualBadge + coverageChip(a) + '</div>' +
       '</div>' +
-      '<div class="hero-actions">' + cacheNote +
-        '<button class="btn-refresh" id="devRefreshBtn"><i class="ico i-refresh ico-cyan"></i> بروزرسانی این فرد</button>' +
+      '<div class="hero-actions">' +
+        '<button class="btn-refresh" id="devRefreshBtn" title="دوباره از گیت‌لب و جیرا بخوان"><i class="ico i-refresh ico-cyan"></i> بروزرسانی</button>' +
         '<button class="ghost" id="devReportBtn" title="کارنامه‌ی چاپی — در پنجره‌ی چاپ می‌توانی PDF ذخیره کنی"><i class="ico i-file-text ico-violet"></i> کارنامه PDF</button>' +
         '<button class="ghost" id="devExportBtn" title="خروجی اکسل عملکرد ماهانه، همراه با نمودار"><i class="ico i-chart ico-cyan"></i> خروجی اکسل</button>' +
       '</div>' +
@@ -6758,32 +7271,41 @@ function renderDevMain() {
       '</div>' +
     '</div>' +
 
-    // Tab strip and the date filter share a row: the filter applies to every
-    // pane, so it belongs beside the strip rather than repeated inside panes.
-    '<div class="card" style="padding:16px 18px">' +
-      '<div class="dev-tabbar">' +
-        '<div class="seg">' + panes.map((x) => (
-          '<button class="seg-item' + (x.id === activePane ? ' on' : '') + '" data-devtab="' + x.id + '">' +
-            esc(x.label) +
-            (x.count != null ? '<span class="seg-count">' + x.count + '</span>' : '') +
-            (x.alert ? '<span class="seg-dot" title="نیازمند رسیدگی"></span>' : '') +
-          '</button>'
-        )).join('') + '</div>' +
-        '<div class="date-filter" style="margin-inline-start:auto">' +
-          renderDatePicker('devSince', DEV.since, 'از تاریخ') +
-          renderDatePicker('devUntil', DEV.until, 'تا تاریخ') +
-          '<button id="devFilterApply">اعمال فیلتر</button>' +
-          '<button class="ghost" id="devFilterClear">پاک کردن</button>' +
-        '</div>' +
-      '</div>' +
+    // The tab strip alone on its row. The date filter used to share it and,
+    // at any ordinary width, pushed the tabs onto two lines and its own
+    // "پاک کردن" onto a third; it lives in the page header now (#devFilters),
+    // the same place the home page keeps its range.
+    '<div class="dev-tabbar">' +
+      '<div class="seg">' + panes.map((x) => (
+        '<button class="seg-item' + (x.id === activePane ? ' on' : '') + '" data-devtab="' + x.id + '">' +
+          esc(x.label) +
+          (x.count != null ? '<span class="seg-count">' + x.count + '</span>' : '') +
+          (x.alert ? '<span class="seg-dot" title="نیازمند رسیدگی"></span>' : '') +
+        '</button>'
+      )).join('') + '</div>' +
     '</div>' +
 
     (panes.find((x) => x.id === activePane) || {}).html;
 
+  const filters = document.getElementById('devFilters');
+  if (filters) {
+    filters.innerHTML =
+      renderDatePicker('devSince', DEV.since, 'از تاریخ', 'از تاریخ') +
+      renderDatePicker('devUntil', DEV.until, 'تا تاریخ', 'تا تاریخ') +
+      '<button id="devFilterApply">اعمال</button>' +
+      ((DEV.since || DEV.until) ? '<button class="ghost" id="devFilterClear">پاک کردن</button>' : '');
+  }
+
 
   for (const btn of main.querySelectorAll('[data-devtab]')) {
-    btn.onclick = () => { DEV.devTab = btn.dataset.devtab; renderDevMain(); };
+    btn.onclick = () => {
+      DEV.devTab = btn.dataset.devtab;
+      renderDevMain();
+      playReveal(main, main.querySelector('.dev-tabbar')); // just the pane below the strip
+    };
   }
+  tryReveal('devs');
+  tryReveal('devmain');
   for (const btn of main.querySelectorAll('[data-trendrange]')) {
     btn.onclick = () => { DEV.trendRange = btn.dataset.trendrange; renderDevMain(); };
   }
@@ -6793,7 +7315,8 @@ function renderDevMain() {
     DEV.until = document.getElementById('devUntil').value;
     loadDevMain();
   };
-  document.getElementById('devFilterClear').onclick = () => {
+  const devClear = document.getElementById('devFilterClear');
+  if (devClear) devClear.onclick = () => {
     DEV.since = ''; DEV.until = '';
     loadDevMain();
   };
@@ -6861,6 +7384,11 @@ function devPanes(a, scoreData, displayName) {
       html:
         '<div>' + renderNowBand(a) + '</div>' +
         '<div class="charts-row">' + renderTrendCard(a) + '</div>',
+    },
+    {
+      id: 'hours',
+      label: 'ساعت کارکرد',
+      html: renderHoursPane(a),
     },
     {
       id: 'delivery',
@@ -6936,6 +7464,26 @@ function chartFrame(w, h, inner) {
 
 function chartEmpty(text) {
   return '<div class="chart-empty">' + esc(text) + '</div>';
+}
+
+// Watermark empty-state: logo icon (very faint) + message text.
+// Use size='lg' for tall panels (dev-main), size='sm' for compact areas.
+const WM_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <path d="M32 4 L58 19 L32 34 L6 19 Z" fill="#A5B4FC"/>
+  <path d="M6 19 L32 34 L32 60 L6 45 Z" fill="#6366F1"/>
+  <path d="M58 19 L58 45 L32 60 L32 34 Z" fill="#4338CA"/>
+</svg>`;
+
+function emptyWm(text, size) {
+  const dim = size === 'lg' ? 96 : size === 'xs' ? 40 : 64;
+  return (
+    '<div class="empty-wm">' +
+      '<span class="wm-icon" aria-hidden="true" style="width:' + dim + 'px;height:' + dim + 'px">' +
+        WM_LOGO_SVG +
+      '</span>' +
+      '<span class="wm-text">' + esc(text) + '</span>' +
+    '</div>'
+  );
 }
 
 // Horizontal gridlines with the value each one stands for, so "how tall is
@@ -7093,7 +7641,7 @@ function stackedBarChart(items) {
     }
     bars += '<g class="bar-group">' + stack +
       '<text class="value-label" x="' + cx.toFixed(1) + '" y="' + (top - 7).toFixed(1) +
-        '" text-anchor="middle">' + it.total + '</text>' +
+        '" text-anchor="middle">' + esc(it.valueLabel != null ? it.valueLabel : it.total) + '</text>' +
       '<text class="axis-label" x="' + cx.toFixed(1) + '" y="' + (H - 18) + '" text-anchor="middle">' +
         esc(it.axis) + (it.axisTitle ? '<title>' + esc(it.axisTitle) + '</title>' : '') + '</text>' +
       (it.sub ? '<text class="axis-label" x="' + cx.toFixed(1) + '" y="' + (H - 5) +
@@ -7144,6 +7692,95 @@ function renderMonthCard(a) {
     ]) +
     stackedBarChart(items) +
   '</div>';
+}
+
+// ---- ساعت کارکرد -------------------------------------------------------------
+// Hours actually logged in Jira (server: lib/worklogHours.js), by Saturday-
+// start week and by Jalali month, each against the working-day capacity of
+// that period (WORKING_DAYS × 8h). The period still running is measured
+// against the capacity elapsed *so far*, not its full-period target — on a
+// Tuesday, 24 of a 40h week is on pace, and a bar that said "16 short"
+// would be accusing someone of the rest of the week.
+function fmtHours(h) {
+  if (h == null) return '—';
+  const r = Math.round(h * 10) / 10;
+  return String(Number.isInteger(r) ? r : r.toFixed(1));
+}
+
+const HOURS_COLORS = { logged: 'var(--chart-2)', over: 'var(--chart-5)', short: 'var(--muted)' };
+
+function hoursItems(buckets, axisOf) {
+  return buckets.map((b) => {
+    const target = b.current ? b.capacitySoFarHours : b.capacityHours;
+    const within = Math.min(b.hours, target);
+    const over = Math.max(0, b.hours - target);
+    const short = Math.max(0, target - b.hours);
+    return {
+      label: b.label,
+      axis: axisOf(b),
+      axisTitle: b.label,
+      sub: b.current ? 'تا امروز' : (target ? Math.round((b.hours / target) * 100) + '٪' : ''),
+      total: Math.round(Math.max(b.hours, target) * 10) / 10,
+      valueLabel: fmtHours(b.hours),
+      segments: [
+        { count: Math.round(within * 10) / 10, color: HOURS_COLORS.logged, label: 'ساعت ثبت‌شده' },
+        { count: Math.round(over * 10) / 10, color: HOURS_COLORS.over, label: 'بیش از ظرفیت' },
+        { count: Math.round(short * 10) / 10, color: HOURS_COLORS.short, label: 'کسری تا ظرفیت' },
+      ],
+    };
+  });
+}
+
+// Average over the periods that are over — the running one would drag it
+// down just for not having finished yet.
+function avgCompleted(buckets) {
+  const done = buckets.filter((b) => !b.current);
+  return done.length ? done.reduce((s, b) => s + b.hours, 0) / done.length : null;
+}
+
+function renderHoursPane(a) {
+  if (!a.jiraConfigured) {
+    return '<div class="card"><div class="empty">ساعت کارکرد از worklogهای جیرا خوانده می‌شود — جیرا هنوز تنظیم نشده.</div></div>';
+  }
+  const w = a.worklogHours;
+  if (!w) return '<div class="card"><div class="empty">داده‌ی ساعت کارکرد هنوز آماده نیست — یک بار «بروزرسانی این فرد» را بزن.</div></div>';
+
+  const pct = (h, cap) => (cap ? Math.round((h / cap) * 100) + '٪ از ' + fmtHours(cap) + ' ساعتِ کاری تا امروز' : '');
+  const wk = w.thisWeek, mo = w.thisMonth;
+  const avgW = avgCompleted(w.weeks), avgM = avgCompleted(w.months);
+  const tone = (h, cap) => (cap && h < cap * 0.75 ? 'warn' : '');
+
+  return '<div class="kpi-row">' +
+      kpi(fmtHours(wk.hours), 'ساعت این هفته', pct(wk.hours, wk.capacitySoFarHours), tone(wk.hours, wk.capacitySoFarHours)) +
+      kpi(fmtHours(mo.hours), 'ساعت این ماه (' + (mo.label || '') + ')', pct(mo.hours, mo.capacitySoFarHours), tone(mo.hours, mo.capacitySoFarHours)) +
+      kpi(fmtHours(avgW), 'میانگین هفتگی', 'روی ' + (w.weeks.length - 1) + ' هفته‌ی کامل اخیر — ظرفیت هفته ' + fmtHours(w.weeks[0].capacityHours) + ' ساعت', '') +
+      kpi(fmtHours(avgM), 'میانگین ماهانه', 'روی ' + (w.months.length - 1) + ' ماه کامل اخیر', '') +
+    '</div>' +
+    (w.error ? '<div class="hours-note warn">خواندن worklog از جیرا ناموفق بود: ' + esc(w.error) + '</div>' : '') +
+    (w.capped ? '<div class="hours-note warn">این فرد روی بیش از ' + w.issueCount + ' تسک زمان ثبت کرده و فقط همین تعداد خوانده شد — ممکن است بخشی از ساعت‌ها در نمودار نیامده باشد.</div>' : '') +
+    '<div class="hours-note" title="از worklogهای خودِ این فرد در جیرا — هر تسکی که رویش زمان زده، نه فقط تسک‌های اساین‌شده. روزهای کاری از تنظیمات «تقویم کاری».">' +
+      '<i class="ico i-clock ico-muted"></i> از worklogهای جیرا · هفته از شنبه · ماه شمسی · ظرفیت = روز کاری × ' + (w.hoursPerDay || 8) + ' ساعت</div>' +
+    legend([
+      { color: HOURS_COLORS.logged, label: 'ساعت ثبت‌شده' },
+      { color: HOURS_COLORS.over, label: 'بیش از ظرفیت' },
+      { color: HOURS_COLORS.short, label: 'کسری تا ظرفیت' },
+    ]) +
+    '<div class="charts-row">' +
+      '<div class="chart-card">' +
+        '<div class="chart-head"><div class="chart-heading">' +
+          '<span class="chart-title">ساعت کارکرد هفتگی</span>' +
+          '<span class="chart-desc">' + w.weeks.length + ' هفته‌ی اخیر؛ عدد بالای هر ستون ساعت ثبت‌شده است.</span>' +
+        '</div></div>' +
+        stackedBarChart(hoursItems(w.weeks, (b) => b.label)) +
+      '</div>' +
+      '<div class="chart-card">' +
+        '<div class="chart-head"><div class="chart-heading">' +
+          '<span class="chart-title">ساعت کارکرد ماهانه</span>' +
+          '<span class="chart-desc">' + w.months.length + ' ماه اخیر (شمسی).</span>' +
+        '</div></div>' +
+        stackedBarChart(hoursItems(w.months, (b) => String(b.label || '').split(' ')[0])) +
+      '</div>' +
+    '</div>';
 }
 
 function renderSprintCard(a) {
@@ -7337,7 +7974,7 @@ function reportBars(items, legend) {
     }).join('');
     return stack +
       '<text x="' + cx.toFixed(1) + '" y="' + (top - 6).toFixed(1) + '" text-anchor="middle" ' +
-        'style="font-size:10px;font-weight:700;fill:#18181b">' + it.total + '</text>' +
+        'style="font-size:10px;font-weight:700;fill:#18181b">' + esc(it.valueLabel != null ? it.valueLabel : it.total) + '</text>' +
       '<text x="' + cx.toFixed(1) + '" y="' + (H - 18) + '" text-anchor="middle" style="font-size:9px;fill:#78716c">' +
         esc(it.axis) + '</text>' +
       (it.sub ? '<text x="' + cx.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" style="font-size:8px;fill:#a8a29e">' +
@@ -7393,6 +8030,187 @@ function reportTasks(tasks) {
       '<table class="grid head-only"><thead><tr><th>کلید</th><th>عنوان</th><th>تخمین</th><th>ثبت‌شده</th><th>سررسید</th></tr></thead></table>' +
       body + '</section>';
   }).join('');
+}
+
+// ---- Report sections for everything the page shows ------------------------
+// The report used to stop at the score, three charts and the task list; the
+// hours, the attention list, the handoff piles, the delivery table, Sentry,
+// the manager's rating and the merge requests themselves were only on the
+// screen. A printed report is what gets forwarded, so it carries them all.
+
+function reportKpi(label, value, sub) {
+  return '<div class="kpi"><div class="l">' + esc(label) + '</div>' +
+    '<div class="v">' + esc(value) + '</div>' + (sub ? '<div class="s">' + esc(sub) + '</div>' : '') + '</div>';
+}
+
+function reportHours(w, jiraConfigured) {
+  if (!jiraConfigured) return '<p class="empty">ساعت کارکرد از worklogهای جیرا خوانده می‌شود — جیرا تنظیم نشده.</p>';
+  if (!w) return '<p class="empty">داده‌ی ساعت کارکرد برای این فرد آماده نیست.</p>';
+  const pct = (h, cap) => (cap ? Math.round((h / cap) * 100) + '٪ از ' + fmtHours(cap) + ' ساعت کاریِ تا امروز' : '');
+  const avgW = avgCompleted(w.weeks);
+  const avgM = avgCompleted(w.months);
+  const items = (buckets, axisOf) => buckets.map((b) => {
+    const target = b.current ? b.capacitySoFarHours : b.capacityHours;
+    return {
+      axis: axisOf(b),
+      total: Math.max(b.hours, target),
+      valueLabel: fmtHours(b.hours),
+      sub: b.current ? 'تا امروز' : (target ? Math.round((b.hours / target) * 100) + '٪' : ''),
+      segments: [
+        { count: Math.min(b.hours, target), color: '#0d9488' },
+        { count: Math.max(0, b.hours - target), color: '#7c3aed' },
+        { count: Math.max(0, target - b.hours), color: '#e7e5e4' },
+      ],
+    };
+  });
+  const key = [
+    { color: '#0d9488', label: 'ساعت ثبت‌شده' },
+    { color: '#7c3aed', label: 'بیش از ظرفیت' },
+    { color: '#e7e5e4', label: 'کسری تا ظرفیت' },
+  ];
+  return '<div class="kpis block">' +
+      reportKpi('ساعت این هفته', fmtHours(w.thisWeek.hours), pct(w.thisWeek.hours, w.thisWeek.capacitySoFarHours)) +
+      reportKpi('ساعت این ماه', fmtHours(w.thisMonth.hours), (w.thisMonth.label || '') + ' · ' + pct(w.thisMonth.hours, w.thisMonth.capacitySoFarHours)) +
+      reportKpi('میانگین هفتگی', fmtHours(avgW), (w.weeks.length - 1) + ' هفته‌ی کامل اخیر') +
+      reportKpi('میانگین ماهانه', fmtHours(avgM), (w.months.length - 1) + ' ماه کامل اخیر') +
+    '</div>' +
+    '<p class="note">از worklogهای خودِ این فرد در جیرا · هفته از شنبه · ماه شمسی · ظرفیت = روز کاری × ' + (w.hoursPerDay || 8) + ' ساعت' +
+      (w.capped ? ' · <b>توجه: فقط ' + w.issueCount + ' تسک خوانده شد؛ ممکن است بخشی از ساعت‌ها نیامده باشد.</b>' : '') + '</p>' +
+    '<h3>هفتگی</h3><div class="block">' + reportBars(items(w.weeks, (b) => b.label), key) + '</div>' +
+    '<h3>ماهانه</h3><div class="block">' + reportBars(items(w.months, (b) => String(b.label || '').split(' ')[0]), key) + '</div>';
+}
+
+function reportNow(a) {
+  const open = openMrs(a);
+  const stale = staleOpenMrs(a);
+  const doing = inProgressTasks(a);
+  const noMr = doing.filter((t) => !t.hasMr);
+  const d = a.delivery || {};
+  const sp = a.latestSprint;
+  return '<div class="kpis block">' +
+    reportKpi('MR باز', open.length, stale.length ? stale.length + ' تا بیش از ۷۲ ساعت' : (d.oldestOpenHours != null && open.length ? 'قدیمی‌ترین: ' + humanHours(d.oldestOpenHours) : 'راکدی نیست')) +
+    reportKpi('تسک در حال انجام', a.jiraConfigured ? doing.length : '—', 'In Progress یا In Review') +
+    reportKpi('در جریان، بدون MR', a.jiraConfigured ? noMr.length : '—', noMr.length ? 'شروع شده ولی کدی ثبت نشده' : '') +
+    reportKpi('آخرین اسپرینت', sp ? sp.doneCount + '/' + sp.taskCount : '—', sp ? sp.name + (sp.score == null ? '' : ' · امتیاز ' + sp.score) : 'اسپرینتی ثبت نشده') +
+  '</div>';
+}
+
+function reportDeliveryKpis(a) {
+  const d = a.delivery || {};
+  const tasks = a.jiraTasks || [];
+  const done = tasks.filter((t) => t.statusCategory === 'done');
+  const withBoth = tasks.filter((t) => t.estimateHours > 0 && t.spentHours > 0);
+  const est = withBoth.reduce((x, t) => x + t.estimateHours, 0);
+  const spent = withBoth.reduce((x, t) => x + t.spentHours, 0);
+  const drift = est > 0 ? Math.round(((spent - est) / est) * 100) : null;
+  const onTime = ((a.autoScore && a.autoScore.components) || []).find((c) => c.key === 'onTime');
+  const noLog = tasks.filter(missingTimeLog);
+  return '<div class="kpis block">' +
+    reportKpi('MR merge‌شده', d.mergedCount || 0, 'از ' + (d.mrCount || 0) + ' MR') +
+    reportKpi('تسک به Done', a.jiraConfigured ? done.length : '—', 'از ' + tasks.length + ' تسک') +
+    reportKpi('تحویل به‌موقع', onTime && onTime.available ? onTime.score : '—', onTime && onTime.available ? 'n=' + onTime.sampleSize + ' تسک دارای سررسید' : 'سررسیدی برای سنجش نیست') +
+    reportKpi('انحراف تخمین', drift == null ? '—' : (drift > 0 ? '+' : '') + drift + '٪', drift == null ? 'تسکی با تخمین و زمان ثبت‌شده نیست' : 'روی ' + withBoth.length + ' تسک') +
+  '</div>' +
+  '<div class="kpis block" style="margin-top:8px">' +
+    reportKpi('بدون ثبت زمان', noLog.length, noLog.length ? 'دقت تخمین ناقص می‌ماند' : 'همه ثبت شده') +
+    reportKpi('میانه‌ی merge', humanHours(d.medianOpenToMergeHours), d.openToMergeSample ? 'n=' + d.openToMergeSample : '') +
+    reportKpi('میانه‌ی cycle', humanHours(d.medianCycleHours), d.cycleSample ? 'n=' + d.cycleSample : '') +
+    reportKpi('MR کامنت‌خورده', d.discussedPct == null ? '—' : d.discussedPct + '٪', d.discussedSample ? d.discussedCount + ' از ' + d.discussedSample : '') +
+  '</div>';
+}
+
+function reportDeliveryTable(a) {
+  const d = a.delivery;
+  if (!d || !d.mrCount) return '<p class="empty">در این بازه MRی نیست.</p>';
+  return '<table class="grid"><tbody>' + deliveryMetricRows(d).map((r) =>
+    '<tr><td>' + esc(r.label) + '</td><td class="n b">' + esc(r.value) + '</td>' +
+    '<td class="muted">' + esc(r.extra) + '</td><td class="n muted">' + (r.n ? 'n=' + r.n : '') + '</td></tr>'
+  ).join('') + '</tbody></table>';
+}
+
+// The whole list, not the page's first eight: paper has no "show more".
+function reportAttention(items) {
+  if (!items.length) return '<p class="empty">هیچ تسک عقب‌افتاده، MR راکد یا worklog جاافتاده‌ای در این بازه نیست.</p>';
+  return '<table class="grid"><thead><tr><th>شدت</th><th>مورد</th><th>چرا</th></tr></thead><tbody>' +
+    items.map((i) => '<tr>' +
+      '<td class="n"><span class="chip ' + (i.level === 'high' ? 'bad' : 'warn') + '">' + (i.level === 'high' ? 'جدی' : 'متوسط') + '</span></td>' +
+      '<td>' + esc(i.plain || '') + '</td>' +
+      '<td class="muted">' + esc(i.why || '') + '</td>' +
+    '</tr>').join('') + '</tbody></table>';
+}
+
+function reportHandoff(a, name) {
+  const report = buildHandoffReport(a, name);
+  const table = (items) => '<table class="grid tasks"><tbody>' + items.map(({ t, late }) =>
+    '<tr><td class="key">' + esc(t.key) + '</td><td>' + esc(shortSummary(t.summary)) + '</td>' +
+    '<td class="muted">' + esc(latenessPhrase(t, late)) + '</td><td class="muted">' + esc(t.status || '') + '</td></tr>'
+  ).join('') + '</tbody></table>';
+  const pile = (label, items) => items.length
+    ? '<p class="facet warn">' + esc(label) + ' — ' + items.length + '</p>' + table(items) : '';
+  const devTotal = report.dev.overdue.length + report.dev.noMr.length + report.dev.noWorklog.length;
+  if (!devTotal && !report.lead.length) return '<p class="empty">چیزی برای تعیین تکلیف نیست.</p>';
+  return '<h3>با خودِ ' + esc(name) + ' <span class="cnt">' + devTotal + '</span></h3>' +
+      (devTotal ? pile('عقب‌افتاده', report.dev.overdue) + pile('در جریان، بدون MR', report.dev.noMr) + pile('بدون ثبت زمان', report.dev.noWorklog)
+        : '<p class="empty">موردی نیست.</p>') +
+    '<h3>با ریویوکننده — در صف ریویو <span class="cnt">' + report.lead.length + '</span></h3>' +
+      (report.lead.length ? table(report.lead) : '<p class="empty">موردی نیست.</p>');
+}
+
+function reportSentry(a) {
+  const s = a.sentryBlame;
+  if (!s) return '<p class="empty">Sentry تنظیم نشده یا ردیابی خطا برای این فرد در دسترس نیست.</p>';
+  const blamed = s.blamed || [];
+  // Nothing searched is "we could not check", not "clean" — the two must
+  // never read alike on something that gets forwarded.
+  if (!s.searched) {
+    return '<p class="empty">ردیابی خطاهای Sentry تا خط کد اجرا نشد (کپی محلی پروژه یا دسترسی Sentry در دسترس نبود) — این بخش «نامعلوم» است، نه «بدون خطا».</p>';
+  }
+  if (!blamed.length) {
+    return '<p class="note">از ' + s.searched + ' خطای ردیابی‌شده در ۹۰ روز اخیر، هیچ‌کدام به خطی که این فرد نوشته نرسید.</p>';
+  }
+  const by = (lvl) => blamed.filter((b) => b.level === lvl).length;
+  const resolved = blamed.filter((b) => b.resolved).length;
+  return '<div class="kpis block">' +
+      reportKpi('خطای ردیابی‌شده به کد او', blamed.length, 'از ' + (s.searched || 0) + ' خطای ۹۰ روز اخیر') +
+      reportKpi('fatal', by('fatal'), '') +
+      reportKpi('error', by('error'), 'warning: ' + by('warning')) +
+      reportKpi('فیکس‌شده', resolved, 'از ' + blamed.length) +
+    '</div>' +
+    (blamed.some((b) => b.title)
+      ? '<table class="grid" style="margin-top:8px"><tbody>' + blamed.filter((b) => b.title).map((b) =>
+          '<tr><td class="key" style="direction:ltr">' + esc(b.shortId || '') + '</td><td>' + esc(b.title) + '</td>' +
+          '<td class="n">' + esc(b.level || '') + '</td><td class="muted">' + (b.resolved ? 'فیکس شده' : 'باز') + '</td></tr>'
+        ).join('') + '</tbody></table>'
+      : '');
+}
+
+function reportRating(scoreData) {
+  const r = scoreData.rating;
+  const month = scoreData.month ? faMonth(scoreData.month) : '';
+  if (!r) return '<p class="empty">امتیاز مدیر برای ' + esc(month || 'این ماه') + ' ثبت نشده.</p>';
+  const params = scoreData.ratingParams || [];
+  return '<p class="note">' + esc(month) + (scoreData.ratingOverall != null ? ' · امتیاز کل: <b>' + scoreData.ratingOverall + '</b>' : '') + '</p>' +
+    (params.length
+      ? '<table class="grid"><thead><tr><th>معیار</th><th>امتیاز (۱ تا ۵)</th></tr></thead><tbody>' +
+          params.map((p) => '<tr><td>' + esc(p.label) + '</td><td class="n b">' + esc((r.scores && r.scores[p.key]) != null ? r.scores[p.key] : '—') + '</td></tr>').join('') +
+        '</tbody></table>'
+      : '') +
+    (r.note ? '<p class="note" style="margin-top:8px"><b>یادداشت:</b> ' + esc(r.note) + '</p>' : '');
+}
+
+// Every merge request in range, month by month — the page's month tabs,
+// laid flat. The maintainer's size/complexity marks stay off paper.
+function reportMrs(months) {
+  if (!(months || []).length) return '<p class="empty">در این بازه MRی نیست.</p>';
+  const verdict = (t) => (!t.hasReport ? 'بدون تأیید maintainer' : t.roundTrip === true ? 'رفت‌وبرگشتی' : t.roundTrip === false ? 'تمیز' : 'نامشخص');
+  return months.map((m) =>
+    '<section class="block"><h3>' + esc(faMonth(m.month)) + ' <span class="cnt">' + m.mrCount + ' MR</span></h3>' +
+    '<table class="grid tasks"><tbody>' + (m.tasks || []).map((t) =>
+      '<tr><td class="key">!' + esc(t.iid) + '</td><td>' + esc(t.title || '') + '</td>' +
+      '<td class="key">' + esc(t.task || '') + '</td><td class="muted">' + esc(t.state || '') + '</td>' +
+      '<td class="muted">' + esc(verdict(t)) + '</td></tr>'
+    ).join('') + '</tbody></table></section>'
+  ).join('');
 }
 
 // The stylesheet the report carries with it. Sized for A4 with a 14mm margin,
@@ -7481,10 +8299,7 @@ function buildReportDocument() {
   const scoreData = DEV.score || {};
   const who = rosterEntry(DEV.selected) || {};
   const name = who.name || DEV.selected;
-  const d = a.delivery || {};
   const tasks = a.jiraTasks || [];
-  const done = tasks.filter((t) => t.statusCategory === 'done');
-  const noLog = tasks.filter(missingTimeLog);
   const attn = attentionItems(a);
 
   const range = (DEV.since || DEV.until)
@@ -7494,8 +8309,7 @@ function buildReportDocument() {
   const roleName = (who.accessLevel || 0) >= 50 ? 'Owner'
     : (who.accessLevel || 0) >= 40 ? 'Maintainer' : null;
 
-  const kpi = (l, v, s) => '<div class="kpi"><div class="l">' + esc(l) + '</div>' +
-    '<div class="v">' + esc(v) + '</div>' + (s ? '<div class="s">' + esc(s) + '</div>' : '') + '</div>';
+  const trend = teamOverview_trend(a.monthlyRows);
 
   const monthItems = (a.months || []).slice().reverse().map((m) => {
     const clean = Math.max(0, m.mrCount - m.roundTripCount - m.uncheckedCount - (m.noReportCount || 0));
@@ -7540,6 +8354,10 @@ function buildReportDocument() {
           (a.lastActivityMs ? '<span class="chip">آخرین فعالیت: ' + esc(relativeTime(a.lastActivityMs)) + '</span>' : '') +
           (coverPct != null ? '<span class="chip ' + (coverPct >= 60 ? 'ok' : coverPct >= 25 ? 'warn' : 'bad') + '">' +
             'پوشش ریویو: ' + a.reportedMRs + '/' + a.totalMRs + '</span>' : '') +
+          (trend.delta != null ? '<span class="chip ' + (trend.delta > 0 ? 'ok' : trend.delta < 0 ? 'bad' : '') + '">' +
+            'روند: ' + (trend.delta > 0 ? '▲' : trend.delta < 0 ? '▼' : '=') + Math.abs(trend.delta) + ' نسبت به ماه قبل</span>' : '') +
+          '<span class="chip ' + (attn.length ? 'warn' : 'ok') + '">نیازمند رسیدگی: ' + attn.length + '</span>' +
+          '<span class="chip">امتیاز مدیر: ' + (scoreData.ratingOverall != null ? scoreData.ratingOverall : 'ثبت نشده') + '</span>' +
         '</div>' +
       '</div>' +
       '<div class="ring">' + reportRing(auto) + '</div>' +
@@ -7547,29 +8365,26 @@ function buildReportDocument() {
 
     '<div class="caveat block">این عدد ورودی گفت‌وگوست، نه مبنای تصمیم پرسنلی. فقط از داده‌ای ساخته شده که این سرویس جمع کرده — درباره‌ی مهارت واقعی، کیفیت کدی که ریویو نشده، یا مسائل تیمی هیچ ادعایی ندارد.</div>' +
 
-    '<h2>یک نگاه</h2>' +
-    '<div class="kpis block">' +
-      kpi('MR باز', openMrs(a).length, staleOpenMrs(a).length ? staleOpenMrs(a).length + ' تا راکد' : 'راکدی نیست') +
-      kpi('MR merge‌شده', d.mergedCount || 0, 'از ' + (d.mrCount || 0) + ' MR') +
-      kpi('تسک به Done', done.length, 'از ' + tasks.length + ' تسک') +
-      kpi('بدون ثبت زمان', noLog.length, noLog.length ? 'دقت تخمین ناقص می‌ماند' : 'همه ثبت شده') +
-    '</div>' +
-    '<div class="kpis block" style="margin-top:8px">' +
-      kpi('میانه‌ی merge', humanHours(d.medianOpenToMergeHours), d.openToMergeSample ? 'n=' + d.openToMergeSample : '') +
-      kpi('میانه‌ی cycle', humanHours(d.medianCycleHours), d.cycleSample ? 'n=' + d.cycleSample : '') +
-      kpi('نیازمند رسیدگی', attn.length, attn.filter((i) => i.level === 'high').length + ' مورد جدی') +
-      kpi('امتیاز مدیر', scoreData.ratingOverall != null ? scoreData.ratingOverall : '—',
-          scoreData.month ? faMonth(scoreData.month) : 'ثبت نشده') +
-    '</div>' +
+    '<h2>همین حالا روی چه چیزی است</h2>' + reportNow(a) +
+    '<h2>تحویل در این بازه</h2>' + reportDeliveryKpis(a) +
 
     '<h2>امتیاز خودکار — از چه ساخته شده</h2>' +
     '<div class="block">' + (reportComposition(auto) || '<p class="empty">' + esc(auto.reason || 'داده‌ای نبود') + '</p>') + '</div>' +
 
     '<div class="pbreak"></div>' +
+    '<h2>ساعت کارکرد</h2>' + reportHours(a.worklogHours, a.jiraConfigured) +
+
     '<h2>روند امتیاز ماه‌به‌ماه</h2>' +
     '<p class="note">امتیاز کل ماهانه (۰ تا ۱۰۰). ماهی که داده‌ی قابل‌سنجش ندارد نقطه نمی‌گیرد.</p>' +
     '<div class="block">' + reportTrend(a.monthlyRows) + '</div>' +
 
+    '<div class="pbreak"></div>' +
+    '<h2>نیازمند رسیدگی <span class="cnt">' + attn.length + '</span></h2>' + reportAttention(attn) +
+    '<h2>تعیین تکلیف</h2>' +
+    '<p class="note">هر تسک فقط در یکی از دو فهرست است — بسته به اینکه قدم بعدی دست کیست.</p>' +
+    reportHandoff(a, name) +
+
+    '<div class="pbreak"></div>' +
     '<h2>Merge Requestها بر اساس ماه</h2>' +
     '<div class="block">' + reportBars(monthItems, [
       { color: '#0d9488', label: 'تمیز' }, { color: '#be123c', label: 'چندنویسنده' },
@@ -7581,6 +8396,18 @@ function buildReportDocument() {
       { color: '#0d9488', label: 'با ثبت زمان' }, { color: '#b45309', label: 'بدون ثبت زمان' },
       { color: '#d6d3d1', label: 'هنوز به Review نرسیده' },
     ]) + '</div>' +
+
+    '<h2>معیارهای تحویل (مستقیم از گیت‌لب)</h2>' +
+    '<p class="note">میانه گزارش می‌شود نه میانگین؛ این اعداد به پر کردن هیچ فیلدی وابسته نیستند.</p>' +
+    '<div class="block">' + reportDeliveryTable(a) + '</div>' +
+
+    '<h2>خطاهای Sentry ردیابی‌شده به کد او</h2>' +
+    '<div class="block">' + reportSentry(a) + '</div>' +
+
+    '<h2>امتیاز مدیر</h2>' +
+    '<div class="block">' + reportRating(scoreData) + '</div>' +
+
+    ((a.months || []).length ? '<div class="pbreak"></div><h2>همه‌ی Merge Requestها</h2>' + reportMrs(a.months) : '') +
 
     (tasks.length ? '<div class="pbreak"></div><h2>تسک‌ها</h2>' + reportTasks(tasks) : '') +
 
@@ -7678,7 +8505,7 @@ function renderNowBand(a) {
       kpi(open.length, 'Merge Request باز',
         open.length && d.oldestOpenHours != null ? 'قدیمی‌ترین: ' + humanHours(d.oldestOpenHours) : '',
         stale.length ? 'warn' : (open.length ? '' : 'quiet')) +
-      (a.jiraConfigured ? kpi(doing.length, 'تسک در حال انجام (In Progress/Review)', '', doing.length ? '' : 'quiet') : '') +
+      (a.jiraConfigured ? kpi(doing.length, 'تسک در حال انجام', 'In Progress یا In Review', doing.length ? '' : 'quiet') : '') +
       (a.jiraConfigured ? kpi(noMr.length, 'تسک در جریان بدون MR',
         noMr.length ? 'کار شروع شده ولی هنوز کدی برایش ثبت نشده' : '', noMr.length ? 'warn' : 'quiet') : '') +
       (sp ? kpi(sp.doneCount, 'پیشرفت آخرین اسپرینت',
@@ -7703,6 +8530,7 @@ function attentionItems(a) {
       level: days > 14 ? 'high' : 'mid',
       icon: '<i class="ico i-calendar ico-amber"></i>',
       text: '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer">' + esc(t.key) + ' — ' + esc(t.summary || '') + '</a>',
+      plain: t.key + ' — ' + (t.summary || ''),
       why: days + ' روز از سررسید گذشته و هنوز بسته نشده' + (t.status ? ' · ' + t.status : ''),
     });
   }
@@ -7711,7 +8539,8 @@ function attentionItems(a) {
     items.push({
       level: hours > 24 * 7 ? 'high' : 'mid',
       icon: '<i class="ico i-git-branch ico-cyan"></i>',
-      text: '<a class="task-title" href="' + esc(mr.webUrl) + '" target="_blank" rel="noreferrer">!' + esc(mr.iid) + ' — ' + esc(mr.title) + '</a>',
+      text: '<a class="task-title" href="' + esc(mr.webUrl) + '" target="_blank" rel="noreferrer"><bdi dir="ltr">!' + esc(mr.iid) + '</bdi> — <bdi>' + esc(mr.title) + '</bdi></a>',
+      plain: '!' + mr.iid + ' — ' + (mr.title || ''),
       why: humanHours(hours) + ' است که باز مانده' + (mr.targetBranch ? ' · به ' + mr.targetBranch : ''),
     });
   }
@@ -7722,6 +8551,7 @@ function attentionItems(a) {
       level: 'mid',
       icon: '<i class="ico i-clock ico-amber"></i>',
       text: '<b>' + noWorklog.length + ' تسک به Review/Done رسیده ولی زمان ثبت‌شده ندارد</b>',
+      plain: noWorklog.length + ' تسک به Review/Done رسیده ولی زمان ثبت‌شده ندارد',
       why: 'تا این پر نشود، دقت تخمین برای این تسک‌ها اصلاً قابل محاسبه نیست — سوراخِ بقیه‌ی اعداد همین است. فهرستشان در تب‌های پایین با حاشیه‌ی نارنجی مشخص شده.',
     });
   }
@@ -8022,7 +8852,7 @@ function renderDeliveredBand(a) {
       '<span class="band-note">معیارهای گیت‌لبی این بخش به پر کردن هیچ فیلدی توسط کسی وابسته نیستند؛ معیارهای جیرایی به آن وابسته‌اند و حجم نمونه‌شان نوشته شده.</span></div>' +
     '<div class="kpi-row">' +
       (a.jiraConfigured ? kpi(done.length, 'تسک به Done رسیده', '', '', tasks.length) : '') +
-      kpi(d.mergedCount || 0, 'MR merge‌شده', 'از ' + (d.mrCount || 0) + ' MR این بازه', '') +
+      kpi(d.mergedCount || 0, 'MRهای merge‌شده', 'از ' + (d.mrCount || 0) + ' MR این بازه', '') +
       kpi(humanHours(d.medianOpenToMergeHours), 'میانه‌ی باز بودن MR تا merge',
         d.p90OpenToMergeHours != null ? '۹۰٪ زیر ' + humanHours(d.p90OpenToMergeHours) + ' · n=' + (d.openToMergeSample || 0) : '', '') +
       (onTime && onTime.available
@@ -8082,7 +8912,24 @@ function humanHours(h) {
 function renderDeliveryMetrics(a) {
   const d = a.delivery;
   if (!d || !d.mrCount) return '';
-  const rows = [
+  const rows = deliveryMetricRows(d);
+  return '<div class="card">' +
+    '<div class="band"><h4><i class="ico i-truck ico-green"></i> معیارهای تحویل (مستقیم از گیت‌لب)</h4>' +
+      '<span class="band-note">این اعداد به پر کردن هیچ فیلدی توسط کسی وابسته نیستند، پس برای همه‌ی MRها کامل‌اند — برخلاف معیارهای جیرا که روی دیتای ناقص می‌ایستند. میانه گزارش می‌شود نه میانگین: یک MR که روی تعطیلات باز مانده، میانگین را از هر چیزی که تیم «معمول» بداند دور می‌کند.</span></div>' +
+    '<div class="table-wrap"><table class="score-table"><tbody>' +
+    rows.map((r) => '<tr>' +
+      '<td>' + esc(r.label) + '</td>' +
+      '<td class="num" style="font-weight:700">' + esc(r.value) + '</td>' +
+      '<td class="muted">' + esc(r.extra) + '</td>' +
+      '<td class="muted">' + (r.n ? '<span class="tag">n=' + r.n + '</span>' : '') + '</td>' +
+    '</tr>').join('') +
+    '</tbody></table></div></div>';
+}
+
+// The delivery table's rows, shared by the page and the printable report so
+// the two can never word or compute a row differently.
+function deliveryMetricRows(d) {
+  return [
     { label: 'میانه‌ی زمان باز بودن MR تا merge', value: humanHours(d.medianOpenToMergeHours),
       extra: d.p90OpenToMergeHours != null ? '۹۰٪ زیر ' + humanHours(d.p90OpenToMergeHours) : '', n: d.openToMergeSample },
     { label: 'میانه‌ی Cycle time (اولین کامیت تا merge)', value: humanHours(d.medianCycleHours),
@@ -8098,17 +8945,6 @@ function renderDeliveryMetrics(a) {
       extra: d.medianOpenAgeHours != null ? 'میانه‌ی سن: ' + humanHours(d.medianOpenAgeHours) + ' · قدیمی‌ترین: ' + humanHours(d.oldestOpenHours) : '', n: d.stillOpenCount },
     { label: 'میانه‌ی تعداد کامنت روی هر MR', value: d.medianNotes == null ? '—' : String(d.medianNotes), extra: '', n: d.notesSample },
   ];
-  return '<div class="card">' +
-    '<div class="band"><h4><i class="ico i-truck ico-green"></i> معیارهای تحویل (مستقیم از گیت‌لب)</h4>' +
-      '<span class="band-note">این اعداد به پر کردن هیچ فیلدی توسط کسی وابسته نیستند، پس برای همه‌ی MRها کامل‌اند — برخلاف معیارهای جیرا که روی دیتای ناقص می‌ایستند. میانه گزارش می‌شود نه میانگین: یک MR که روی تعطیلات باز مانده، میانگین را از هر چیزی که تیم «معمول» بداند دور می‌کند.</span></div>' +
-    '<div class="table-wrap"><table class="score-table"><tbody>' +
-    rows.map((r) => '<tr>' +
-      '<td>' + esc(r.label) + '</td>' +
-      '<td class="num" style="font-weight:700">' + esc(r.value) + '</td>' +
-      '<td class="muted">' + esc(r.extra) + '</td>' +
-      '<td class="muted">' + (r.n ? '<span class="tag">n=' + r.n + '</span>' : '') + '</td>' +
-    '</tr>').join('') +
-    '</tbody></table></div></div>';
 }
 
 // A task that reached Review/Done with no logged hours — the same rule the
@@ -8268,12 +9104,12 @@ function jalaliLabel(iso) {
 // lives in a hidden field as ISO, which is what everything downstream reads.
 const JDP = { open: null, view: null };
 
-function renderDatePicker(id, iso, label) {
+function renderDatePicker(id, iso, label, placeholder) {
   return '<div class="field jdp-field">' +
       '<label>' + esc(label) + '</label>' +
       '<input type="hidden" id="' + id + '" value="' + esc(iso || '') + '" />' +
-      '<button type="button" class="jdp-btn" data-jdp="' + id + '">' +
-        (iso ? esc(jalaliLabel(iso)) : '<span class="jdp-ph">انتخاب تاریخ</span>') +
+      '<button type="button" class="jdp-btn" data-jdp="' + id + '" title="' + esc(label) + '">' +
+        (iso ? esc(jalaliLabel(iso)) : '<span class="jdp-ph">' + esc(placeholder || 'انتخاب تاریخ') + '</span>') +
       '</button>' +
       '<div class="jdp-pop" data-jdp-pop="' + id + '" hidden></div>' +
     '</div>';
@@ -8747,25 +9583,27 @@ function renderJiraTasks(a) {
           '<i class="ico i-clipboard ico-muted"></i> ' +
           (active ? 'کپی همین فیلتر' : 'کپی متن این ستون') + '</button>' +
       '</div>' +
-      '<div class="task-cards two-col">' + items.map((t) => (
+      // Two lines per ticket: what it is (key, title, how late), then what it
+      // says (MR, estimate drift) followed by where it is filed, in grey. The
+      // status chip is gone from the card — the tab it sits under already is
+      // its status — and so is a project chip that read "eServices Mobile"
+      // on every single card.
+      '<div class="task-cards compact">' + items.map((t) => (
         '<div class="task-card' + (missingTimeLog(t) ? ' needs-worklog' : '') + '">' +
           '<div class="task-head">' +
-            '<span class="task-pill">' + esc(t.key) + '</span>' +
-            '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer" title="' + esc(t.summary) + '">' + esc(t.summary || '(بدون عنوان)') + '</a>' +
-          '</div>' +
-          '<div class="task-meta">' +
-            jiraStatusBadge(t) +
-            projectBadge(t) +
-            mrLinks(t) +
-            estimateBadge(t) +
+            '<a class="task-pill" href="' + esc(t.url) + '" target="_blank" rel="noreferrer">' + esc(t.key) + '</a>' +
+            '<a class="task-title" href="' + esc(t.url) + '" target="_blank" rel="noreferrer" dir="auto" title="' + esc(t.summary) + '">' + esc(t.summary || '(بدون عنوان)') + '</a>' +
             dueBadge(t) +
           '</div>' +
-          '<div class="task-foot">' +
-            (t.type ? '<span>' + esc(t.type) + '</span>' : '') +
-            (t.priority ? '<span>' + esc(t.priority) + '</span>' : '') +
-            (t.sprint ? '<span><i class="ico i-sprint ico-cyan"></i> ' + esc(t.sprint) + '</span>' : '') +
-            (t.storyPoints != null ? '<span>SP ' + esc(t.storyPoints) + '</span>' : '') +
-            (t.updated ? '<span>آخرین تغییر: ' + esc(faDate(t.updated)) + '</span>' : '') +
+          '<div class="task-meta">' +
+            mrLinks(t) +
+            estimateBadge(t) +
+            (missingTimeLog(t) ? '<span class="tl-flag">بدون ثبت زمان</span>' : '') +
+            '<span class="task-foot">' +
+              [t.project, t.type, t.priority, t.sprint, t.storyPoints != null ? 'SP ' + t.storyPoints : null,
+                t.updated ? 'آخرین تغییر ' + faDate(t.updated) : null]
+                .filter(Boolean).map((x) => '<span>' + esc(x) + '</span>').join('') +
+            '</span>' +
           '</div>' +
         '</div>'
       )).join('') + '</div>'
@@ -8877,8 +9715,8 @@ function renderMrTaskCard(t) {
     : '';
   return '<div class="task-card">' +
     '<div class="task-head">' +
-      (t.task ? '<span class="task-pill">' + esc(t.task) + '</span>' : '') +
-      '<a class="task-title" href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(t.title) + '">!' + esc(t.iid) + ' — ' + esc(t.title) + '</a>' +
+      (t.task ? (t.jiraUrl ? '<a class="task-pill" href="' + esc(t.jiraUrl) + '" target="_blank" rel="noreferrer">' + esc(t.task) + ' <i class="ico i-ticket"></i></a>' : '<span class="task-pill">' + esc(t.task) + ' <i class="ico i-ticket"></i></span>') : '') +
+      '<a class="task-title" href="' + esc(t.webUrl) + '" target="_blank" rel="noreferrer" title="' + esc(t.title) + '"><bdi dir="ltr">!' + esc(t.iid) + '</bdi> — <bdi>' + esc(t.title) + '</bdi></a>' +
     '</div>' +
     '<div class="task-meta">' +
       branchPill(t) +
@@ -9025,10 +9863,12 @@ async function loadSentry() {
   } catch (e) {
     box.innerHTML = '<div class="error-box">خطا: ' + esc(e.message) + '</div>';
     SENTRY.loading = false;
+    tryReveal('sentry');
     return;
   }
   SENTRY.loading = false;
   renderSentry();
+  tryReveal('sentry');
 }
 
 function renderSentry() {
@@ -9098,12 +9938,12 @@ function renderSentryIssue(issue) {
   return '<div class="sentry-item lvl-' + esc(issue.level || 'unknown') + (issue.resolved ? ' is-resolved' : '') + '">' +
     '<div class="sentry-head">' +
       '<span class="sentry-level lvl-' + esc(issue.level || 'unknown') + '">' + esc(lvl) + '</span>' +
-      '<a class="sentry-title" href="' + esc(issue.permalink) + '" target="_blank" rel="noreferrer">' + esc(issue.title) + '</a>' +
+      '<a class="sentry-title" href="' + esc(issue.permalink) + '" target="_blank" rel="noreferrer" dir="auto">' + esc(issue.title) + '</a>' +
       (issue.resolved ? '<span class="sentry-level" style="background:rgba(65,224,138,.16);color:var(--green)"><i class="ico i-check ico-green"></i> فیکس شد</span>' : '') +
-      '<button class="ghost sentry-detail-btn" data-issue="' + esc(issue.id) + '">' + (expanded ? '▲ بستن' : '▼ جزئیات و لاگ') + '</button>' +
-      action +
     '</div>' +
     (issue.culprit ? '<div class="sentry-culprit mono">' + esc(issue.culprit) + '</div>' : '') +
+    // The two actions sit at the end of the stats line: on the title's line
+    // they took half its width and folded a one-line error into three.
     '<div class="sentry-meta">' +
       '<span>' + esc(issue.count) + ' رخداد</span>' +
       '<span>' + esc(issue.userCount) + ' کاربر</span>' +
@@ -9111,6 +9951,10 @@ function renderSentryIssue(issue) {
       '<span>اولین: ' + esc(relativeIso(issue.firstSeen)) + '</span>' +
       '<span class="tag">' + esc(issue.project || '') + '</span>' +
       (issue.shortId ? '<span class="tag mono">' + esc(issue.shortId) + '</span>' : '') +
+      '<span class="sentry-actions">' +
+        '<button class="ghost sentry-detail-btn" data-issue="' + esc(issue.id) + '">' + (expanded ? '▲ بستن' : '▼ جزئیات و لاگ') + '</button>' +
+        action +
+      '</span>' +
     '</div>' +
     (expanded ? renderSentryDetail(issue.id) : '') +
     (isOpen ? renderSentryForm(issue) : '') +

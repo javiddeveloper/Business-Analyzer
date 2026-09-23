@@ -77,7 +77,8 @@ test('each task tab renders the cards of the status it is labelled with', () => 
     assert.ok(active, 'an active tab must be rendered');
     assert.equal(active[1].trim(), expectedLabel);
 
-    const keys = [...html.matchAll(/task-pill">([A-Z]-\d)</g)].map((m) => m[1]);
+    // The pill is a link to the ticket now, so it carries an href before the key.
+    const keys = [...html.matchAll(/class="task-pill"[^>]*>([A-Z]-\d)\b/g)].map((m) => m[1]);
     assert.deepEqual(keys, expectedKeys,
       `the "${expectedLabel}" tab must show its own tasks, not another status's`);
 

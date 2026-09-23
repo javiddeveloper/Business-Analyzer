@@ -192,3 +192,87 @@ test('fetchIssuesByKeys tolerates one missing/erroring key without losing the ot
     global.fetch = originalFetch;
   }
 });
+
+// ---- worklogsByAuthor ------------------------------------------------------
+// The source for weekly/monthly hours. The properties that matter: only this
+// author's entries (a ticket's worklog holds everyone's), only entries on or
+// after `since` (the JQL finds the issue, but its worklog is all-time), and
+// one unreadable issue must not blank the whole week.
+test('worklogsByAuthor keeps only this author\'s entries since the date, and survives one failing issue', async () => {
+  const jira = stubSecrets(CONFIGURED);
+  const originalFetch = global.fetch;
+  const seen = [];
+  global.fetch = async (url) => {
+    seen.push(url);
+    const ok = (body) => ({ ok: true, status: 200, text: async () => JSON.stringify(body), json: async () => body });
+    if (url.includes('/rest/api/2/search')) {
+      return ok({ total: 3, issues: [{ key: 'EM-1' }, { key: 'EM-2' }, { key: 'EM-BROKEN' }] });
+    }
+    if (url.includes('EM-BROKEN')) return { ok: false, status: 500, text: async () => 'boom', json: async () => ({}) };
+    if (url.includes('/issue/EM-1/worklog')) {
+      return ok({ worklogs: [
+        { author: { name: 's_nami' }, started: '2026-09-20T09:00:00.000+0330', timeSpentSeconds: 3600 * 3 },
+        { author: { name: 'someone_else' }, started: '2026-09-20T09:00:00.000+0330', timeSpentSeconds: 3600 * 5 },
+        { author: { name: 's_nami' }, started: '2026-01-02T09:00:00.000+0330', timeSpentSeconds: 3600 * 9 }, // before since
+      ] });
+    }
+    if (url.includes('/issue/EM-2/worklog')) {
+      return ok({ worklogs: [{ author: { name: 'S_NAMI' }, started: '2026-09-21T10:00:00.000+0330', timeSpentSeconds: 1800 }] });
+    }
+    throw new Error('unexpected ' + url);
+  };
+  try {
+    const out = await jira.worklogsByAuthor('s_nami', { since: '2026-03-20' });
+    assert.equal(out.entries.length, 2, 'the other author and the pre-`since` entry are both dropped');
+    assert.deepEqual(out.entries.map((e) => e.seconds).sort((a, b) => a - b), [1800, 10800]);
+    assert.equal(out.issueCount, 3);
+    const jql = decodeURIComponent(seen.find((u) => u.includes('/search')));
+    assert.match(jql, /worklogAuthor = "s_nami"/, 'found by who logged, not by assignee');
+    assert.match(jql, /worklogDate >= "2026-03-20"/);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+// A complete inline worklog is used as-is (no per-issue call), a truncated
+// one is read in full, and the search pages past its first 100 results.
+test('worklogsByAuthor uses complete inline worklogs, refetches truncated ones, and pages the search', async () => {
+  const jira = stubSecrets(CONFIGURED);
+  const originalFetch = global.fetch;
+  const worklogCalls = [];
+  const ok = (body) => ({ ok: true, status: 200, text: async () => JSON.stringify(body), json: async () => body });
+  const inline = (n) => ({ total: n, worklogs: Array.from({ length: n }, () => (
+    { author: { name: 'r_x' }, started: '2026-09-20T09:00:00.000+0330', timeSpentSeconds: 3600 }
+  )) });
+  global.fetch = async (url) => {
+    if (url.includes('/rest/api/2/search')) {
+      const startAt = Number(/startAt=(\d+)/.exec(url)[1]);
+      if (startAt === 0) {
+        const issues = Array.from({ length: 100 }, (_, i) => ({ key: 'EM-' + i, fields: { worklog: inline(1) } }));
+        issues[5] = { key: 'EM-5', fields: { worklog: { total: 25, worklogs: inline(20).worklogs } } }; // truncated
+        return ok({ total: 101, issues });
+      }
+      return ok({ total: 101, issues: [{ key: 'EM-100', fields: { worklog: inline(2) } }] });
+    }
+    if (url.includes('/worklog')) {
+      worklogCalls.push(url);
+      return ok(inline(25));
+    }
+    throw new Error('unexpected ' + url);
+  };
+  try {
+    const out = await jira.worklogsByAuthor('r_x', { since: '2026-03-20' });
+    assert.equal(out.issueCount, 101, 'the second search page is read too');
+    assert.equal(out.capped, false);
+    assert.equal(worklogCalls.length, 1, 'only the truncated issue costs its own request');
+    assert.equal(out.entries.length, 99 + 25 + 2);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('worklogsByAuthor refuses a username that could break out of the JQL string', async () => {
+  const jira = stubSecrets(CONFIGURED);
+  const out = await jira.worklogsByAuthor('x" OR 1=1 --');
+  assert.deepEqual(out.entries, []);
+});

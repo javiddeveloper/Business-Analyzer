@@ -25,6 +25,7 @@ const projects = require('./lib/projects');
 const jira = require('./lib/jira');
 const devScore = require('./lib/devScore');
 const monthly = require('./lib/monthly');
+const worklogHours = require('./lib/worklogHours');
 const xlsx = require('./lib/xlsx');
 const deliveryMetrics = require('./lib/deliveryMetrics');
 const teamOverview = require('./lib/teamOverview');
@@ -950,7 +951,12 @@ async function buildSentryBlameIndex({ force = false } = {}) {
         searched++;
         if (!result.author) continue; // blame worked, but nobody on the roster wrote that line
         const key = result.author.username;
-        (byAuthor[key] || (byAuthor[key] = [])).push({ level: issue.level, resolved: issue.status === 'resolved' });
+        // title/shortId ride along for the printable report, which names the
+        // crashes rather than only counting them.
+        (byAuthor[key] || (byAuthor[key] = [])).push({
+          level: issue.level, resolved: issue.status === 'resolved',
+          title: issue.title || null, shortId: issue.shortId || null,
+        });
       }
     }
     return { searched, byAuthor };
@@ -1020,6 +1026,20 @@ async function loadDeveloperAnalytics(author, { since, until, force = false } = 
       // as the complete one.
       value.jiraTasksTotal = assigned.total;
       value.jiraConfigured = true;
+
+      // Hours actually logged, week by week and Jalali month by month.
+      // Deliberately independent of the page's since/until filter: "how many
+      // hours this week / this month" is always about the recent weeks and
+      // months, and a filter set to last spring would otherwise leave this
+      // week's bar empty for no reason the reader could see.
+      const lookback = worklogHours.lookbackSince();
+      const logs = await jira.worklogsByAuthor(author, { since: lookback, force });
+      value.worklogHours = {
+        ...worklogHours.buildHours(logs.entries),
+        issueCount: logs.issueCount,
+        capped: logs.capped,
+        error: logs.error || null,
+      };
     }
 
     // The composite score is computed per request, not cached with the
